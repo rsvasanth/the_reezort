@@ -39,12 +39,12 @@ const data = {
 	},
 	navMain: [
 		{
-			title: "Command center",
+			title: "Executive cockpit",
 			url: "#",
 			icon: HotelIcon,
 		},
 		{
-			title: "Property setup",
+			title: "Room inventory",
 			url: "#",
 			icon: Building2Icon,
 		},
@@ -59,7 +59,7 @@ const data = {
 			icon: BedDoubleIcon,
 		},
 		{
-			title: "Finance bridge",
+			title: "Revenue and folios",
 			url: "#",
 			icon: CreditCardIcon,
 		},
@@ -88,22 +88,22 @@ const data = {
 	],
 	documents: [
 		{
-			name: "Master specs",
+			name: "Daily manager brief",
 			url: "#",
 			icon: BookOpenIcon,
 		},
 		{
-			name: "Sprint tasks",
+			name: "Arrival manifest",
 			url: "#",
 			icon: ClipboardListIcon,
 		},
 		{
-			name: "Implementation roles",
+			name: "Staffing view",
 			url: "#",
 			icon: UsersIcon,
 		},
 		{
-			name: "Engineering backlog",
+			name: "Engineering tickets",
 			url: "#",
 			icon: WrenchIcon,
 		},
@@ -119,7 +119,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 						<SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
 							<a href="/resort-app">
 								<HotelIcon className="h-5 w-5" />
-								<span className="text-base font-medium tracking-[-0.02em]">THE REEZORT</span>
+								<span className="text-base font-medium">THE REEZORT</span>
 							</a>
 						</SidebarMenuButton>
 					</SidebarMenuItem>

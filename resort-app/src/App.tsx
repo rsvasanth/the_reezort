@@ -25,21 +25,21 @@ function App() {
 				<AppSidebar />
 				<SidebarInset>
 					<SiteHeader />
-					<main className="@container/main flex flex-1 flex-col gap-6 bg-background py-6">
+					<main className="flex flex-1 flex-col gap-6 bg-background py-6">
 						<section className="px-4 lg:px-6">
 							<div className="grid gap-8 border-b pb-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-end">
 								<div className="max-w-3xl">
 									<div className="mb-6 flex flex-wrap gap-2">
-										<Badge variant="outline">Production baseline</Badge>
+										<Badge variant="outline">Mock data</Badge>
+										<Badge variant="secondary">Management preview</Badge>
 										<Badge variant="secondary">ERPNext v15</Badge>
-										<Badge variant="secondary">Frappe v15</Badge>
 									</div>
-									<h1 className="max-w-4xl text-5xl font-light leading-[0.94] tracking-[-0.04em] text-foreground md:text-7xl">
-										The resort operating system.
+									<h1 className="max-w-4xl text-5xl font-light leading-[0.94] text-foreground md:text-7xl">
+										Resort management cockpit.
 									</h1>
 									<p className="mt-6 max-w-2xl text-base leading-7 text-muted-foreground md:text-lg">
-										Role-based hotel operations on Frappe and ERPNext, starting with property setup,
-										room inventory, reservations, folio posting, and executive visibility.
+										A prototype view for daily leadership review: occupancy, revenue pace, arrivals,
+										room readiness, service load, and operational exceptions across the resort.
 									</p>
 								</div>
 								<div className="grid gap-3">
@@ -47,7 +47,7 @@ function App() {
 										<a href="/app">Open ERPNext desk</a>
 									</Button>
 									<Button asChild variant="outline" className="rounded-full">
-										<a href="/resort-app">Refresh resort app</a>
+										<a href="/resort-app">Refresh prototype</a>
 									</Button>
 								</div>
 							</div>

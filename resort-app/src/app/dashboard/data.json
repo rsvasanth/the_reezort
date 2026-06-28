@@ -1,74 +1,110 @@
 [
   {
     "id": 1,
-    "header": "Foundation app shell",
-    "type": "UI foundation",
-    "status": "Done",
-    "target": "1",
-    "limit": "1",
-    "reviewer": "Product owner"
+    "header": "VIP arrival: chairman suite",
+    "type": "Guest relations",
+    "status": "In Process",
+    "target": "18:40",
+    "limit": "Suite 601",
+    "reviewer": "Front office"
   },
   {
     "id": 2,
-    "header": "Shadcn registry components",
-    "type": "Design system",
-    "status": "Done",
-    "target": "1",
-    "limit": "1",
-    "reviewer": "Frontend"
+    "header": "Airport pickup queue",
+    "type": "Concierge",
+    "status": "In Process",
+    "target": "7 trips",
+    "limit": "3 pending",
+    "reviewer": "Transport desk"
   },
   {
     "id": 3,
-    "header": "ERPNext business boundary",
-    "type": "Architecture",
-    "status": "Done",
-    "target": "1",
-    "limit": "1",
-    "reviewer": "Architect"
+    "header": "Rooms pending final inspection",
+    "type": "Housekeeping",
+    "status": "In Process",
+    "target": "14 rooms",
+    "limit": "2 urgent",
+    "reviewer": "HK supervisor"
   },
   {
     "id": 4,
-    "header": "Property setup prompt",
-    "type": "Development prompt",
+    "header": "Beachfront villa maintenance",
+    "type": "Engineering",
     "status": "In Process",
-    "target": "1",
-    "limit": "1",
-    "reviewer": "Backend"
+    "target": "16:30",
+    "limit": "Villa 09",
+    "reviewer": "Chief engineer"
   },
   {
     "id": 5,
-    "header": "Reservation prompt",
-    "type": "Development prompt",
-    "status": "Not Started",
-    "target": "1",
-    "limit": "1",
-    "reviewer": "Frontend"
+    "header": "Restaurant dinner covers forecast",
+    "type": "F&B",
+    "status": "Done",
+    "target": "186",
+    "limit": "3 outlets",
+    "reviewer": "F&B manager"
   },
   {
     "id": 6,
-    "header": "Folio posting prompt",
-    "type": "Development prompt",
-    "status": "Not Started",
-    "target": "1",
-    "limit": "1",
-    "reviewer": "Finance"
+    "header": "Banquet hall turnover",
+    "type": "Events",
+    "status": "In Process",
+    "target": "21:00",
+    "limit": "Royal hall",
+    "reviewer": "Events manager"
   },
   {
     "id": 7,
-    "header": "Role permission prompt",
-    "type": "Security",
+    "header": "High-value folio review",
+    "type": "Finance",
     "status": "Not Started",
-    "target": "1",
-    "limit": "1",
-    "reviewer": "System manager"
+    "target": "₹4.2L",
+    "limit": "6 folios",
+    "reviewer": "Accounts"
   },
   {
     "id": 8,
-    "header": "Deployment runbook prompt",
-    "type": "Operations",
+    "header": "OTA overbooking watch",
+    "type": "Reservations",
     "status": "In Process",
-    "target": "1",
-    "limit": "1",
-    "reviewer": "DevOps"
+    "target": "4 rooms",
+    "limit": "Deluxe sea view",
+    "reviewer": "Revenue manager"
+  },
+  {
+    "id": 9,
+    "header": "Guest recovery follow-up",
+    "type": "Guest services",
+    "status": "Done",
+    "target": "2 cases",
+    "limit": "Closed",
+    "reviewer": "Duty manager"
+  },
+  {
+    "id": 10,
+    "header": "Night audit readiness",
+    "type": "Finance",
+    "status": "Not Started",
+    "target": "23:30",
+    "limit": "Desk close",
+    "reviewer": "Night auditor"
+  },
+  {
+    "id": 11,
+    "header": "Poolside inventory transfer",
+    "type": "Stores",
+    "status": "In Process",
+    "target": "32 items",
+    "limit": "Issue slip",
+    "reviewer": "Stores"
+  },
+  {
+    "id": 12,
+    "header": "Owner dashboard brief",
+    "type": "Management",
+    "status": "Done",
+    "target": "19:00",
+    "limit": "Daily pack",
+    "reviewer": "General manager"
   }
 ]

@@ -1,8 +1,8 @@
 import {
-	BadgeCheckIcon,
 	BedDoubleIcon,
-	Building2Icon,
-	ClipboardCheckIcon,
+	CalendarCheckIcon,
+	ClipboardListIcon,
+	IndianRupeeIcon,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -16,43 +16,43 @@ import {
 
 const cards = [
 	{
-		label: "Production site",
-		value: "Live",
-		badge: "HTTPS",
-		footer: "app.thereezort.com is running behind nginx and Supervisor.",
-		icon: BadgeCheckIcon,
-	},
-	{
-		label: "First sprint",
-		value: "Property",
-		badge: "001",
-		footer: "Buildings, floors, room types, rooms, amenities, and room state.",
-		icon: Building2Icon,
-	},
-	{
-		label: "Core boundary",
-		value: "ERPNext",
-		badge: "Ledger",
-		footer: "Finance, HR, stock, purchase, assets, and sales posting remain standard.",
-		icon: ClipboardCheckIcon,
-	},
-	{
-		label: "Parked scope",
-		value: "Spa",
-		badge: "007",
-		footer: "Spa and ancillary services stay outside year-one operation.",
+		label: "Tonight occupancy",
+		value: "82%",
+		badge: "+6%",
+		footer: "148 of 180 sellable rooms are occupied or due in.",
 		icon: BedDoubleIcon,
+	},
+	{
+		label: "Projected room revenue",
+		value: "₹18.4L",
+		badge: "Today",
+		footer: "Room revenue forecast from direct, OTA, and corporate channels.",
+		icon: IndianRupeeIcon,
+	},
+	{
+		label: "Arrivals",
+		value: "46",
+		badge: "9 VIP",
+		footer: "Expected arrivals, early check-ins, and airport pickup watchlist.",
+		icon: CalendarCheckIcon,
+	},
+	{
+		label: "Open exceptions",
+		value: "11",
+		badge: "3 urgent",
+		footer: "Housekeeping, maintenance, guest request, and billing follow-ups.",
+		icon: ClipboardListIcon,
 	},
 ];
 
 export function SectionCards() {
 	return (
-		<div className="*:data-[slot=card]:shadow-none @xl/main:grid-cols-2 @5xl/main:grid-cols-4 grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card lg:px-6">
+		<div className="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-none sm:grid-cols-2 xl:grid-cols-4 lg:px-6">
 			{cards.map((card) => (
-				<Card key={card.label} className="@container/card">
+				<Card key={card.label}>
 					<CardHeader className="relative">
-						<CardDescription>{card.label}</CardDescription>
-						<CardTitle className="@[250px]/card:text-3xl text-2xl font-light tabular-nums tracking-[-0.03em]">
+						<CardDescription className="pr-20">{card.label}</CardDescription>
+						<CardTitle className="text-2xl font-light tabular-nums sm:text-3xl">
 							{card.value}
 						</CardTitle>
 						<div className="absolute right-4 top-4">

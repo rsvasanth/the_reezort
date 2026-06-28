@@ -172,7 +172,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     accessorKey: "header",
-    header: "Workstream",
+    header: "Operational item",
     cell: ({ row }) => {
       return <TableCellViewer item={row.original} />
     },
@@ -180,7 +180,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     accessorKey: "type",
-    header: "Category",
+    header: "Area",
     cell: ({ row }) => (
       <div className="w-32">
         <Badge variant="outline" className="px-1.5 text-muted-foreground">
@@ -208,7 +208,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     accessorKey: "target",
-    header: () => <div className="w-full text-right">Estimate</div>,
+    header: () => <div className="w-full text-right">Due / value</div>,
     cell: ({ row }) => (
       <form
         onSubmit={(e) => {
@@ -233,7 +233,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     accessorKey: "limit",
-    header: () => <div className="w-full text-right">Cap</div>,
+    header: () => <div className="w-full text-right">Location / note</div>,
     cell: ({ row }) => (
       <form
         onSubmit={(e) => {
@@ -269,20 +269,20 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
       return (
         <>
           <Label htmlFor={`${row.original.id}-reviewer`} className="sr-only">
-            Reviewer
+            Owner
           </Label>
           <Select>
             <SelectTrigger
               className="h-8 w-40"
               id={`${row.original.id}-reviewer`}
             >
-              <SelectValue placeholder="Assign reviewer" />
+              <SelectValue placeholder="Assign owner" />
             </SelectTrigger>
             <SelectContent align="end">
-              <SelectItem value="Eddie Lake">Eddie Lake</SelectItem>
-              <SelectItem value="Jamik Tashpulatov">
-                Jamik Tashpulatov
-              </SelectItem>
+              <SelectItem value="Front office">Front office</SelectItem>
+              <SelectItem value="Duty manager">Duty manager</SelectItem>
+              <SelectItem value="Revenue manager">Revenue manager</SelectItem>
+              <SelectItem value="Chief engineer">Chief engineer</SelectItem>
             </SelectContent>
           </Select>
         </>
@@ -305,10 +305,10 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-32">
           <DropdownMenuItem>Edit</DropdownMenuItem>
-          <DropdownMenuItem>Make a copy</DropdownMenuItem>
-          <DropdownMenuItem>Favorite</DropdownMenuItem>
+          <DropdownMenuItem>Assign owner</DropdownMenuItem>
+          <DropdownMenuItem>Escalate</DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>Delete</DropdownMenuItem>
+          <DropdownMenuItem>Close</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     ),
@@ -416,22 +416,22 @@ export function DataTable({
         </Label>
         <Select defaultValue="outline">
           <SelectTrigger
-            className="@4xl/main:hidden flex w-fit"
+            className="flex w-fit lg:hidden"
             id="view-selector"
           >
             <SelectValue placeholder="Select a view" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="outline">Foundation</SelectItem>
-            <SelectItem value="past-performance">Property</SelectItem>
-            <SelectItem value="key-personnel">Reservations</SelectItem>
-            <SelectItem value="focus-documents">Billing</SelectItem>
+            <SelectItem value="outline">Today</SelectItem>
+            <SelectItem value="past-performance">Rooms</SelectItem>
+            <SelectItem value="key-personnel">Arrivals</SelectItem>
+            <SelectItem value="focus-documents">Finance</SelectItem>
           </SelectContent>
         </Select>
-        <TabsList className="@4xl/main:flex hidden">
-          <TabsTrigger value="outline">Foundation</TabsTrigger>
+        <TabsList className="hidden lg:flex">
+          <TabsTrigger value="outline">Today</TabsTrigger>
           <TabsTrigger value="past-performance" className="gap-1">
-            Property{" "}
+            Rooms{" "}
             <Badge
               variant="secondary"
               className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
@@ -440,7 +440,7 @@ export function DataTable({
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="key-personnel" className="gap-1">
-            Reservations{" "}
+            Arrivals{" "}
             <Badge
               variant="secondary"
               className="flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/30"
@@ -448,7 +448,7 @@ export function DataTable({
               2
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="focus-documents">Billing</TabsTrigger>
+          <TabsTrigger value="focus-documents">Finance</TabsTrigger>
         </TabsList>
         <div className="flex items-center gap-2">
           <DropdownMenu>
@@ -486,7 +486,7 @@ export function DataTable({
           </DropdownMenu>
           <Button variant="outline" size="sm">
             <PlusIcon />
-            <span className="hidden lg:inline">Add workstream</span>
+            <span className="hidden lg:inline">Add item</span>
           </Button>
         </div>
       </div>
@@ -627,38 +627,83 @@ export function DataTable({
         value="past-performance"
         className="flex flex-col px-4 lg:px-6"
       >
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
+        <PreviewPanel
+          items={[
+            { label: "Vacant ready", value: "26", note: "Checked and released" },
+            { label: "Dirty rooms", value: "14", note: "Final clean pending" },
+            { label: "Out of order", value: "3", note: "Engineering hold" },
+            { label: "Suite upgrades", value: "8", note: "Revenue approved" },
+          ]}
+        />
       </TabsContent>
       <TabsContent value="key-personnel" className="flex flex-col px-4 lg:px-6">
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
+        <PreviewPanel
+          items={[
+            { label: "VIP arrivals", value: "9", note: "Guest relations assigned" },
+            { label: "Early arrivals", value: "6", note: "Rooms blocked" },
+            { label: "Airport pickups", value: "7", note: "Three still pending" },
+            { label: "Group check-ins", value: "2", note: "Banquet desk aligned" },
+          ]}
+        />
       </TabsContent>
       <TabsContent
         value="focus-documents"
         className="flex flex-col px-4 lg:px-6"
       >
-        <div className="aspect-video w-full flex-1 rounded-lg border border-dashed"></div>
+        <PreviewPanel
+          items={[
+            { label: "Open folios", value: "INR 4.2L", note: "Manager review" },
+            { label: "Deposit exceptions", value: "3", note: "Follow-up before audit" },
+            { label: "Pending invoices", value: "6", note: "ERPNext posting queue" },
+            { label: "Cashier close", value: "23:30", note: "Night audit target" },
+          ]}
+        />
       </TabsContent>
     </Tabs>
   )
 }
 
+function PreviewPanel({
+  items,
+}: {
+  items: {
+    label: string
+    value: string
+    note: string
+  }[]
+}) {
+  return (
+    <div className="grid gap-4 rounded-lg border bg-card p-4 text-card-foreground md:grid-cols-2 xl:grid-cols-4">
+      {items.map((item) => (
+        <div key={item.label} className="rounded-md border bg-background p-4">
+          <div className="text-sm text-muted-foreground">{item.label}</div>
+          <div className="mt-2 text-2xl font-light tabular-nums">
+            {item.value}
+          </div>
+          <div className="mt-3 text-sm text-muted-foreground">{item.note}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 const chartData = [
-  { month: "January", desktop: 186, mobile: 80 },
-  { month: "February", desktop: 305, mobile: 200 },
-  { month: "March", desktop: 237, mobile: 120 },
-  { month: "April", desktop: 73, mobile: 190 },
-  { month: "May", desktop: 209, mobile: 130 },
-  { month: "June", desktop: 214, mobile: 140 },
+  { month: "January", resolved: 186, open: 80 },
+  { month: "February", resolved: 305, open: 200 },
+  { month: "March", resolved: 237, open: 120 },
+  { month: "April", resolved: 173, open: 90 },
+  { month: "May", resolved: 209, open: 130 },
+  { month: "June", resolved: 214, open: 140 },
 ]
 
 const chartConfig = {
-  desktop: {
-    label: "Desktop",
-    color: "var(--primary)",
+  resolved: {
+    label: "Resolved",
+    color: "hsl(var(--chart-1))",
   },
-  mobile: {
-    label: "Mobile",
-    color: "var(--primary)",
+  open: {
+    label: "Open",
+    color: "hsl(var(--chart-2))",
   },
 } satisfies ChartConfig
 
@@ -676,7 +721,7 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
         <SheetHeader className="gap-1">
           <SheetTitle>{item.header}</SheetTitle>
           <SheetDescription>
-            Foundation item details
+            Operations detail
           </SheetDescription>
         </SheetHeader>
         <div className="flex flex-1 flex-col gap-4 overflow-y-auto py-4 text-sm">
@@ -705,19 +750,19 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
                     content={<ChartTooltipContent indicator="dot" />}
                   />
                   <Area
-                    dataKey="mobile"
+                    dataKey="open"
                     type="natural"
-                    fill="var(--color-mobile)"
+                    fill="var(--color-open)"
                     fillOpacity={0.6}
-                    stroke="var(--color-mobile)"
+                    stroke="var(--color-open)"
                     stackId="a"
                   />
                   <Area
-                    dataKey="desktop"
+                    dataKey="resolved"
                     type="natural"
-                    fill="var(--color-desktop)"
+                    fill="var(--color-resolved)"
                     fillOpacity={0.4}
-                    stroke="var(--color-desktop)"
+                    stroke="var(--color-resolved)"
                     stackId="a"
                   />
                 </AreaChart>
@@ -725,13 +770,12 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
               <Separator />
               <div className="grid gap-2">
                 <div className="flex gap-2 font-medium leading-none">
-                  Ready for scoped implementation{" "}
+                  Actionable for today{" "}
                   <TrendingUpIcon className="size-4" />
                 </div>
                 <div className="text-muted-foreground">
-                  Foundation item details. This is just
-                  some random text to test the layout. It spans multiple lines
-                  and should wrap around.
+                  Mocked operational detail for leadership review. In production, this panel
+                  will show source documents, accountable staff, timestamps, and escalation notes.
                 </div>
               </div>
               <Separator />
@@ -739,33 +783,26 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
           )}
           <form className="flex flex-col gap-4">
             <div className="flex flex-col gap-3">
-              <Label htmlFor="header">Workstream</Label>
+              <Label htmlFor="header">Item</Label>
               <Input id="header" defaultValue={item.header} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
-                <Label htmlFor="type">Category</Label>
+                <Label htmlFor="type">Area</Label>
                 <Select defaultValue={item.type}>
                   <SelectTrigger id="type" className="w-full">
                     <SelectValue placeholder="Select a type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Table of Contents">
-                      Table of Contents
-                    </SelectItem>
-                    <SelectItem value="Executive Summary">
-                      Executive Summary
-                    </SelectItem>
-                    <SelectItem value="Technical Approach">
-                      Technical Approach
-                    </SelectItem>
-                    <SelectItem value="Design">Design</SelectItem>
-                    <SelectItem value="Capabilities">Capabilities</SelectItem>
-                    <SelectItem value="Billing">
-                      Billing
-                    </SelectItem>
-                    <SelectItem value="Narrative">Narrative</SelectItem>
-                    <SelectItem value="Cover Page">Cover Page</SelectItem>
+                    <SelectItem value="Guest relations">Guest relations</SelectItem>
+                    <SelectItem value="Concierge">Concierge</SelectItem>
+                    <SelectItem value="Housekeeping">Housekeeping</SelectItem>
+                    <SelectItem value="Engineering">Engineering</SelectItem>
+                    <SelectItem value="F&B">F&B</SelectItem>
+                    <SelectItem value="Events">Events</SelectItem>
+                    <SelectItem value="Finance">Finance</SelectItem>
+                    <SelectItem value="Reservations">Reservations</SelectItem>
+                    <SelectItem value="Management">Management</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -777,6 +814,7 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Done">Done</SelectItem>
+                    <SelectItem value="In Process">In Process</SelectItem>
                     <SelectItem value="In Progress">In Progress</SelectItem>
                     <SelectItem value="Not Started">Not Started</SelectItem>
                   </SelectContent>
@@ -785,11 +823,11 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-3">
-                <Label htmlFor="target">Target</Label>
+                <Label htmlFor="target">Due / value</Label>
                 <Input id="target" defaultValue={item.target} />
               </div>
               <div className="flex flex-col gap-3">
-                <Label htmlFor="limit">Limit</Label>
+                <Label htmlFor="limit">Location / note</Label>
                 <Input id="limit" defaultValue={item.limit} />
               </div>
             </div>
@@ -797,21 +835,22 @@ function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
               <Label htmlFor="reviewer">Owner</Label>
               <Select defaultValue={item.reviewer}>
                 <SelectTrigger id="reviewer" className="w-full">
-                  <SelectValue placeholder="Select a reviewer" />
+                  <SelectValue placeholder="Select an owner" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Eddie Lake">Eddie Lake</SelectItem>
-                  <SelectItem value="Jamik Tashpulatov">
-                    Jamik Tashpulatov
-                  </SelectItem>
-                  <SelectItem value="Emily Whalen">Emily Whalen</SelectItem>
+                  <SelectItem value="Front office">Front office</SelectItem>
+                  <SelectItem value="Duty manager">Duty manager</SelectItem>
+                  <SelectItem value="HK supervisor">HK supervisor</SelectItem>
+                  <SelectItem value="Revenue manager">Revenue manager</SelectItem>
+                  <SelectItem value="Accounts">Accounts</SelectItem>
+                  <SelectItem value="Chief engineer">Chief engineer</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </form>
         </div>
         <SheetFooter className="mt-auto flex gap-2 sm:flex-col sm:space-x-0">
-          <Button className="w-full">Save draft</Button>
+          <Button className="w-full">Mark reviewed</Button>
           <SheetClose asChild>
             <Button variant="outline" className="w-full">
               Done

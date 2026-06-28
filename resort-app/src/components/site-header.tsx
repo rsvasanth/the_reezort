@@ -1,3 +1,4 @@
+import { ModeToggle } from "@/components/mode-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -12,9 +13,12 @@ export function SiteHeader() {
 					<div className="min-w-0">
 						<h1 className="truncate text-sm font-medium">Resort operations</h1>
 					</div>
-					<div className="hidden items-center gap-2 sm:flex">
-						<Badge variant="outline">app.thereezort.com</Badge>
-						<Badge variant="secondary">Sprint 0</Badge>
+					<div className="flex items-center gap-2">
+						<ModeToggle />
+						<div className="hidden items-center gap-2 sm:flex">
+							<Badge variant="outline">app.thereezort.com</Badge>
+							<Badge variant="secondary">Prototype</Badge>
+						</div>
 					</div>
 				</div>
 			</div>

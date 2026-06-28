@@ -1,0 +1,15 @@
+{
+  "name": "the_reezort",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Five-star resort operations layer for ERPNext",
+  "scripts": {
+    "postinstall": "cd resort-app && yarn install",
+    "dev": "cd resort-app && yarn dev",
+    "build": "cd resort-app && yarn build",
+    "lint": "cd resort-app && yarn lint",
+    "test": "yarn lint"
+  },
+  "author": "Alphaworkz",
+  "license": "MIT"
+}

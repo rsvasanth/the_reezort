@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "header": "Foundation app shell",
+    "type": "UI foundation",
+    "status": "Done",
+    "target": "1",
+    "limit": "1",
+    "reviewer": "Product owner"
+  },
+  {
+    "id": 2,
+    "header": "Shadcn registry components",
+    "type": "Design system",
+    "status": "Done",
+    "target": "1",
+    "limit": "1",
+    "reviewer": "Frontend"
+  },
+  {
+    "id": 3,
+    "header": "ERPNext business boundary",
+    "type": "Architecture",
+    "status": "Done",
+    "target": "1",
+    "limit": "1",
+    "reviewer": "Architect"
+  },
+  {
+    "id": 4,
+    "header": "Property setup prompt",
+    "type": "Development prompt",
+    "status": "In Process",
+    "target": "1",
+    "limit": "1",
+    "reviewer": "Backend"
+  },
+  {
+    "id": 5,
+    "header": "Reservation prompt",
+    "type": "Development prompt",
+    "status": "Not Started",
+    "target": "1",
+    "limit": "1",
+    "reviewer": "Frontend"
+  },
+  {
+    "id": 6,
+    "header": "Folio posting prompt",
+    "type": "Development prompt",
+    "status": "Not Started",
+    "target": "1",
+    "limit": "1",
+    "reviewer": "Finance"
+  },
+  {
+    "id": 7,
+    "header": "Role permission prompt",
+    "type": "Security",
+    "status": "Not Started",
+    "target": "1",
+    "limit": "1",
+    "reviewer": "System manager"
+  },
+  {
+    "id": 8,
+    "header": "Deployment runbook prompt",
+    "type": "Operations",
+    "status": "In Process",
+    "target": "1",
+    "limit": "1",
+    "reviewer": "DevOps"
+  }
+]

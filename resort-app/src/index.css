@@ -4,26 +4,39 @@
 
 @layer base {
 	:root {
-		--background: 210 24% 98%;
-		--foreground: 222 47% 11%;
-		--card: 0 0% 100%;
-		--card-foreground: 222 47% 11%;
-		--popover: 0 0% 100%;
-		--popover-foreground: 222 47% 11%;
-		--primary: 198 89% 21%;
-		--primary-foreground: 0 0% 100%;
-		--secondary: 42 38% 92%;
-		--secondary-foreground: 32 45% 18%;
-		--muted: 214 32% 92%;
-		--muted-foreground: 215 16% 38%;
-		--accent: 173 58% 92%;
-		--accent-foreground: 186 70% 18%;
-		--destructive: 0 74% 42%;
-		--destructive-foreground: 0 0% 100%;
-		--border: 214 28% 86%;
-		--input: 214 28% 86%;
-		--ring: 198 89% 31%;
-		--radius: 0.5rem;
+		--background: 0 0% 4%;
+		--foreground: 0 0% 100%;
+		--card: 0 0% 7%;
+		--card-foreground: 0 0% 100%;
+		--popover: 0 0% 7%;
+		--popover-foreground: 0 0% 100%;
+		--primary: 0 0% 100%;
+		--primary-foreground: 0 0% 4%;
+		--secondary: 0 0% 9%;
+		--secondary-foreground: 0 0% 75%;
+		--muted: 0 0% 9%;
+		--muted-foreground: 0 0% 44%;
+		--accent: 0 0% 11%;
+		--accent-foreground: 0 0% 100%;
+		--destructive: 0 0% 75%;
+		--destructive-foreground: 0 0% 4%;
+		--border: 0 0% 14%;
+		--input: 0 0% 14%;
+		--ring: 0 0% 44%;
+		--radius: 0.75rem;
+		--chart-1: 0 0% 92%;
+		--chart-2: 0 0% 62%;
+		--chart-3: 0 0% 44%;
+		--chart-4: 0 0% 28%;
+		--chart-5: 0 0% 18%;
+		--sidebar-background: 0 0% 4%;
+		--sidebar-foreground: 0 0% 75%;
+		--sidebar-primary: 0 0% 100%;
+		--sidebar-primary-foreground: 0 0% 4%;
+		--sidebar-accent: 0 0% 9%;
+		--sidebar-accent-foreground: 0 0% 100%;
+		--sidebar-border: 0 0% 14%;
+		--sidebar-ring: 0 0% 44%;
 	}
 
 	* {
@@ -35,6 +48,41 @@
 		font-family:
 			Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
 			sans-serif;
+	}
+
+	.dark {
+		--background: 0 0% 4%;
+		--foreground: 0 0% 100%;
+		--card: 0 0% 7%;
+		--card-foreground: 0 0% 100%;
+		--popover: 0 0% 7%;
+		--popover-foreground: 0 0% 100%;
+		--primary: 0 0% 100%;
+		--primary-foreground: 0 0% 4%;
+		--secondary: 0 0% 9%;
+		--secondary-foreground: 0 0% 75%;
+		--muted: 0 0% 9%;
+		--muted-foreground: 0 0% 44%;
+		--accent: 0 0% 11%;
+		--accent-foreground: 0 0% 100%;
+		--destructive: 0 0% 75%;
+		--destructive-foreground: 0 0% 4%;
+		--border: 0 0% 14%;
+		--input: 0 0% 14%;
+		--ring: 0 0% 44%;
+		--chart-1: 0 0% 92%;
+		--chart-2: 0 0% 62%;
+		--chart-3: 0 0% 44%;
+		--chart-4: 0 0% 28%;
+		--chart-5: 0 0% 18%;
+		--sidebar-background: 0 0% 4%;
+		--sidebar-foreground: 0 0% 75%;
+		--sidebar-primary: 0 0% 100%;
+		--sidebar-primary-foreground: 0 0% 4%;
+		--sidebar-accent: 0 0% 9%;
+		--sidebar-accent-foreground: 0 0% 100%;
+		--sidebar-border: 0 0% 14%;
+		--sidebar-ring: 0 0% 44%;
 	}
 }
 	

@@ -1,0 +1,24 @@
+{
+ "actions": [],
+ "creation": "2026-06-29 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": ["amenity", "is_guest_visible", "notes"],
+ "fields": [
+  {"fieldname": "amenity", "fieldtype": "Link", "in_list_view": 1, "label": "Amenity", "options": "Room Amenity", "reqd": 1},
+  {"default": "1", "fieldname": "is_guest_visible", "fieldtype": "Check", "in_list_view": 1, "label": "Guest Visible"},
+  {"fieldname": "notes", "fieldtype": "Small Text", "label": "Notes"}
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-06-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Room Type Amenity",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

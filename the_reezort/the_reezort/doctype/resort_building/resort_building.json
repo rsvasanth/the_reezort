@@ -1,0 +1,31 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "format:{resort_property}-{building_code}",
+ "creation": "2026-06-29 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "engine": "InnoDB",
+ "field_order": ["resort_property", "building_name", "building_code", "operational_zone", "display_order", "is_active"],
+ "fields": [
+  {"fieldname": "resort_property", "fieldtype": "Link", "in_list_view": 1, "label": "Resort Property", "options": "Resort Property", "reqd": 1},
+  {"fieldname": "building_name", "fieldtype": "Data", "in_list_view": 1, "label": "Building Name", "reqd": 1},
+  {"fieldname": "building_code", "fieldtype": "Data", "in_list_view": 1, "label": "Building Code", "reqd": 1},
+  {"fieldname": "operational_zone", "fieldtype": "Data", "label": "Operational Zone"},
+  {"fieldname": "display_order", "fieldtype": "Int", "label": "Display Order"},
+  {"default": "1", "fieldname": "is_active", "fieldtype": "Check", "in_list_view": 1, "label": "Active"}
+ ],
+ "links": [],
+ "modified": "2026-06-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Resort Building",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1}
+ ],
+ "sort_field": "display_order",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}

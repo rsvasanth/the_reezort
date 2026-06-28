@@ -1,0 +1,25 @@
+{
+ "actions": [],
+ "creation": "2026-06-29 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": ["day_of_week", "is_closed", "opens_at", "closes_at"],
+ "fields": [
+  {"fieldname": "day_of_week", "fieldtype": "Select", "in_list_view": 1, "label": "Day of Week", "options": "Monday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday", "reqd": 1},
+  {"default": "0", "fieldname": "is_closed", "fieldtype": "Check", "in_list_view": 1, "label": "Closed"},
+  {"fieldname": "opens_at", "fieldtype": "Time", "in_list_view": 1, "label": "Opens At"},
+  {"fieldname": "closes_at", "fieldtype": "Time", "in_list_view": 1, "label": "Closes At"}
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-06-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Operating Hours",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "idx",
+ "sort_order": "ASC",
+ "states": []
+}

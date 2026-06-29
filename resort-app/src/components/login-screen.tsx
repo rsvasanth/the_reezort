@@ -31,12 +31,13 @@ export function LoginScreen() {
 		setSubmitting(true);
 		try {
 			await login({ username, password });
-			// The auth hook revalidates currentUser and the app swaps to the workspace.
+			// Reload so the auth gate re-reads the now-authenticated session and
+			// renders the workspace (avoids a cross-hook revalidation race).
+			window.location.reload();
 		} catch {
 			toast.error("Sign in failed", {
 				description: "Check your email and password, then try again.",
 			});
-		} finally {
 			setSubmitting(false);
 		}
 	}

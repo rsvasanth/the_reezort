@@ -374,12 +374,16 @@ def get_folio_detail(guest_folio):
 		order_by="service_date asc, department asc, creation asc",
 	)
 
+	# Return a FLAT list of lines; the SPA groups by service_date -> department
+	# client-side (per the UI contract). Returning a pre-grouped shape broke the
+	# frontend's groupLines() and crashed on undefined line fields.
+	expose_links = _can_view_erpnext_links()
 	# TODO: Replace this basic role check with formal field-level masking in the permissions packet.
 	next_actions = ["add_line"] if folio.folio_status in OPEN_FOLIO_STATUSES else []
 	return _envelope(
 		{
 			"folio": _folio_header(folio),
-			"lines": _group_lines(lines, _can_view_erpnext_links()),
+			"lines": [_line_dict(line, expose_links) for line in lines],
 			"totals": _folio_totals(folio),
 			"balance_status": folio.balance_status,
 			"posting_status": folio.posting_status,

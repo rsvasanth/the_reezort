@@ -2,22 +2,13 @@
 
 import * as React from "react";
 import {
-	BarChartIcon,
-	BedDoubleIcon,
-	BookOpenIcon,
-	Building2Icon,
-	CalendarDaysIcon,
-	ClipboardListIcon,
-	CreditCardIcon,
 	DatabaseIcon,
 	HotelIcon,
-	SettingsIcon,
-	ShieldCheckIcon,
-	UsersIcon,
-	WrenchIcon,
+	LayoutDashboardIcon,
+	ReceiptTextIcon,
 } from "lucide-react";
+import { useFrappeAuth } from "frappe-react-sdk";
 
-import { NavDocuments } from "@/components/nav-documents";
 import { NavMain } from "@/components/nav-main";
 import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
@@ -31,86 +22,23 @@ import {
 	SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-const data = {
-	user: {
-		name: "THE REEZORT",
-		email: "Administrator",
-		avatar: "",
-	},
-	navMain: [
-		{
-			title: "Executive cockpit",
-			url: "#",
-			icon: HotelIcon,
-		},
-		{
-			title: "Room inventory",
-			url: "#",
-			icon: Building2Icon,
-		},
-		{
-			title: "Reservations",
-			url: "#",
-			icon: CalendarDaysIcon,
-		},
-		{
-			title: "Front office",
-			url: "#",
-			icon: BedDoubleIcon,
-		},
-		{
-			title: "Revenue and folios",
-			url: "#",
-			icon: CreditCardIcon,
-		},
-		{
-			title: "Analytics",
-			url: "#",
-			icon: BarChartIcon,
-		},
-	],
-	navSecondary: [
-		{
-			title: "ERPNext desk",
-			url: "/app",
-			icon: DatabaseIcon,
-		},
-		{
-			title: "Security",
-			url: "#",
-			icon: ShieldCheckIcon,
-		},
-		{
-			title: "Settings",
-			url: "#",
-			icon: SettingsIcon,
-		},
-	],
-	documents: [
-		{
-			name: "Daily manager brief",
-			url: "#",
-			icon: BookOpenIcon,
-		},
-		{
-			name: "Arrival manifest",
-			url: "#",
-			icon: ClipboardListIcon,
-		},
-		{
-			name: "Staffing view",
-			url: "#",
-			icon: UsersIcon,
-		},
-		{
-			name: "Engineering tickets",
-			url: "#",
-			icon: WrenchIcon,
-		},
-	],
-};
+const navMain = [
+	{ title: "Executive cockpit", url: "/resort-app", icon: LayoutDashboardIcon },
+	{ title: "Vikram Menon · Suite", url: "/resort-app#/folio/RZ-FOL-2026-00001", icon: ReceiptTextIcon },
+	{ title: "Anjali Rao · Deluxe", url: "/resort-app#/folio/RZ-FOL-2026-00002", icon: ReceiptTextIcon },
+	{ title: "Rahul Kapoor · Villa", url: "/resort-app#/folio/RZ-FOL-2026-00003", icon: ReceiptTextIcon },
+];
+
+const navSecondary = [{ title: "ERPNext desk", url: "/app", icon: DatabaseIcon }];
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+	const { currentUser } = useFrappeAuth();
+	const user = {
+		name: currentUser ?? "Resort staff",
+		email: currentUser ? "Signed in" : "",
+		avatar: "",
+	};
+
 	return (
 		<Sidebar collapsible="offcanvas" {...props}>
 			<SidebarHeader>
@@ -126,12 +54,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				</SidebarMenu>
 			</SidebarHeader>
 			<SidebarContent>
-				<NavMain items={data.navMain} />
-				<NavDocuments items={data.documents} />
-				<NavSecondary items={data.navSecondary} className="mt-auto" />
+				<NavMain items={navMain} />
+				<NavSecondary items={navSecondary} className="mt-auto" />
 			</SidebarContent>
 			<SidebarFooter>
-				<NavUser user={data.user} />
+				<NavUser user={user} />
 			</SidebarFooter>
 		</Sidebar>
 	);

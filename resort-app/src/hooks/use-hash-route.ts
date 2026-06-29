@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
  * Hash routes (no router library):
  *   #/folio/<name>        → folio workspace
  *   #/housekeeping        → housekeeping board
+ *   #/setup               → property setup wizard
  *   #/condition/<stay>    → room condition capture for a stay
  *   (anything else)       → dashboard
  */
@@ -29,6 +30,7 @@ export type ParsedRoute =
 	| { kind: "dashboard" }
 	| { kind: "folio"; name: string | null }
 	| { kind: "housekeeping" }
+	| { kind: "setup" }
 	| { kind: "condition"; stay: string | null };
 
 export function parseHashRoute(hash: string): ParsedRoute {
@@ -42,6 +44,8 @@ export function parseHashRoute(hash: string): ParsedRoute {
 	}
 
 	if (path === "/housekeeping") return { kind: "housekeeping" };
+
+	if (path === "/setup") return { kind: "setup" };
 
 	const conditionMatch = path.match(/^\/condition(?:\/(.*))?$/);
 	if (conditionMatch) {

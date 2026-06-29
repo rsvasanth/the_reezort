@@ -17,6 +17,7 @@ import data from "@/app/dashboard/data.json";
 import { FolioWorkspace } from "@/app/folio/FolioWorkspace";
 import HousekeepingBoard from "@/app/housekeeping/HousekeepingBoard";
 import ConditionCaptureScreen from "@/app/condition/ConditionCaptureScreen";
+import PropertySetupScreen from "@/app/setup/PropertySetupScreen";
 import { parseHashRoute, useHashRoute } from "@/hooks/use-hash-route";
 import { toOperationalRows, toSectionCards } from "@/lib/dashboard-adapter";
 import {
@@ -175,6 +176,14 @@ function AuthGate() {
 
 	if (route.kind === "housekeeping") {
 		return <HousekeepingBoard />;
+	}
+
+	if (route.kind === "setup") {
+		return (
+			<AppShell>
+				<PropertySetupScreen />
+			</AppShell>
+		);
 	}
 
 	if (route.kind === "condition" && route.stay) {

@@ -49,6 +49,7 @@ const operations: NavItem[] = [
 ];
 
 const system: NavItem[] = [
+	{ title: "Property setup", url: "/resort-app#/setup", icon: HotelIcon, status: "live" },
 	{ title: "ERPNext desk", url: "/app", icon: DatabaseIcon, status: "live" },
 	{ title: "Integrations", url: "#", icon: PlugIcon, status: "soon" },
 	{ title: "Security & audit", url: "#", icon: ShieldCheckIcon, status: "soon" },

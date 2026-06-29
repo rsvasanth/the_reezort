@@ -506,6 +506,11 @@ def seed_doctype_permissions():
 	for doctype in write_doctypes:
 		for role in operator_roles:
 			grant(doctype, role, write=True, create=True)
+	# Property onboarding (the SPA setup wizard) is a manager task — grant the
+	# Resort Manager create/write on the master-data chain so it works without the desk.
+	setup_doctypes = ["Resort Property", "Resort Building", "Resort Floor", "Room Type"]
+	for doctype in setup_doctypes:
+		grant(doctype, "Resort Manager", write=True, create=True)
 	for role in ["Accounts User", "Accounts Manager", "Resort Manager"]:
 		grant("ERPNext Posting Log", role)
 

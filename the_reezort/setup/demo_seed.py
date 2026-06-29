@@ -476,6 +476,8 @@ def seed_doctype_permissions():
 	from frappe.permissions import add_permission, update_permission_property
 
 	def grant(doctype, role, write=False, create=False):
+		if not frappe.db.exists("DocType", doctype):
+			return
 		add_permission(doctype, role, 0)
 		update_permission_property(doctype, role, 0, "read", 1)
 		if write:
@@ -483,17 +485,33 @@ def seed_doctype_permissions():
 		if create:
 			update_permission_property(doctype, role, 0, "create", 1)
 
-	operational = ["Guest Folio", "Folio Line", "Stay"]
-	staff_roles = ["Front Desk", "Resort Manager", "Accounts User", "Accounts Manager"]
-	for doctype in operational:
-		for role in staff_roles:
+	all_roles = [
+		"Front Desk", "Housekeeping", "Restaurant", "Reservation Agent",
+		"Concierge", "Maintenance", "Resort Manager", "Accounts User", "Accounts Manager",
+	]
+	operator_roles = ["Front Desk", "Resort Manager", "Accounts User", "Accounts Manager"]
+
+	# Read across the operational doctypes the dashboards/screens load.
+	read_doctypes = [
+		"Resort Property", "Resort Building", "Resort Floor", "Room Type", "Room",
+		"Service Location", "Guest Profile", "Reservation", "Room Hold",
+		"Guest Folio", "Folio Line", "Stay",
+	]
+	# Write/create only where staff actually mutate.
+	write_doctypes = ["Guest Folio", "Folio Line", "Stay", "Reservation", "Room", "Guest Profile", "Room Hold"]
+
+	for doctype in read_doctypes:
+		for role in all_roles:
+			grant(doctype, role)
+	for doctype in write_doctypes:
+		for role in operator_roles:
 			grant(doctype, role, write=True, create=True)
 	for role in ["Accounts User", "Accounts Manager", "Resort Manager"]:
 		grant("ERPNext Posting Log", role)
 
 	frappe.clear_cache()
 	frappe.db.commit()
-	return {"granted_doctypes": operational + ["ERPNext Posting Log"], "roles": staff_roles}
+	return {"read_doctypes": read_doctypes, "write_doctypes": write_doctypes, "roles": all_roles}
 
 
 @frappe.whitelist()

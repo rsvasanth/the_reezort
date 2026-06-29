@@ -30,6 +30,7 @@ IMMUTABLE_FIELDS = (
 class FolioLine(Document):
 	def validate(self):
 		self.validate_unique_idempotency_key()
+		self.validate_source_identity()
 		self.validate_parent_accepts_charge()
 		self.validate_immutable_posted_line()
 
@@ -52,6 +53,13 @@ class FolioLine(Document):
 
 		if frappe.db.exists("Folio Line", filters):
 			frappe.throw(_("Duplicate folio line idempotency key is not allowed."))
+
+	def validate_source_identity(self):
+		if self.source_module == "Manual":
+			return
+
+		if not self.source_doctype or not self.source_name:
+			frappe.throw(_("Source DocType and Source Name are required for non-manual folio lines."))
 
 	def validate_parent_accepts_charge(self):
 		if not self.is_new() or self.line_type != "Charge":

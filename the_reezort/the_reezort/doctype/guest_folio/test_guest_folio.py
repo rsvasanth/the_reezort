@@ -43,7 +43,7 @@ class TestGuestFolio(FrappeTestCase):
 		values = {
 			"guest_folio": folio.name,
 			"line_type": "Charge",
-			"source_module": "Tests",
+			"source_module": "PMS",
 			"source_doctype": "Test Charge",
 			"source_name": frappe.generate_hash(length=10),
 			"idempotency_key": frappe.generate_hash(length=20),
@@ -53,7 +53,7 @@ class TestGuestFolio(FrappeTestCase):
 			"qty": 1,
 			"rate": 1000,
 			"amount": 1000,
-			"tax_treatment": "Taxable",
+			"tax_treatment": "Standard",
 		}
 		values.update(overrides)
 		return insert_doc("Folio Line", **values)
@@ -75,7 +75,7 @@ class TestGuestFolio(FrappeTestCase):
 			qty=2,
 			rate=1200,
 			amount=2400,
-			source_module="Reservation",
+			source_module="PMS",
 			source_doctype="Reservation",
 			source_name="TEST-RES-001",
 			source_row_id="ROW-001",
@@ -88,8 +88,22 @@ class TestGuestFolio(FrappeTestCase):
 		self.assertEqual(line.qty, 2)
 		self.assertEqual(line.rate, 1200)
 		self.assertEqual(line.amount, 2400)
-		self.assertEqual(line.source_module, "Reservation")
+		self.assertEqual(line.source_module, "PMS")
 		self.assertEqual(line.idempotency_key, "TEST-CHARGE-001")
+
+	def test_manual_line_can_be_created_without_source_document(self):
+		folio = self.make_folio()
+		line = self.make_line(
+			folio,
+			source_module="Manual",
+			source_doctype=None,
+			source_name=None,
+			idempotency_key="MANUAL-LINE-WITHOUT-SOURCE-DOC",
+		)
+
+		self.assertEqual(line.source_module, "Manual")
+		self.assertIsNone(line.source_doctype)
+		self.assertIsNone(line.source_name)
 
 	def test_duplicate_idempotency_is_rejected(self):
 		folio = self.make_folio()

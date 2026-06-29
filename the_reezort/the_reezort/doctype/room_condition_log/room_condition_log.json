@@ -1,0 +1,59 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-06-29 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "resort_property",
+  "room",
+  "condition_type",
+  "old_status",
+  "new_status",
+  "source_section",
+  "source_doctype",
+  "source_name",
+  "changed_section",
+  "changed_by",
+  "changed_at",
+  "reason"
+ ],
+ "fields": [
+  {"default": "RZ-RCL-.YYYY.-.#####", "fieldname": "naming_series", "fieldtype": "Select", "label": "Series", "options": "RZ-RCL-.YYYY.-.#####", "reqd": 1},
+  {"fieldname": "resort_property", "fieldtype": "Link", "in_list_view": 1, "label": "Resort Property", "options": "Resort Property", "reqd": 1},
+  {"fieldname": "room", "fieldtype": "Link", "in_list_view": 1, "label": "Room", "options": "Room", "reqd": 1},
+  {"fieldname": "condition_type", "fieldtype": "Select", "in_list_view": 1, "label": "Condition Type", "options": "Housekeeping\nMaintenance\nOccupancy\nSellable", "reqd": 1},
+  {"fieldname": "old_status", "fieldtype": "Data", "label": "Old Status"},
+  {"fieldname": "new_status", "fieldtype": "Data", "in_list_view": 1, "label": "New Status", "reqd": 1},
+  {"fieldname": "source_section", "fieldtype": "Section Break", "label": "Source"},
+  {"fieldname": "source_doctype", "fieldtype": "Data", "label": "Source DocType"},
+  {"fieldname": "source_name", "fieldtype": "Data", "label": "Source Name"},
+  {"fieldname": "changed_section", "fieldtype": "Section Break", "label": "Changed"},
+  {"fieldname": "changed_by", "fieldtype": "Link", "label": "Changed By", "options": "User", "reqd": 1},
+  {"fieldname": "changed_at", "fieldtype": "Datetime", "in_list_view": 1, "label": "Changed At", "reqd": 1},
+  {"fieldname": "reason", "fieldtype": "Small Text", "label": "Reason"}
+ ],
+ "indexes": [
+  ["room", "condition_type", "changed_at"],
+  ["resort_property", "condition_type", "changed_at"],
+  ["source_doctype", "source_name"]
+ ],
+ "links": [],
+ "modified": "2026-06-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Room Condition Log",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 0, "delete": 0, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Resort Manager", "share": 0, "write": 0},
+  {"create": 1, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Housekeeping", "share": 0, "write": 0}
+ ],
+ "sort_field": "changed_at",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

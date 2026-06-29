@@ -38,10 +38,6 @@ def log_room_condition(room, condition_type, new_status, source_doctype=None, so
 	)
 	log.insert(ignore_permissions=True)
 
-	if condition_type == "Housekeeping":
-		room_doc.set(status_field, new_status)
-		room_doc.save(ignore_permissions=True)
-	else:
-		frappe.db.set_value("Room", room_doc.name, status_field, new_status)
+	frappe.db.set_value("Room", room_doc.name, status_field, new_status)
 
 	return log

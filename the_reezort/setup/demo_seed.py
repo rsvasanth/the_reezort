@@ -466,6 +466,37 @@ def seed_demo_folios():
 
 
 @frappe.whitelist()
+def seed_doctype_permissions():
+	"""Grant resort/finance roles access to the operational billing doctypes.
+
+	The folio/PMS doctypes ship System-Manager-only; this opens read/write to the
+	staff roles so the role-based SPA demo works. (A formal permissions packet will
+	eventually move these into the doctype definitions.)
+	"""
+	from frappe.permissions import add_permission, update_permission_property
+
+	def grant(doctype, role, write=False, create=False):
+		add_permission(doctype, role, 0)
+		update_permission_property(doctype, role, 0, "read", 1)
+		if write:
+			update_permission_property(doctype, role, 0, "write", 1)
+		if create:
+			update_permission_property(doctype, role, 0, "create", 1)
+
+	operational = ["Guest Folio", "Folio Line", "Stay"]
+	staff_roles = ["Front Desk", "Resort Manager", "Accounts User", "Accounts Manager"]
+	for doctype in operational:
+		for role in staff_roles:
+			grant(doctype, role, write=True, create=True)
+	for role in ["Accounts User", "Accounts Manager", "Resort Manager"]:
+		grant("ERPNext Posting Log", role)
+
+	frappe.clear_cache()
+	frappe.db.commit()
+	return {"granted_doctypes": operational + ["ERPNext Posting Log"], "roles": staff_roles}
+
+
+@frappe.whitelist()
 def seed_full_demo(password=DEMO_PASSWORD):
 	"""Run the full idempotent THE REEZORT demo seed end to end."""
 	ensure_fiscal_year()
@@ -474,7 +505,8 @@ def seed_full_demo(password=DEMO_PASSWORD):
 	base = seed_base_masters()
 	gst = seed_gst_tax()
 	org = seed_org_and_users(password=password)
+	permissions = seed_doctype_permissions()
 	folios = seed_demo_folios()
 	frappe.db.commit()
 
-	return {"company": company, "base": base, "gst": gst, "org": org, "folios": folios}
+	return {"company": company, "base": base, "gst": gst, "org": org, "permissions": permissions, "folios": folios}

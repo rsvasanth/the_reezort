@@ -9,6 +9,7 @@ from the_reezort.housekeeping.condition import log_room_condition
 
 OPEN_TASK_STATUSES = ("Queued", "Assigned", "In Progress", "Paused", "Inspection Required", "Rework Required")
 DND_BLOCKING_STATUSES = {"DND", "Refused", "Access Issue"}
+INSPECTION_OUTCOMES = {"Passed", "Failed", "Rework Required", "Maintenance Required", "Accepted With Exception"}
 
 
 def _as_dict(value):
@@ -57,6 +58,21 @@ def _task_data(task_doc):
 		"completion_notes": task_doc.completion_notes,
 		"dnd_status": task_doc.dnd_status,
 		"idempotency_key": task_doc.idempotency_key,
+	}
+
+
+def _inspection_data(inspection_doc):
+	return {
+		"name": inspection_doc.name,
+		"resort_property": inspection_doc.resort_property,
+		"room": inspection_doc.room,
+		"housekeeping_task": inspection_doc.housekeeping_task,
+		"inspection_status": inspection_doc.inspection_status,
+		"inspector_user": inspection_doc.inspector_user,
+		"inspected_at": inspection_doc.inspected_at,
+		"rework_task": inspection_doc.rework_task,
+		"exception_approval": inspection_doc.exception_approval,
+		"notes": inspection_doc.notes,
 	}
 
 
@@ -225,3 +241,125 @@ def get_housekeeping_board(resort_property):
 			}
 
 	return _envelope({"rooms": [{**room, "open_task": task_by_room.get(room.name)} for room in rooms]})
+
+
+@frappe.whitelist()
+def create_inspection(housekeeping_task):
+	_require_permission("Room Inspection", "create")
+	task_doc = _get_task(housekeeping_task)
+	if not task_doc.room:
+		frappe.throw(_("Room Inspection requires a room-linked housekeeping task."))
+
+	existing = frappe.db.get_value(
+		"Room Inspection",
+		{"housekeeping_task": task_doc.name, "inspection_status": ["not in", ["Cancelled"]]},
+		"name",
+		order_by="creation asc",
+	)
+	if existing:
+		return _envelope({"inspection": _inspection_data(frappe.get_doc("Room Inspection", existing)), "reused": True})
+
+	inspection = frappe.get_doc(
+		{
+			"doctype": "Room Inspection",
+			"resort_property": task_doc.resort_property,
+			"room": task_doc.room,
+			"housekeeping_task": task_doc.name,
+			"inspection_status": "Draft",
+			"inspector_user": frappe.session.user,
+		}
+	)
+	inspection.insert(ignore_permissions=True)
+	return _envelope({"inspection": _inspection_data(inspection), "reused": False}, next_actions=["record_inspection"])
+
+
+def _create_rework_task(inspection_doc):
+	source_key = f"room-inspection-rework:{inspection_doc.name}"
+	existing = frappe.db.get_value("Housekeeping Task", {"idempotency_key": source_key}, "name")
+	if existing:
+		return frappe.get_doc("Housekeeping Task", existing)
+
+	original_task = frappe.get_doc("Housekeeping Task", inspection_doc.housekeeping_task)
+	rework = frappe.get_doc(
+		{
+			"doctype": "Housekeeping Task",
+			"resort_property": inspection_doc.resort_property,
+			"room": inspection_doc.room,
+			"building": original_task.building,
+			"floor": original_task.floor,
+			"task_type": "Room Inspection",
+			"task_status": "Queued",
+			"priority": original_task.priority or "Normal",
+			"assigned_user": original_task.assigned_user,
+			"assigned_employee": original_task.assigned_employee,
+			"source_doctype": "Room Inspection",
+			"source_name": inspection_doc.name,
+			"idempotency_key": source_key,
+			"requires_inspection": 1,
+		}
+	)
+	rework.insert(ignore_permissions=True)
+	return rework
+
+
+def _has_open_blocking_maintenance(room):
+	# TODO: Replace this placeholder once the Maintenance module owns blocking maintenance documents.
+	return False
+
+
+@frappe.whitelist()
+def record_inspection(inspection, outcome, notes=None):
+	_require_permission("Room Inspection", "write")
+	if outcome not in INSPECTION_OUTCOMES:
+		frappe.throw(_("Unsupported inspection outcome: {0}").format(outcome))
+
+	inspection_doc = frappe.get_doc("Room Inspection", inspection)
+	if inspection_doc.inspection_status == "Draft":
+		inspection_doc.inspection_status = "In Progress"
+		inspection_doc.save(ignore_permissions=True)
+
+	inspection_doc.notes = notes
+	inspection_doc.inspected_at = now()
+
+	if outcome == "Passed":
+		if _has_open_blocking_maintenance(inspection_doc.room):
+			frappe.throw(_("Room cannot become inspected while blocking maintenance is open."))
+		inspection_doc.inspection_status = "Passed"
+		inspection_doc.save(ignore_permissions=True)
+		log_room_condition(
+			inspection_doc.room,
+			"Housekeeping",
+			"Inspected",
+			source_doctype="Room Inspection",
+			source_name=inspection_doc.name,
+			reason=notes,
+		)
+		return _envelope({"inspection": _inspection_data(inspection_doc)}, next_actions=[])
+
+	if outcome == "Accepted With Exception":
+		inspection_doc.inspection_status = "Accepted With Exception"
+		if not frappe.db.exists("DocType", "Housekeeping Exception Approval"):
+			inspection_doc.flags.ignore_links = True
+		inspection_doc.save(ignore_permissions=True)
+		return _envelope({"inspection": _inspection_data(inspection_doc)}, next_actions=[])
+
+	if outcome == "Maintenance Required":
+		inspection_doc.inspection_status = "Maintenance Required"
+		inspection_doc.save(ignore_permissions=True)
+		return _envelope({"inspection": _inspection_data(inspection_doc)}, next_actions=[])
+
+	if outcome == "Failed":
+		inspection_doc.inspection_status = "Failed"
+		inspection_doc.save(ignore_permissions=True)
+	elif outcome == "Rework Required":
+		inspection_doc.inspection_status = "Failed"
+		inspection_doc.save(ignore_permissions=True)
+
+	rework_task = _create_rework_task(inspection_doc)
+	inspection_doc.inspection_status = "Rework Required"
+	inspection_doc.rework_task = rework_task.name
+	inspection_doc.save(ignore_permissions=True)
+	return _envelope(
+		{"inspection": _inspection_data(inspection_doc), "rework_task": _task_data(rework_task)},
+		next_actions=["assign_task"],
+	)

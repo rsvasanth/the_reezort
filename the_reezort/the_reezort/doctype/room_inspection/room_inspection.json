@@ -1,0 +1,53 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-06-29 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "resort_property",
+  "room",
+  "housekeeping_task",
+  "inspection_status",
+  "inspector_user",
+  "inspected_at",
+  "rework_task",
+  "exception_approval",
+  "notes"
+ ],
+ "fields": [
+  {"default": "RZ-RINS-.YYYY.-.#####", "fieldname": "naming_series", "fieldtype": "Select", "label": "Series", "options": "RZ-RINS-.YYYY.-.#####", "reqd": 1},
+  {"fieldname": "resort_property", "fieldtype": "Link", "in_list_view": 1, "label": "Resort Property", "options": "Resort Property", "reqd": 1},
+  {"fieldname": "room", "fieldtype": "Link", "in_list_view": 1, "label": "Room", "options": "Room", "reqd": 1},
+  {"fieldname": "housekeeping_task", "fieldtype": "Link", "in_list_view": 1, "label": "Housekeeping Task", "options": "Housekeeping Task", "reqd": 1},
+  {"default": "Draft", "fieldname": "inspection_status", "fieldtype": "Select", "in_list_view": 1, "label": "Inspection Status", "options": "Draft\nIn Progress\nPassed\nFailed\nRework Required\nMaintenance Required\nAccepted With Exception\nCancelled", "reqd": 1},
+  {"fieldname": "inspector_user", "fieldtype": "Link", "label": "Inspector User", "options": "User", "reqd": 1},
+  {"fieldname": "inspected_at", "fieldtype": "Datetime", "label": "Inspected At"},
+  {"fieldname": "rework_task", "fieldtype": "Link", "label": "Rework Task", "options": "Housekeeping Task", "read_only": 1},
+  {"fieldname": "exception_approval", "fieldtype": "Link", "label": "Exception Approval", "options": "Housekeeping Exception Approval"},
+  {"fieldname": "notes", "fieldtype": "Small Text", "label": "Notes"}
+ ],
+ "indexes": [
+  ["resort_property", "inspection_status"],
+  ["room", "inspection_status"],
+  ["housekeeping_task"]
+ ],
+ "links": [],
+ "modified": "2026-06-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Room Inspection",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Resort Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 0, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Housekeeping", "share": 1, "write": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

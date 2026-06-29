@@ -259,6 +259,9 @@ function slugify(label: string): string {
 	}
 }
 
-function formatQty(qty: number): string {
+function formatQty(qty: number | null | undefined): string {
+	// Real data can have nullish qty on non-Charge lines (Discount / Adjustment /
+	// Payment Reference). Never let that crash the render.
+	if (qty == null || !Number.isFinite(qty)) return "—";
 	return Number.isInteger(qty) ? qty.toString() : qty.toFixed(2);
 }

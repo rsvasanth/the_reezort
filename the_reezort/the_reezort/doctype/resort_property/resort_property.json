@@ -10,6 +10,7 @@
  "field_order": [
   "property_name",
   "property_code",
+  "image",
   "company",
   "default_currency",
   "timezone",
@@ -30,6 +31,7 @@
  "fields": [
   {"fieldname": "property_name", "fieldtype": "Data", "in_list_view": 1, "label": "Property Name", "reqd": 1},
   {"fieldname": "property_code", "fieldtype": "Data", "in_list_view": 1, "label": "Property Code", "reqd": 1, "unique": 1},
+  {"fieldname": "image", "fieldtype": "Attach Image", "label": "Image"},
   {"fieldname": "company", "fieldtype": "Link", "in_list_view": 1, "label": "Company", "options": "Company", "reqd": 1},
   {"fieldname": "default_currency", "fieldtype": "Link", "label": "Default Currency", "options": "Currency"},
   {"fieldname": "timezone", "fieldtype": "Data", "label": "Timezone", "reqd": 1},

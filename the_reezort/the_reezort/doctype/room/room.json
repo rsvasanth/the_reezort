@@ -6,7 +6,7 @@
  "doctype": "DocType",
  "document_type": "Setup",
  "engine": "InnoDB",
- "field_order": ["resort_property", "building", "floor", "room_type", "identity_section", "room_number", "room_name", "display_order", "extension_number", "lock_identifier", "attributes_section", "smoking_policy", "is_accessible", "is_connecting_room", "connecting_rooms", "erpnext_section", "room_asset", "cost_center", "status_section", "occupancy_status", "housekeeping_status", "maintenance_status", "sellable_status", "display_status", "amenities_section", "amenity_overrides", "is_active"],
+ "field_order": ["resort_property", "building", "floor", "room_type", "identity_section", "room_number", "room_name", "image", "display_order", "extension_number", "lock_identifier", "attributes_section", "smoking_policy", "is_accessible", "is_connecting_room", "connecting_rooms", "erpnext_section", "room_asset", "cost_center", "status_section", "occupancy_status", "housekeeping_status", "maintenance_status", "sellable_status", "display_status", "amenities_section", "amenity_overrides", "is_active"],
  "fields": [
   {"fieldname": "resort_property", "fieldtype": "Link", "in_list_view": 1, "label": "Resort Property", "options": "Resort Property", "reqd": 1},
   {"fieldname": "building", "fieldtype": "Link", "in_list_view": 1, "label": "Building", "options": "Resort Building", "reqd": 1},
@@ -15,6 +15,7 @@
   {"fieldname": "identity_section", "fieldtype": "Section Break", "label": "Identity"},
   {"fieldname": "room_number", "fieldtype": "Data", "in_list_view": 1, "label": "Room Number", "reqd": 1},
   {"fieldname": "room_name", "fieldtype": "Data", "label": "Room Name"},
+  {"fieldname": "image", "fieldtype": "Attach Image", "label": "Image"},
   {"fieldname": "display_order", "fieldtype": "Int", "label": "Display Order"},
   {"fieldname": "extension_number", "fieldtype": "Data", "label": "Extension Number"},
   {"fieldname": "lock_identifier", "fieldtype": "Data", "label": "Lock Identifier"},

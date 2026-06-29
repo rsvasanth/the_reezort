@@ -2,7 +2,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, today
 
-from the_reezort.billing.api import add_folio_line, get_folio_detail, get_or_create_folio
+from the_reezort.billing.api import add_folio_line, get_active_folios, get_folio_detail, get_or_create_folio
 from the_reezort.property.api import seed_demo_property
 from the_reezort.setup.bootstrap import seed_erpnext_demo_masters
 
@@ -27,6 +27,10 @@ class TestBillingAPI(FrappeTestCase):
 		cls.item_code = frappe.db.get_value("Item", {"item_code": "ROOM-DLX"}, "name")
 		cls.initial_sales_invoice_count = frappe.db.count("Sales Invoice")
 		cls.initial_payment_entry_count = frappe.db.count("Payment Entry")
+
+	def test_image_fields_are_available_on_metadata(self):
+		for doctype in ("Guest Profile", "Room", "Resort Property", "Room Type"):
+			self.assertTrue(frappe.get_meta(doctype).has_field("image"), doctype)
 
 	def make_reservation(self, suffix):
 		guest = frappe.get_doc(
@@ -87,6 +91,8 @@ class TestBillingAPI(FrappeTestCase):
 		self.assertEqual(folio["folio_status"], "Open")
 		self.assertEqual(folio["primary_folio"], 1)
 		self.assertTrue(folio["customer"])
+		self.assertIn("guest_image", folio)
+		self.assertIsNone(folio["guest_image"])
 
 	def test_get_or_create_folio_is_idempotent_for_reservation(self):
 		reservation = self.make_reservation("IDEMPOTENT")
@@ -165,9 +171,20 @@ class TestBillingAPI(FrappeTestCase):
 		self.assertEqual(result["data"]["folio"]["name"], folio["name"])
 		self.assertEqual(result["data"]["totals"]["total_charges"], 900)
 		self.assertEqual(result["next_actions"], ["add_line"])
-		self.assertEqual(result["data"]["lines"][0]["service_date"], today())
-		self.assertIsNone(result["data"]["lines"][0]["departments"][0]["department"])
-		self.assertEqual(result["data"]["lines"][0]["departments"][0]["lines"][0]["description"], "Detailed line")
+		self.assertIn("guest_image", result["data"]["folio"])
+		self.assertIsNone(result["data"]["folio"]["guest_image"])
+		self.assertEqual(str(result["data"]["lines"][0]["service_date"]), today())
+		self.assertEqual(result["data"]["lines"][0]["description"], "Detailed line")
+
+	def test_get_active_folios_returns_guest_image_key(self):
+		reservation = self.make_reservation("ACTIVEIMG")
+		folio = get_or_create_folio(reservation=reservation.name)["data"]["folio"]
+
+		result = get_active_folios(limit=100)
+		active_folio = next(row for row in result["data"]["folios"] if row["name"] == folio["name"])
+
+		self.assertIn("guest_image", active_folio)
+		self.assertIsNone(active_folio["guest_image"])
 
 	def test_no_erpnext_financial_documents_are_created_for_operational_folio(self):
 		reservation = self.make_reservation("NOFINANCE")

@@ -50,6 +50,17 @@ def _envelope(data, warnings=None, blockers=None, next_actions=None):
 	}
 
 
+def _guest_image_for_folio(doc):
+	if not doc.reservation:
+		return None
+
+	guest_profile = frappe.db.get_value("Reservation", doc.reservation, "staying_guest_profile")
+	if not guest_profile:
+		return None
+
+	return frappe.db.get_value("Guest Profile", guest_profile, "image")
+
+
 def _folio_header(doc):
 	return {
 		"name": doc.name,
@@ -58,6 +69,7 @@ def _folio_header(doc):
 		"stay": doc.stay,
 		"reservation": doc.reservation,
 		"customer": doc.customer,
+		"guest_image": _guest_image_for_folio(doc),
 		"folio_type": doc.folio_type,
 		"primary_folio": doc.primary_folio,
 		"folio_status": doc.folio_status,
@@ -400,7 +412,7 @@ def get_active_folios(limit=20):
 	folios = frappe.get_all(
 		"Guest Folio",
 		filters={"folio_status": ["in", ["Draft", "Open", "Under Review", "Ready for Settlement"]]},
-		fields=["name", "customer", "stay", "folio_status", "outstanding_amount", "currency"],
+		fields=["name", "customer", "reservation", "stay", "folio_status", "outstanding_amount", "currency"],
 		order_by="modified desc",
 		limit=int(limit),
 	)
@@ -418,6 +430,7 @@ def get_active_folios(limit=20):
 			{
 				"name": folio.name,
 				"guest": guest,
+				"guest_image": _guest_image_for_folio(folio),
 				"room": room,
 				"folio_status": folio.folio_status,
 				"outstanding": flt(folio.outstanding_amount),

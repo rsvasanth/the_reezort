@@ -1,0 +1,53 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-06-29 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "resort_property",
+  "stay",
+  "room",
+  "capture_stage",
+  "captured_by",
+  "captured_at",
+  "overall_condition",
+  "notes",
+  "photos"
+ ],
+ "fields": [
+  {"default": "RZ-RCC-.YYYY.-.#####", "fieldname": "naming_series", "fieldtype": "Select", "label": "Series", "options": "RZ-RCC-.YYYY.-.#####", "reqd": 1},
+  {"fieldname": "resort_property", "fieldtype": "Link", "in_list_view": 1, "label": "Resort Property", "options": "Resort Property", "reqd": 1},
+  {"fieldname": "stay", "fieldtype": "Link", "in_list_view": 1, "label": "Stay", "options": "Stay", "reqd": 1},
+  {"fieldname": "room", "fieldtype": "Link", "in_list_view": 1, "label": "Room", "options": "Room", "reqd": 1},
+  {"fieldname": "capture_stage", "fieldtype": "Select", "in_list_view": 1, "label": "Capture Stage", "options": "Check-In\nCheck-Out", "reqd": 1},
+  {"fieldname": "captured_by", "fieldtype": "Link", "label": "Captured By", "options": "User", "reqd": 1},
+  {"fieldname": "captured_at", "fieldtype": "Datetime", "in_list_view": 1, "label": "Captured At", "reqd": 1},
+  {"fieldname": "overall_condition", "fieldtype": "Select", "in_list_view": 1, "label": "Overall Condition", "options": "Good\nMinor Issues\nDamage Noted"},
+  {"fieldname": "notes", "fieldtype": "Small Text", "label": "Notes"},
+  {"fieldname": "photos", "fieldtype": "Table", "label": "Photos", "options": "Room Condition Photo", "reqd": 1}
+ ],
+ "indexes": [
+  ["stay", "capture_stage"],
+  ["resort_property", "capture_stage", "captured_at"],
+  ["room", "capture_stage", "captured_at"]
+ ],
+ "links": [],
+ "modified": "2026-06-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Room Condition Capture",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Resort Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 0, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Front Desk", "share": 1, "write": 1}
+ ],
+ "sort_field": "captured_at",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

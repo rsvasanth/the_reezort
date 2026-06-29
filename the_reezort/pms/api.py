@@ -7,6 +7,7 @@ No ERPNext financial documents are created here.
 
 import frappe
 from frappe import _
+from frappe.utils import now
 
 from the_reezort.billing.api import get_or_create_folio
 
@@ -50,6 +51,32 @@ def _resolve_vacant_room(property_name, room_type):
 		},
 		"name",
 	)
+
+
+def _as_list(value):
+	if isinstance(value, str):
+		import json
+
+		return json.loads(value) if value else []
+	return value or []
+
+
+def _condition_capture_data(doc):
+	return {
+		"name": doc.name,
+		"resort_property": doc.resort_property,
+		"stay": doc.stay,
+		"room": doc.room,
+		"capture_stage": doc.capture_stage,
+		"captured_by": doc.captured_by,
+		"captured_at": doc.captured_at,
+		"overall_condition": doc.overall_condition,
+		"notes": doc.notes,
+		"photos": [
+			{"image": row.image, "caption": row.caption, "area": row.area}
+			for row in doc.get("photos")
+		],
+	}
 
 
 @frappe.whitelist()
@@ -140,3 +167,66 @@ def check_in(reservation, room=None, arrival_time=None):
 		"current_room": resolved_room,
 		"reused": False,
 	}
+
+
+@frappe.whitelist()
+def capture_room_condition(stay, capture_stage, photos, overall_condition=None, notes=None):
+	_require_permission("Room Condition Capture", "create")
+	if capture_stage not in {"Check-In", "Check-Out"}:
+		frappe.throw(_("Capture stage must be Check-In or Check-Out."))
+
+	photos = _as_list(photos)
+	if not photos:
+		frappe.throw(_("At least one room condition photo is required."))
+
+	existing = frappe.db.get_value(
+		"Room Condition Capture",
+		{"stay": stay, "capture_stage": capture_stage},
+		"name",
+		order_by="creation asc",
+	)
+	if existing:
+		return {"capture": _condition_capture_data(frappe.get_doc("Room Condition Capture", existing)), "reused": True}
+
+	stay_doc = frappe.get_doc("Stay", stay)
+	if not stay_doc.current_room:
+		frappe.throw(_("Stay must have a current room before condition capture."))
+
+	capture = frappe.get_doc(
+		{
+			"doctype": "Room Condition Capture",
+			"resort_property": stay_doc.resort_property,
+			"stay": stay_doc.name,
+			"room": stay_doc.current_room,
+			"capture_stage": capture_stage,
+			"captured_by": frappe.session.user,
+			"captured_at": now(),
+			"overall_condition": overall_condition,
+			"notes": notes,
+		}
+	)
+	for photo in photos:
+		if isinstance(photo, str):
+			photo = {"image": photo}
+		capture.append(
+			"photos",
+			{
+				"image": photo.get("image"),
+				"caption": photo.get("caption"),
+				"area": photo.get("area"),
+			},
+		)
+	capture.insert(ignore_permissions=True)
+	return {"capture": _condition_capture_data(capture), "reused": False}
+
+
+@frappe.whitelist()
+def get_room_condition_captures(stay):
+	_require_permission("Room Condition Capture", "read")
+	captures = frappe.get_all(
+		"Room Condition Capture",
+		filters={"stay": stay},
+		fields=["name"],
+		order_by="captured_at asc",
+	)
+	return {"captures": [_condition_capture_data(frappe.get_doc("Room Condition Capture", row.name)) for row in captures]}

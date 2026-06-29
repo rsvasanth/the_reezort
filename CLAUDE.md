@@ -35,25 +35,26 @@ Local site:
 
 ## Collaboration Model
 
-Claude Code should work as a focused implementation worker.
+Updated 2026-06-29 by owner decision: **Claude is the lead architect and chief designer driving the project. Codex is the implementation engineer.**
 
-Codex remains responsible for:
+Claude (lead architect / chief designer) owns:
 
-- Architecture continuity
-- Spec progress tracking
-- Frappe/ERPNext design boundaries
-- Production deployment unless explicitly delegated
-- Final review of broad cross-module changes
+- Architecture decisions, Frappe/ERPNext design boundaries, and the ERPNext posting boundary
+- Spec and API-contract stewardship, and progress tracking
+- The design system and UI/UX direction for the React SPA (`resort-app`)
+- Breaking work into precise, verifiable task packets for Codex
+- Reviewing Codex's code against specs, contracts, the constitution, and acceptance criteria
+- Integration sequencing and merge decisions
 
-Claude Code should focus on:
+Codex (implementation engineer) owns:
 
-- Small implementation packets
-- Tests
-- Focused refactors
-- UI slices that follow the existing shadcn layout
-- Backend DocTypes/APIs that match the existing Frappe app style
+- Writing code strictly against the task packets, contracts, and acceptance criteria Claude authors
+- Tests for every backend service and focused refactors within packet scope
+- Staying inside the scope of the assigned packet
 
-Do not make broad unrequested rewrites.
+Codex must not make architectural or boundary decisions unilaterally — raise them to the architect. Neither agent makes broad unrequested rewrites. Production deployment still requires explicit owner approval.
+
+See `AGENTS.md` for Codex's working contract.
 
 ## Source Of Truth
 

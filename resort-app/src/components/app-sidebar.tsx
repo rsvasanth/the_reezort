@@ -24,7 +24,7 @@ import { useFrappeAuth } from "frappe-react-sdk";
 
 import { NavMain, type NavItem } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
-import { useUserProfile } from "@/hooks/use-user-profile";
+import { canAccessDesk, useUserProfile } from "@/hooks/use-user-profile";
 import {
 	Sidebar,
 	SidebarContent,
@@ -91,6 +91,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 		avatar: "",
 	};
 
+	// Desk is reserved for admin / accounts / management; operational roles are SPA-only.
+	const systemItems = canAccessDesk(profile)
+		? system
+		: system.filter((item) => item.title !== "ERPNext desk");
+
 	return (
 		<Sidebar collapsible="offcanvas" {...props}>
 			<SidebarHeader>
@@ -108,7 +113,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			<SidebarContent>
 				<NavMain label="Operations" items={operations} />
 				{folioItems.length > 0 ? <NavMain label="Guest folios · live" items={folioItems} /> : null}
-				<NavMain label="System" items={system} className="mt-auto" />
+				<NavMain label="System" items={systemItems} className="mt-auto" />
 			</SidebarContent>
 			<SidebarFooter>
 				<NavUser user={user} />

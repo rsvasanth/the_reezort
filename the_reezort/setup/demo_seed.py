@@ -523,6 +523,32 @@ def seed_doctype_permissions():
 	return {"read_doctypes": read_doctypes, "write_doctypes": write_doctypes, "roles": all_roles}
 
 
+# Desk lockdown (D1/D2): operational roles use the SPA only; the ERPNext desk
+# is reserved for admin, accounting, and management oversight.
+DESK_ACCESS_RETAINED = ["Resort Manager", "Accounts User", "Accounts Manager"]
+DESK_ACCESS_REVOKED = [
+	"Front Desk", "Housekeeping", "Restaurant", "Reservation Agent", "Concierge", "Maintenance",
+]
+
+
+@frappe.whitelist()
+def lock_desk_access():
+	"""Restrict the ERPNext desk: operational roles lose /app (SPA only); admin/accounts/GM keep it.
+
+	Reversible — re-grant by setting desk_access back to 1. The SPA, its APIs, and SPA login are
+	unaffected (desk_access only gates the /app desk UI).
+	"""
+	for role in DESK_ACCESS_REVOKED:
+		if frappe.db.exists("Role", role):
+			frappe.db.set_value("Role", role, "desk_access", 0)
+	for role in DESK_ACCESS_RETAINED:
+		if frappe.db.exists("Role", role):
+			frappe.db.set_value("Role", role, "desk_access", 1)
+	frappe.clear_cache()
+	frappe.db.commit()
+	return {"revoked": DESK_ACCESS_REVOKED, "retained": DESK_ACCESS_RETAINED}
+
+
 @frappe.whitelist()
 def seed_full_demo(password=DEMO_PASSWORD):
 	"""Run the full idempotent THE REEZORT demo seed end to end."""

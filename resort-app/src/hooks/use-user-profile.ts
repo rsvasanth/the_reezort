@@ -8,6 +8,15 @@ export type UserProfile = {
 	isSystemManager: boolean;
 };
 
+// Roles that retain ERPNext desk access after the SPA-first lockdown (D1/D2).
+const DESK_ROLES = ["Resort Manager", "Accounts User", "Accounts Manager"];
+
+/** Whether this user should see/reach the ERPNext desk. Operational roles are SPA-only. */
+export function canAccessDesk(profile: UserProfile | null): boolean {
+	if (!profile) return false;
+	return profile.isSystemManager || profile.roles.some((r) => DESK_ROLES.includes(r));
+}
+
 /**
  * Loads the logged-in user's profile (name + roles) from
  * the_reezort.account.api.get_current_user_profile. Falls back to the bare

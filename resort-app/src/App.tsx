@@ -20,6 +20,7 @@ import ConditionCaptureScreen from "@/app/condition/ConditionCaptureScreen";
 import PropertyManagementScreen from "@/app/property/PropertyManagementScreen";
 import StaffAccessScreen from "@/app/staff/StaffAccessScreen";
 import { parseHashRoute, useHashRoute } from "@/hooks/use-hash-route";
+import { canAccessDesk, useUserProfile } from "@/hooks/use-user-profile";
 import { toOperationalRows, toSectionCards } from "@/lib/dashboard-adapter";
 import {
 	getManagementDashboardSnapshot,
@@ -55,6 +56,8 @@ function AppShell({ children }: { children: ReactNode }) {
 
 function Workspace() {
 	const { currentUser, logout } = useFrappeAuth();
+	const profile = useUserProfile(currentUser);
+	const showDesk = canAccessDesk(profile);
 	const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
 	const [snapshotState, setSnapshotState] = useState<"loading" | "live" | "mock">(
 		"loading"
@@ -127,9 +130,11 @@ function Workspace() {
 								</p>
 							</div>
 							<div className="grid gap-3">
-								<Button asChild className="rounded-full">
-									<a href="/app">Open ERPNext desk</a>
-								</Button>
+								{showDesk ? (
+									<Button asChild className="rounded-full">
+										<a href="/app">Open ERPNext desk</a>
+									</Button>
+								) : null}
 								<Button asChild variant="outline" className="rounded-full">
 									<a href="/resort-app">Refresh prototype</a>
 								</Button>

@@ -1,0 +1,62 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-06-29 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "posting_type",
+  "idempotency_key",
+  "posting_status",
+  "source_section",
+  "source_doctype",
+  "source_name",
+  "results_section",
+  "sales_invoices_json",
+  "payment_entries_json",
+  "credit_notes_json",
+  "diagnostics_section",
+  "error_message",
+  "retry_count",
+  "last_attempt_at"
+ ],
+ "fields": [
+  {"default": "RZ-EPL-.YYYY.-.#####", "fieldname": "naming_series", "fieldtype": "Select", "label": "Series", "options": "RZ-EPL-.YYYY.-.#####", "reqd": 1},
+  {"fieldname": "posting_type", "fieldtype": "Select", "in_list_view": 1, "label": "Posting Type", "options": "Folio Settlement\nDirect Bill\nDeposit\nRefund\nCredit Note", "reqd": 1},
+  {"fieldname": "idempotency_key", "fieldtype": "Data", "in_list_view": 1, "label": "Idempotency Key", "reqd": 1, "unique": 1},
+  {"default": "Pending", "fieldname": "posting_status", "fieldtype": "Select", "in_list_view": 1, "label": "Posting Status", "options": "Pending\nProcessing\nPosted\nFailed\nCancelled", "reqd": 1},
+  {"fieldname": "source_section", "fieldtype": "Section Break", "label": "Source"},
+  {"fieldname": "source_doctype", "fieldtype": "Data", "label": "Source DocType", "reqd": 1},
+  {"fieldname": "source_name", "fieldtype": "Dynamic Link", "in_list_view": 1, "label": "Source Name", "options": "source_doctype", "reqd": 1},
+  {"fieldname": "results_section", "fieldtype": "Section Break", "label": "ERPNext Results"},
+  {"fieldname": "sales_invoices_json", "fieldtype": "JSON", "label": "Sales Invoices"},
+  {"fieldname": "payment_entries_json", "fieldtype": "JSON", "label": "Payment Entries"},
+  {"fieldname": "credit_notes_json", "fieldtype": "JSON", "label": "Credit Notes"},
+  {"fieldname": "diagnostics_section", "fieldtype": "Section Break", "label": "Diagnostics"},
+  {"fieldname": "error_message", "fieldtype": "Small Text", "label": "Error Message", "read_only": 1},
+  {"default": "0", "fieldname": "retry_count", "fieldtype": "Int", "label": "Retry Count", "read_only": 1},
+  {"fieldname": "last_attempt_at", "fieldtype": "Datetime", "label": "Last Attempt At", "read_only": 1}
+ ],
+ "indexes": [
+  ["posting_type", "posting_status"],
+  ["source_doctype", "source_name"]
+ ],
+ "links": [],
+ "modified": "2026-06-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "ERPNext Posting Log",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 0, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Accounts Manager", "share": 1, "write": 1},
+  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Accounts User", "share": 0, "write": 0}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

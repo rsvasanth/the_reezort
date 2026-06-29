@@ -68,13 +68,67 @@ export type RoomTypeRecord = {
 	max_occupancy: number;
 };
 
+export type TreeBuilding = { name: string; building_name: string; building_code: string; is_active: number };
+export type TreeFloor = { name: string; building: string; floor_label: string; floor_code: string; is_active: number };
+export type TreeRoomType = {
+	name: string;
+	room_type_name: string;
+	room_type_code: string;
+	max_occupancy: number;
+	is_active: number;
+};
+export type TreeRoom = {
+	name: string;
+	room_number: string;
+	room_name: string | null;
+	building: string;
+	floor: string;
+	room_type: string;
+	occupancy_status: string;
+	housekeeping_status: string;
+	maintenance_status: string;
+	sellable_status: string;
+	smoking_policy: string;
+	is_accessible: number;
+	is_active: number;
+};
+
 export type PropertyTree = {
 	resort_property: string;
-	buildings: { name: string; building_name: string; building_code: string }[];
-	floors: { name: string; building: string; floor_label: string; floor_code: string }[];
-	room_types: { name: string; room_type_name: string; room_type_code: string; max_occupancy: number }[];
-	rooms: { name: string; room_number: string; building: string; floor: string; room_type: string }[];
+	buildings: TreeBuilding[];
+	floors: TreeFloor[];
+	room_types: TreeRoomType[];
+	rooms: TreeRoom[];
 	counts: { buildings: number; floors: number; room_types: number; rooms: number };
+};
+
+export type ManagedDoctype =
+	| "Resort Property"
+	| "Resort Building"
+	| "Resort Floor"
+	| "Room Type"
+	| "Room"
+	| "Room Amenity";
+
+export type Amenity = {
+	name: string;
+	amenity_name: string;
+	amenity_code: string;
+	amenity_type: string;
+	is_guest_visible: number;
+	icon: string | null;
+	is_active: number;
+};
+
+export type EquipmentCondition = "Working" | "Faulty" | "Under Repair" | "Missing" | "Not Installed";
+
+export type RoomEquipmentItem = {
+	amenity: string;
+	label?: string | null;
+	condition: EquipmentCondition;
+	quantity?: number;
+	asset?: string | null;
+	notes?: string | null;
 };
 
 export type BulkRoomResult = {
@@ -253,4 +307,85 @@ export async function createRoomType(
 
 export async function createRoomsBulk(payload: CreateRoomsBulkPayload): Promise<BulkRoomResult> {
 	return callSetup("the_reezort.setup.api.create_rooms_bulk", { method: "POST", body: { payload } });
+}
+
+// ---------- Management (CRUD / equipment / amenity catalog) ----------
+
+export const EQUIPMENT_CONDITIONS: EquipmentCondition[] = [
+	"Working",
+	"Faulty",
+	"Under Repair",
+	"Missing",
+	"Not Installed",
+];
+
+export async function updateRecord(
+	doctype: ManagedDoctype,
+	name: string,
+	payload: Record<string, unknown>
+): Promise<{ record: Record<string, unknown>; changed: string[] }> {
+	return callSetup("the_reezort.setup.management.update_record", {
+		method: "POST",
+		body: { doctype, name, payload },
+	});
+}
+
+export async function setActive(
+	doctype: ManagedDoctype,
+	name: string,
+	isActive: boolean
+): Promise<{ name: string; is_active: number }> {
+	return callSetup("the_reezort.setup.management.set_active", {
+		method: "POST",
+		body: { doctype, name, is_active: isActive ? 1 : 0 },
+	});
+}
+
+export async function deleteRecord(
+	doctype: ManagedDoctype,
+	name: string
+): Promise<{ deleted: string }> {
+	return callSetup("the_reezort.setup.management.delete_record", {
+		method: "POST",
+		body: { doctype, name },
+	});
+}
+
+export async function listAmenities(includeInactive = false): Promise<{ amenities: Amenity[] }> {
+	return callSetup("the_reezort.setup.management.list_amenities", {
+		method: "GET",
+		params: includeInactive ? { include_inactive: "1" } : {},
+	});
+}
+
+export async function createAmenity(payload: {
+	amenity_name: string;
+	amenity_code: string;
+	amenity_type?: string;
+	is_guest_visible?: boolean;
+	icon?: string | null;
+}): Promise<{ amenity: Amenity; reused: boolean }> {
+	return callSetup("the_reezort.setup.management.create_amenity", {
+		method: "POST",
+		body: { payload },
+	});
+}
+
+export async function getRoomEquipment(
+	room: string
+): Promise<{ room: string; room_number: string; items: RoomEquipmentItem[] }> {
+	return callSetup("the_reezort.setup.management.get_room_equipment", {
+		method: "GET",
+		params: { room },
+	});
+}
+
+export async function setRoomEquipment(
+	room: string,
+	items: RoomEquipmentItem[]
+): Promise<{ room: string; count: number }> {
+	return callSetup("the_reezort.setup.management.set_room_equipment", {
+		method: "POST",
+		body: { room, items },
+	});
 }

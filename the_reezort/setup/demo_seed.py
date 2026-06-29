@@ -475,7 +475,7 @@ def seed_doctype_permissions():
 	"""
 	from frappe.permissions import add_permission, update_permission_property
 
-	def grant(doctype, role, write=False, create=False):
+	def grant(doctype, role, write=False, create=False, delete=False):
 		if not frappe.db.exists("DocType", doctype):
 			return
 		add_permission(doctype, role, 0)
@@ -484,6 +484,8 @@ def seed_doctype_permissions():
 			update_permission_property(doctype, role, 0, "write", 1)
 		if create:
 			update_permission_property(doctype, role, 0, "create", 1)
+		if delete:
+			update_permission_property(doctype, role, 0, "delete", 1)
 
 	all_roles = [
 		"Front Desk", "Housekeeping", "Restaurant", "Reservation Agent",
@@ -506,11 +508,13 @@ def seed_doctype_permissions():
 	for doctype in write_doctypes:
 		for role in operator_roles:
 			grant(doctype, role, write=True, create=True)
-	# Property onboarding (the SPA setup wizard) is a manager task — grant the
-	# Resort Manager create/write on the master-data chain so it works without the desk.
-	setup_doctypes = ["Resort Property", "Resort Building", "Resort Floor", "Room Type"]
+	# Property management (the SPA setup + management console) is a manager task —
+	# grant the Resort Manager full CRUD on the master-data chain so it works
+	# without the desk. Room (write/create) is already granted above.
+	setup_doctypes = ["Resort Property", "Resort Building", "Resort Floor", "Room Type", "Room Amenity"]
 	for doctype in setup_doctypes:
-		grant(doctype, "Resort Manager", write=True, create=True)
+		grant(doctype, "Resort Manager", write=True, create=True, delete=True)
+	grant("Room", "Resort Manager", write=True, create=True, delete=True)
 	for role in ["Accounts User", "Accounts Manager", "Resort Manager"]:
 		grant("ERPNext Posting Log", role)
 

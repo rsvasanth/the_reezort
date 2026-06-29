@@ -33,19 +33,32 @@ class TestERPNextPostingLog(FrappeTestCase):
 		cls.source_name = folio.name
 		cls.initial_sales_invoice_count = frappe.db.count("Sales Invoice")
 		cls.initial_payment_entry_count = frappe.db.count("Payment Entry")
+		# run_posting commits, so use a unique key prefix per run to avoid colliding
+		# with committed logs from earlier runs (idempotency_key is unique).
+		cls.key_prefix = frappe.generate_hash(length=10)
 
-	def _run(self, key, operation):
-		return run_posting("Folio Settlement", self.source_doctype, self.source_name, key, operation)
+	@classmethod
+	def tearDownClass(cls):
+		frappe.db.delete("ERPNext Posting Log", {"idempotency_key": ("like", f"{cls.key_prefix}%")})
+		frappe.db.commit()
+		super().tearDownClass()
+
+	def _key(self, suffix):
+		return f"{self.key_prefix}-{suffix}"
+
+	def _run(self, suffix, operation):
+		return run_posting("Folio Settlement", self.source_doctype, self.source_name, self._key(suffix), operation)
 
 	def test_get_or_create_posting_log_is_idempotent(self):
-		first = get_or_create_posting_log("Folio Settlement", self.source_doctype, self.source_name, "POST-IDEM-1")
-		second = get_or_create_posting_log("Folio Settlement", self.source_doctype, self.source_name, "POST-IDEM-1")
+		key = self._key("IDEM")
+		first = get_or_create_posting_log("Folio Settlement", self.source_doctype, self.source_name, key)
+		second = get_or_create_posting_log("Folio Settlement", self.source_doctype, self.source_name, key)
 
 		self.assertEqual(first.name, second.name)
-		self.assertEqual(frappe.db.count("ERPNext Posting Log", {"idempotency_key": "POST-IDEM-1"}), 1)
+		self.assertEqual(frappe.db.count("ERPNext Posting Log", {"idempotency_key": key}), 1)
 
 	def test_successful_posting_marks_posted_and_stores_results(self):
-		result = self._run("POST-OK-1", lambda: {"sales_invoices": ["ACC-SINV-TEST-001"]})
+		result = self._run("OK", lambda: {"sales_invoices": ["ACC-SINV-TEST-001"]})
 
 		self.assertEqual(result["posting_status"], "Posted")
 		self.assertFalse(result["reused"])
@@ -59,8 +72,8 @@ class TestERPNextPostingLog(FrappeTestCase):
 			calls["count"] += 1
 			return {"payment_entries": ["ACC-PAY-TEST-001"]}
 
-		first = self._run("POST-REUSE-1", operation)
-		second = self._run("POST-REUSE-1", operation)
+		first = self._run("REUSE", operation)
+		second = self._run("REUSE", operation)
 
 		self.assertEqual(calls["count"], 1)
 		self.assertFalse(first["reused"])
@@ -72,9 +85,9 @@ class TestERPNextPostingLog(FrappeTestCase):
 			raise ValueError("simulated posting failure")
 
 		with self.assertRaises(ValueError):
-			self._run("POST-FAIL-1", operation)
+			self._run("FAIL", operation)
 
-		log = frappe.get_doc("ERPNext Posting Log", {"idempotency_key": "POST-FAIL-1"})
+		log = frappe.get_doc("ERPNext Posting Log", {"idempotency_key": self._key("FAIL")})
 		self.assertEqual(log.posting_status, "Failed")
 		self.assertEqual(log.retry_count, 1)
 		self.assertIn("simulated posting failure", log.error_message)
@@ -89,15 +102,16 @@ class TestERPNextPostingLog(FrappeTestCase):
 			return {"sales_invoices": ["ACC-SINV-RETRY-001"]}
 
 		with self.assertRaises(ValueError):
-			self._run("POST-RETRY-1", operation)
+			self._run("RETRY", operation)
 
-		result = self._run("POST-RETRY-1", operation)
+		result = self._run("RETRY", operation)
 		self.assertEqual(result["posting_status"], "Posted")
 		self.assertEqual(result["results"]["sales_invoices"], ["ACC-SINV-RETRY-001"])
 		self.assertEqual(frappe.db.get_value("ERPNext Posting Log", result["posting_log"], "retry_count"), 1)
 
 	def test_duplicate_idempotency_key_is_rejected_at_doctype_level(self):
-		get_or_create_posting_log("Folio Settlement", self.source_doctype, self.source_name, "POST-DUP-1")
+		key = self._key("DUP")
+		get_or_create_posting_log("Folio Settlement", self.source_doctype, self.source_name, key)
 
 		with self.assertRaises(Exception):
 			frappe.get_doc(
@@ -106,13 +120,13 @@ class TestERPNextPostingLog(FrappeTestCase):
 					"posting_type": "Folio Settlement",
 					"source_doctype": self.source_doctype,
 					"source_name": self.source_name,
-					"idempotency_key": "POST-DUP-1",
+					"idempotency_key": key,
 					"posting_status": "Pending",
 				}
 			).insert(ignore_permissions=True)
 
 	def test_posted_log_cannot_transition_back(self):
-		result = self._run("POST-TERMINAL-1", lambda: {"sales_invoices": ["ACC-SINV-TERM-001"]})
+		result = self._run("TERMINAL", lambda: {"sales_invoices": ["ACC-SINV-TERM-001"]})
 		log = frappe.get_doc("ERPNext Posting Log", result["posting_log"])
 
 		log.posting_status = "Processing"
@@ -120,7 +134,7 @@ class TestERPNextPostingLog(FrappeTestCase):
 			log.save(ignore_permissions=True)
 
 	def test_no_real_erpnext_documents_are_created_by_scaffold(self):
-		self._run("POST-NODOCS-1", lambda: {"sales_invoices": ["ACC-SINV-FAKE-001"]})
+		self._run("NODOCS", lambda: {"sales_invoices": ["ACC-SINV-FAKE-001"]})
 
 		self.assertEqual(frappe.db.count("Sales Invoice"), self.initial_sales_invoice_count)
 		self.assertEqual(frappe.db.count("Payment Entry"), self.initial_payment_entry_count)

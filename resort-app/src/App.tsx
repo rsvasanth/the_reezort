@@ -18,6 +18,7 @@ import { FolioWorkspace } from "@/app/folio/FolioWorkspace";
 import HousekeepingBoard from "@/app/housekeeping/HousekeepingBoard";
 import ConditionCaptureScreen from "@/app/condition/ConditionCaptureScreen";
 import PropertyManagementScreen from "@/app/property/PropertyManagementScreen";
+import StaffAccessScreen from "@/app/staff/StaffAccessScreen";
 import { parseHashRoute, useHashRoute } from "@/hooks/use-hash-route";
 import { toOperationalRows, toSectionCards } from "@/lib/dashboard-adapter";
 import {
@@ -182,6 +183,14 @@ function AuthGate() {
 		return (
 			<AppShell>
 				<PropertyManagementScreen />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "staff") {
+		return (
+			<AppShell>
+				<StaffAccessScreen />
 			</AppShell>
 		);
 	}

@@ -16,6 +16,7 @@ import {
 	ReceiptTextIcon,
 	ShieldCheckIcon,
 	SparklesIcon,
+	UsersIcon,
 	UtensilsIcon,
 	WrenchIcon,
 } from "lucide-react";
@@ -50,6 +51,7 @@ const operations: NavItem[] = [
 
 const system: NavItem[] = [
 	{ title: "Property management", url: "/resort-app#/setup", icon: HotelIcon, status: "live" },
+	{ title: "Staff & access", url: "/resort-app#/staff", icon: UsersIcon, status: "live" },
 	{ title: "ERPNext desk", url: "/app", icon: DatabaseIcon, status: "live" },
 	{ title: "Integrations", url: "#", icon: PlugIcon, status: "soon" },
 	{ title: "Security & audit", url: "#", icon: ShieldCheckIcon, status: "soon" },

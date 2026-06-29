@@ -7,8 +7,10 @@ org/staff -> roles/users.
 """
 
 import frappe
-from frappe.utils import getdate, today
+from frappe.utils import add_days, getdate, today
 
+from the_reezort.billing.api import add_folio_line
+from the_reezort.pms.api import check_in
 from the_reezort.property.api import seed_demo_property
 from the_reezort.setup.bootstrap import seed_erpnext_demo_masters
 
@@ -363,6 +365,106 @@ def seed_org_and_users(password=DEMO_PASSWORD):
 	}
 
 
+# ---------------------------------------------------------------------------
+# In-house guests with open folios (live data for the Folio Workspace demo)
+# ---------------------------------------------------------------------------
+
+# (guest_name, room_item, room_rate, extra_item, extra_rate, extra_module)
+DEMO_FOLIO_GUESTS = [
+	("Vikram Menon", "ROOM-STE", 24500, "FNB-ADD-BUFFET", 2200, "Restaurant"),
+	("Anjali Rao", "ROOM-DLX", 14500, "LAUNDRY-SERVICE", 650, "Manual"),
+	("Rahul Kapoor", "ROOM-VIL", 38500, "FNB-ROOM-SERVICE", 1800, "Restaurant"),
+]
+
+
+def _create_demo_reservation(property_name, guest_name, room_type):
+	email = guest_name.lower().replace(" ", ".") + "@guest.thereezort.com"
+	profile_name = frappe.db.get_value("Guest Profile", {"email": email}, "name")
+	if not profile_name:
+		profile_name = frappe.get_doc(
+			{"doctype": "Guest Profile", "guest_full_name": guest_name, "email": email}
+		).insert(ignore_permissions=True).name
+
+	reservation = frappe.get_doc(
+		{
+			"doctype": "Reservation",
+			"resort_property": property_name,
+			"status": "Confirmed",
+			"booking_source": "Direct",
+			"arrival_date": today(),
+			"departure_date": add_days(today(), 2),
+			"currency": CURRENCY,
+			"staying_guest_profile": profile_name,
+			"guests": [
+				{"guest_profile": profile_name, "guest_name": guest_name, "guest_type": "Adult", "is_primary_guest": 1}
+			],
+			"rooms": [{"room_type": room_type, "adults": 2, "children": 0, "status": "Confirmed"}],
+		}
+	).insert(ignore_permissions=True)
+	return reservation.name
+
+
+@frappe.whitelist()
+def seed_demo_folios():
+	"""Check a few demo guests in with open folios + charges (idempotent by guest name)."""
+	company = ensure_reezort_company()
+	set_as_default_company(company)
+	property_name = frappe.db.get_value("Resort Property", {}, "name")
+	created = []
+
+	for guest_name, room_item, room_rate, extra_item, extra_rate, extra_module in DEMO_FOLIO_GUESTS:
+		if frappe.db.exists("Stay", {"primary_guest_name": guest_name, "stay_status": ["in", ["In House", "Due Out"]]}):
+			continue
+
+		room_type = frappe.db.get_value(
+			"Room",
+			{
+				"resort_property": property_name,
+				"sellable_status": "Sellable",
+				"occupancy_status": "Vacant",
+				"is_active": 1,
+			},
+			"room_type",
+		)
+		if not room_type:
+			break
+
+		reservation = _create_demo_reservation(property_name, guest_name, room_type)
+		checked_in = check_in(reservation)
+		folio, stay = checked_in["folio"], checked_in["stay"]
+
+		add_folio_line(
+			folio,
+			{
+				"line_type": "Charge",
+				"item_code": room_item,
+				"qty": 1,
+				"rate": room_rate,
+				"source_module": "Room",
+				"source_doctype": "Stay",
+				"source_name": stay,
+				"description": f"{room_item} room tariff",
+			},
+		)
+		add_folio_line(
+			folio,
+			{
+				"line_type": "Charge",
+				"item_code": extra_item,
+				"qty": 1,
+				"rate": extra_rate,
+				"source_module": extra_module,
+				"source_doctype": "Stay",
+				"source_name": stay,
+				"description": extra_item.replace("-", " ").title(),
+			},
+		)
+		created.append({"guest": guest_name, "folio": folio, "stay": stay})
+
+	frappe.db.commit()
+	return {"created_folios": created, "count": len(created)}
+
+
 @frappe.whitelist()
 def seed_full_demo(password=DEMO_PASSWORD):
 	"""Run the full idempotent THE REEZORT demo seed end to end."""
@@ -372,6 +474,7 @@ def seed_full_demo(password=DEMO_PASSWORD):
 	base = seed_base_masters()
 	gst = seed_gst_tax()
 	org = seed_org_and_users(password=password)
+	folios = seed_demo_folios()
 	frappe.db.commit()
 
-	return {"company": company, "base": base, "gst": gst, "org": org}
+	return {"company": company, "base": base, "gst": gst, "org": org, "folios": folios}

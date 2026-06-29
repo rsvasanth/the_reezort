@@ -1,0 +1,27 @@
+{
+ "actions": [],
+ "creation": "2026-06-29 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": ["room_type", "room", "adults", "children", "estimated_amount", "status"],
+ "fields": [
+  {"fieldname": "room_type", "fieldtype": "Link", "in_list_view": 1, "label": "Room Type", "options": "Room Type", "reqd": 1},
+  {"fieldname": "room", "fieldtype": "Link", "label": "Room", "options": "Room"},
+  {"default": "2", "fieldname": "adults", "fieldtype": "Int", "in_list_view": 1, "label": "Adults", "reqd": 1},
+  {"default": "0", "fieldname": "children", "fieldtype": "Int", "label": "Children"},
+  {"default": "0", "fieldname": "estimated_amount", "fieldtype": "Currency", "in_list_view": 1, "label": "Estimated Amount"},
+  {"default": "Requested", "fieldname": "status", "fieldtype": "Select", "in_list_view": 1, "label": "Status", "options": "Requested\nHeld\nConfirmed\nCancelled\nChecked In"}
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-06-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Reservation Room",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,35 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-06-29 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "engine": "InnoDB",
+ "field_order": ["naming_series", "guest_full_name", "email", "phone", "erpnext_customer", "profile_section", "vip_level", "preferences", "internal_notes", "is_active"],
+ "fields": [
+  {"default": "RZ-GUEST-.YYYY.-.#####", "fieldname": "naming_series", "fieldtype": "Select", "label": "Series", "options": "RZ-GUEST-.YYYY.-.#####", "reqd": 1},
+  {"fieldname": "guest_full_name", "fieldtype": "Data", "in_list_view": 1, "label": "Guest Full Name", "reqd": 1},
+  {"fieldname": "email", "fieldtype": "Data", "in_list_view": 1, "label": "Email", "options": "Email"},
+  {"fieldname": "phone", "fieldtype": "Data", "in_list_view": 1, "label": "Phone"},
+  {"fieldname": "erpnext_customer", "fieldtype": "Link", "label": "ERPNext Customer", "options": "Customer"},
+  {"fieldname": "profile_section", "fieldtype": "Section Break", "label": "Profile"},
+  {"default": "Standard", "fieldname": "vip_level", "fieldtype": "Select", "label": "VIP Level", "options": "Standard\nVIP\nVVIP\nOwner\nBlacklisted"},
+  {"fieldname": "preferences", "fieldtype": "Small Text", "label": "Preferences"},
+  {"fieldname": "internal_notes", "fieldtype": "Text", "label": "Internal Notes"},
+  {"default": "1", "fieldname": "is_active", "fieldtype": "Check", "in_list_view": 1, "label": "Active"}
+ ],
+ "links": [],
+ "modified": "2026-06-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Guest Profile",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,29 @@
+{
+ "actions": [],
+ "creation": "2026-06-29 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": ["guest_profile", "guest_name", "email", "phone", "guest_type", "is_primary_guest", "nationality", "notes"],
+ "fields": [
+  {"fieldname": "guest_profile", "fieldtype": "Link", "label": "Guest Profile", "options": "Guest Profile"},
+  {"fieldname": "guest_name", "fieldtype": "Data", "in_list_view": 1, "label": "Guest Name", "reqd": 1},
+  {"fieldname": "email", "fieldtype": "Data", "label": "Email", "options": "Email"},
+  {"fieldname": "phone", "fieldtype": "Data", "label": "Phone"},
+  {"default": "Adult", "fieldname": "guest_type", "fieldtype": "Select", "in_list_view": 1, "label": "Guest Type", "options": "Adult\nChild\nInfant"},
+  {"default": "0", "fieldname": "is_primary_guest", "fieldtype": "Check", "in_list_view": 1, "label": "Primary Guest"},
+  {"fieldname": "nationality", "fieldtype": "Data", "label": "Nationality"},
+  {"fieldname": "notes", "fieldtype": "Small Text", "label": "Notes"}
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-06-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Reservation Guest",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

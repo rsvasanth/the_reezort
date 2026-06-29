@@ -1,0 +1,38 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-06-29 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": ["naming_series", "resort_property", "reservation", "hold_scope", "room_type", "room", "start_date", "end_date", "quantity", "status", "expires_at", "source", "idempotency_key"],
+ "fields": [
+  {"default": "RZ-HOLD-.YYYY.-.#####", "fieldname": "naming_series", "fieldtype": "Select", "label": "Series", "options": "RZ-HOLD-.YYYY.-.#####", "reqd": 1},
+  {"fieldname": "resort_property", "fieldtype": "Link", "in_list_view": 1, "label": "Resort Property", "options": "Resort Property", "reqd": 1},
+  {"fieldname": "reservation", "fieldtype": "Link", "in_list_view": 1, "label": "Reservation", "options": "Reservation"},
+  {"default": "Room Type", "fieldname": "hold_scope", "fieldtype": "Select", "label": "Hold Scope", "options": "Room Type\nRoom", "reqd": 1},
+  {"fieldname": "room_type", "fieldtype": "Link", "in_list_view": 1, "label": "Room Type", "options": "Room Type", "reqd": 1},
+  {"fieldname": "room", "fieldtype": "Link", "label": "Room", "options": "Room"},
+  {"fieldname": "start_date", "fieldtype": "Date", "in_list_view": 1, "label": "Start Date", "reqd": 1},
+  {"fieldname": "end_date", "fieldtype": "Date", "in_list_view": 1, "label": "End Date", "reqd": 1},
+  {"default": "1", "fieldname": "quantity", "fieldtype": "Int", "in_list_view": 1, "label": "Quantity", "reqd": 1},
+  {"default": "Active", "fieldname": "status", "fieldtype": "Select", "in_list_view": 1, "label": "Status", "options": "Active\nConsumed\nExpired\nReleased\nCancelled", "reqd": 1},
+  {"fieldname": "expires_at", "fieldtype": "Datetime", "in_list_view": 1, "label": "Expires At", "reqd": 1},
+  {"default": "Staff", "fieldname": "source", "fieldtype": "Select", "label": "Source", "options": "Online\nStaff\nChannel\nEvent"},
+  {"fieldname": "idempotency_key", "fieldtype": "Data", "label": "Idempotency Key", "unique": 1}
+ ],
+ "links": [],
+ "modified": "2026-06-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Room Hold",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1}
+ ],
+ "sort_field": "expires_at",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

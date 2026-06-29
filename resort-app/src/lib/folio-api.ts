@@ -133,6 +133,7 @@ export type GuestFolioHeader = {
 	customer: string;
 	customer_name?: string | null;
 	guest_name?: string | null;
+	guest_image?: string | null;
 	room_number?: string | null;
 	folio_type: FolioType;
 	primary_folio?: 0 | 1;

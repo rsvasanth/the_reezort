@@ -7,9 +7,10 @@ import {
 	MoreHorizontal,
 	Printer,
 	RefreshCw,
-	UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
+
+import { GuestAvatar } from "@/components/guest-avatar";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -85,8 +86,12 @@ export function FolioHeaderCard({
 				<div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
 					{/* Guest / payer block */}
 					<div className="flex flex-col gap-2">
-						<div className="flex items-center gap-2 text-2xl font-semibold tracking-tight">
-							<UserRound className="size-5 text-muted-foreground" />
+						<div className="flex items-center gap-3 text-2xl font-semibold tracking-tight">
+							<GuestAvatar
+								name={folio.guest_name ?? folio.customer_name ?? folio.customer}
+								imageUrl={folio.guest_image}
+								size="lg"
+							/>
 							<span className="truncate">{folio.guest_name ?? folio.customer_name ?? folio.customer}</span>
 						</div>
 						<div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">

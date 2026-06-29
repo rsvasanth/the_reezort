@@ -12,7 +12,10 @@ import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/sonner";
 import data from "@/app/dashboard/data.json";
+import { FolioWorkspace } from "@/app/folio/FolioWorkspace";
+import { parseHashRoute, useHashRoute } from "@/hooks/use-hash-route";
 import { toOperationalRows, toSectionCards } from "@/lib/dashboard-adapter";
 import {
 	getManagementDashboardSnapshot,
@@ -134,6 +137,8 @@ function Workspace() {
 
 function AuthGate() {
 	const { currentUser, isLoading } = useFrappeAuth();
+	const hash = useHashRoute();
+	const route = parseHashRoute(hash);
 
 	if (isLoading) {
 		return <FullScreenLoader />;
@@ -143,6 +148,10 @@ function AuthGate() {
 		return <LoginScreen />;
 	}
 
+	if (route.kind === "folio") {
+		return <FolioWorkspace folioName={route.name} />;
+	}
+
 	return <Workspace />;
 }
 
@@ -150,6 +159,7 @@ function App() {
 	return (
 		<FrappeProvider>
 			<AuthGate />
+			<Toaster richColors closeButton position="top-right" />
 		</FrappeProvider>
 	);
 }

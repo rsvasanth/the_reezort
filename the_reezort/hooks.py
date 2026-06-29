@@ -148,23 +148,11 @@ required_apps = ["erpnext", "hrms"]
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"the_reezort.tasks.all"
-# 	],
-# 	"daily": [
-# 		"the_reezort.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"the_reezort.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"the_reezort.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"the_reezort.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	"hourly": [
+		"the_reezort.servicedesk.api.escalate_overdue_tickets",
+	],
+}
 
 # Testing
 # -------

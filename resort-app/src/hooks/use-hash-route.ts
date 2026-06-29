@@ -33,6 +33,7 @@ export type ParsedRoute =
 	| { kind: "setup" }
 	| { kind: "staff" }
 	| { kind: "attendance" }
+	| { kind: "servicedesk" }
 	| { kind: "condition"; stay: string | null };
 
 export function parseHashRoute(hash: string): ParsedRoute {
@@ -52,6 +53,8 @@ export function parseHashRoute(hash: string): ParsedRoute {
 	if (path === "/staff") return { kind: "staff" };
 
 	if (path === "/attendance") return { kind: "attendance" };
+
+	if (path === "/servicedesk") return { kind: "servicedesk" };
 
 	const conditionMatch = path.match(/^\/condition(?:\/(.*))?$/);
 	if (conditionMatch) {

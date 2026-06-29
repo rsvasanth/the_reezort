@@ -502,6 +502,10 @@ def seed_doctype_permissions():
 	# Write/create only where staff actually mutate.
 	write_doctypes = ["Guest Folio", "Folio Line", "Stay", "Reservation", "Room", "Guest Profile", "Room Hold"]
 
+	# Service Desk: every operational role can raise/work tickets.
+	for role in all_roles:
+		grant("Service Ticket", role, write=True, create=True)
+
 	for doctype in read_doctypes:
 		for role in all_roles:
 			grant(doctype, role)

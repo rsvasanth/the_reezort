@@ -1,0 +1,42 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-06-29 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["naming_series", "resort_property", "subject", "category", "priority", "status", "description", "raised_by_type", "guest", "room", "stay", "source", "assigned_to", "opened_at", "sla_due", "responded_at", "resolved_at", "escalated", "escalated_at", "idempotency_key"],
+ "fields": [
+  {"fieldname": "naming_series", "fieldtype": "Select", "label": "Series", "options": "RZ-TKT-.YYYY.-.#####", "default": "RZ-TKT-.YYYY.-.#####", "reqd": 1},
+  {"fieldname": "resort_property", "fieldtype": "Link", "label": "Resort Property", "options": "Resort Property", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "subject", "fieldtype": "Data", "label": "Subject", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "category", "fieldtype": "Select", "label": "Category", "options": "Guest Request\nHousekeeping\nMaintenance\nIT\nConcierge\nComplaint\nOther", "reqd": 1, "default": "Guest Request", "in_list_view": 1},
+  {"fieldname": "priority", "fieldtype": "Select", "label": "Priority", "options": "Low\nNormal\nHigh\nUrgent", "reqd": 1, "default": "Normal", "in_list_view": 1},
+  {"fieldname": "status", "fieldtype": "Select", "label": "Status", "options": "Open\nIn Progress\nOn Hold\nResolved\nClosed\nCancelled", "reqd": 1, "default": "Open", "in_list_view": 1},
+  {"fieldname": "description", "fieldtype": "Text", "label": "Description"},
+  {"fieldname": "raised_by_type", "fieldtype": "Select", "label": "Raised By", "options": "Staff\nGuest", "default": "Staff"},
+  {"fieldname": "guest", "fieldtype": "Link", "label": "Guest", "options": "Guest Profile"},
+  {"fieldname": "room", "fieldtype": "Link", "label": "Room", "options": "Room"},
+  {"fieldname": "stay", "fieldtype": "Link", "label": "Stay", "options": "Stay"},
+  {"fieldname": "source", "fieldtype": "Select", "label": "Source", "options": "Front Desk\nPhone\nIn-Person\nApp\nInternal", "default": "Front Desk"},
+  {"fieldname": "assigned_to", "fieldtype": "Link", "label": "Assigned To", "options": "User"},
+  {"fieldname": "opened_at", "fieldtype": "Datetime", "label": "Opened At"},
+  {"fieldname": "sla_due", "fieldtype": "Datetime", "label": "SLA Due"},
+  {"fieldname": "responded_at", "fieldtype": "Datetime", "label": "Responded At"},
+  {"fieldname": "resolved_at", "fieldtype": "Datetime", "label": "Resolved At"},
+  {"fieldname": "escalated", "fieldtype": "Check", "label": "Escalated", "default": "0"},
+  {"fieldname": "escalated_at", "fieldtype": "Datetime", "label": "Escalated At"},
+  {"fieldname": "idempotency_key", "fieldtype": "Data", "label": "Idempotency Key", "unique": 1, "hidden": 1}
+ ],
+ "links": [],
+ "modified": "2026-06-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Service Ticket",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

@@ -1,0 +1,79 @@
+"""Shared ERPNext Sales Invoice / Payment Entry posting helpers.
+
+These helpers are used by the billing posting boundary only. They create and
+submit ERPNext financial documents from trusted billing service methods.
+"""
+
+import frappe
+from frappe import _
+from frappe.utils import flt, today
+
+
+def default_sales_taxes_template(company):
+	return frappe.db.get_value(
+		"Sales Taxes and Charges Template", {"company": company, "is_default": 1}, "name"
+	)
+
+
+def build_and_submit_sales_invoice(company, customer, currency, lines, taxes_template=None, remarks=None):
+	"""Build and submit a Sales Invoice for already-validated billing lines."""
+	from erpnext.controllers.accounts_controller import get_taxes_and_charges
+
+	si = frappe.new_doc("Sales Invoice")
+	si.company = company
+	si.customer = customer
+	si.currency = currency or "INR"
+	si.conversion_rate = 1
+	si.posting_date = today()
+	si.due_date = today()
+	if remarks:
+		si.remarks = remarks
+
+	for line in lines:
+		si.append(
+			"items",
+			{
+				"item_code": _line_value(line, "item_code"),
+				"description": _line_value(line, "description"),
+				"qty": flt(_line_value(line, "qty")) or 1,
+				"rate": flt(_line_value(line, "rate")),
+				"cost_center": _line_value(line, "cost_center"),
+				"discount_amount": flt(_line_value(line, "discount_amount")),
+			},
+		)
+
+	template = taxes_template if taxes_template is not None else default_sales_taxes_template(company)
+	if template:
+		si.taxes_and_charges = template
+		for tax in get_taxes_and_charges("Sales Taxes and Charges Template", template):
+			si.append("taxes", tax)
+
+	si.insert(ignore_permissions=True)
+	si.submit()
+	return si
+
+
+def create_payment_entry_for_invoice(sales_invoice, amount, mode_of_payment, reference_no=None):
+	"""Create and submit a Payment Entry allocated to a submitted Sales Invoice."""
+	from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
+
+	invoice_name = sales_invoice.name if hasattr(sales_invoice, "name") else sales_invoice
+	amount = flt(amount)
+	pe = get_payment_entry("Sales Invoice", invoice_name)
+	pe.mode_of_payment = mode_of_payment
+	pe.reference_no = reference_no or invoice_name
+	pe.reference_date = today()
+	if amount:
+		pe.paid_amount = amount
+		pe.received_amount = amount
+		for reference in pe.references:
+			reference.allocated_amount = amount
+	pe.insert(ignore_permissions=True)
+	pe.submit()
+	return pe.name
+
+
+def _line_value(line, fieldname):
+	if isinstance(line, dict):
+		return line.get(fieldname)
+	return getattr(line, fieldname, None)

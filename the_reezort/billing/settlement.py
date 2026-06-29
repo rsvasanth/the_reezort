@@ -10,8 +10,12 @@ import json
 
 import frappe
 from frappe import _
-from frappe.utils import flt, today
+from frappe.utils import flt
 
+from the_reezort.billing.erpnext_posting import (
+	build_and_submit_sales_invoice,
+	create_payment_entry_for_invoice,
+)
 from the_reezort.billing.posting import run_posting
 
 CHARGEABLE_LINE_TYPES = {"Charge", "Adjustment"}
@@ -55,64 +59,23 @@ def _billable_charge_lines(guest_folio):
 	return [row for row in rows if row.item_code]
 
 
-def _default_sales_taxes_template(company):
-	return frappe.db.get_value(
-		"Sales Taxes and Charges Template", {"company": company, "is_default": 1}, "name"
+def _create_sales_invoice(folio, charge_lines):
+	return build_and_submit_sales_invoice(
+		company=folio.company,
+		customer=folio.customer,
+		currency=folio.currency or "INR",
+		lines=charge_lines,
+		remarks=_("Folio {0}").format(folio.name),
 	)
 
 
-def _create_sales_invoice(folio, charge_lines):
-	from erpnext.controllers.accounts_controller import get_taxes_and_charges
-
-	si = frappe.new_doc("Sales Invoice")
-	si.company = folio.company
-	si.customer = folio.customer
-	si.currency = folio.currency or "INR"
-	si.conversion_rate = 1
-	si.posting_date = today()
-	si.due_date = today()
-	si.remarks = _("Folio {0}").format(folio.name)
-
-	for line in charge_lines:
-		si.append(
-			"items",
-			{
-				"item_code": line.item_code,
-				"description": line.description,
-				"qty": flt(line.qty) or 1,
-				"rate": flt(line.rate),
-				"cost_center": line.cost_center,
-				"discount_amount": flt(line.discount_amount),
-			},
-		)
-
-	template = _default_sales_taxes_template(folio.company)
-	if template:
-		si.taxes_and_charges = template
-		for tax in get_taxes_and_charges("Sales Taxes and Charges Template", template):
-			si.append("taxes", tax)
-
-	si.insert(ignore_permissions=True)
-	si.submit()
-	return si
-
-
 def _create_payment_entry(folio, sales_invoice, payment):
-	from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
-
-	amount = flt(payment.get("amount"))
-	pe = get_payment_entry("Sales Invoice", sales_invoice)
-	pe.mode_of_payment = payment.get("mode_of_payment") or payment.get("payment_kind")
-	pe.reference_no = payment.get("reference_no") or sales_invoice
-	pe.reference_date = today()
-	if amount:
-		pe.paid_amount = amount
-		pe.received_amount = amount
-		for reference in pe.references:
-			reference.allocated_amount = amount
-	pe.insert(ignore_permissions=True)
-	pe.submit()
-	return pe.name
+	return create_payment_entry_for_invoice(
+		sales_invoice=sales_invoice,
+		amount=payment.get("amount"),
+		mode_of_payment=payment.get("mode_of_payment") or payment.get("payment_kind"),
+		reference_no=payment.get("reference_no") or sales_invoice,
+	)
 
 
 def _mark_lines_posted(charge_lines, sales_invoice):

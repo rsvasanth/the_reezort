@@ -1,0 +1,29 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "creation": "2026-06-29 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Other",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": ["section", "item_label", "mandatory", "requires_photo", "pass_fail", "sort_order"],
+ "fields": [
+  {"fieldname": "section", "fieldtype": "Data", "in_list_view": 1, "label": "Section"},
+  {"fieldname": "item_label", "fieldtype": "Data", "in_list_view": 1, "label": "Item Label", "reqd": 1},
+  {"default": "0", "fieldname": "mandatory", "fieldtype": "Check", "label": "Mandatory"},
+  {"default": "0", "fieldname": "requires_photo", "fieldtype": "Check", "label": "Requires Photo"},
+  {"default": "0", "fieldname": "pass_fail", "fieldtype": "Check", "label": "Pass/Fail"},
+  {"fieldname": "sort_order", "fieldtype": "Int", "label": "Sort Order"}
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-06-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Housekeeping Checklist Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "idx",
+ "sort_order": "ASC",
+ "states": []
+}

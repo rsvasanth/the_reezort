@@ -1,0 +1,50 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-06-29 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "template_name",
+  "resort_property",
+  "task_type",
+  "room_type",
+  "vip_only",
+  "inspection_required",
+  "estimated_minutes",
+  "checklist_items"
+ ],
+ "fields": [
+  {"default": "RZ-HKCT-.YYYY.-.#####", "fieldname": "naming_series", "fieldtype": "Select", "label": "Series", "options": "RZ-HKCT-.YYYY.-.#####", "reqd": 1},
+  {"fieldname": "template_name", "fieldtype": "Data", "in_list_view": 1, "label": "Template Name", "reqd": 1},
+  {"fieldname": "resort_property", "fieldtype": "Link", "in_list_view": 1, "label": "Resort Property", "options": "Resort Property"},
+  {"fieldname": "task_type", "fieldtype": "Select", "in_list_view": 1, "label": "Task Type", "options": "Departure Cleaning\nStayover Cleaning\nArrival Touch-up\nTurndown\nDeep Cleaning\nAmenity Replenishment\nMinibar Check\nLinen Change\nRoom Inspection\nPublic Area Cleaning\nGuest Request Support\nMaintenance Follow-up", "reqd": 1},
+  {"fieldname": "room_type", "fieldtype": "Link", "label": "Room Type", "options": "Room Type"},
+  {"default": "0", "fieldname": "vip_only", "fieldtype": "Check", "label": "VIP Only"},
+  {"default": "0", "fieldname": "inspection_required", "fieldtype": "Check", "label": "Inspection Required"},
+  {"fieldname": "estimated_minutes", "fieldtype": "Int", "label": "Estimated Minutes"},
+  {"fieldname": "checklist_items", "fieldtype": "Table", "label": "Checklist Items", "options": "Housekeeping Checklist Item"}
+ ],
+ "indexes": [
+  ["resort_property", "task_type"],
+  ["room_type", "task_type"]
+ ],
+ "links": [],
+ "modified": "2026-06-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Housekeeping Checklist Template",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Resort Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 0, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Housekeeping", "share": 1, "write": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

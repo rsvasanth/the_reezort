@@ -18,6 +18,12 @@ def _as_dict(value):
 	return value or {}
 
 
+def _as_list(value):
+	if isinstance(value, str):
+		return json.loads(value) if value else []
+	return value or []
+
+
 def _envelope(data, warnings=None, blockers=None, next_actions=None):
 	return {
 		"ok": True,
@@ -52,6 +58,7 @@ def _task_data(task_doc):
 		"due_at": task_doc.due_at,
 		"assigned_user": task_doc.assigned_user,
 		"assigned_employee": task_doc.assigned_employee,
+		"checklist_template": task_doc.get("checklist_template"),
 		"requires_inspection": task_doc.requires_inspection,
 		"start_time": task_doc.start_time,
 		"completed_at": task_doc.completed_at,
@@ -122,6 +129,7 @@ def create_task(payload):
 			"due_at": payload.get("due_at"),
 			"assigned_user": payload.get("assigned_user"),
 			"assigned_employee": payload.get("assigned_employee"),
+			"checklist_template": payload.get("checklist_template"),
 			"stay": payload.get("stay"),
 			"reservation": payload.get("reservation"),
 			"source_doctype": payload.get("source_doctype"),
@@ -166,12 +174,115 @@ def pause_task(task):
 	return _envelope({"task": _task_data(task_doc)}, next_actions=["start_task"])
 
 
+def _item_key(row):
+	return (row.get("section") or "", row.get("item_label") or "")
+
+
+def _photos_by_item(photos):
+	photos = _as_list(photos)
+	mapped = {}
+	for index, photo in enumerate(photos):
+		if isinstance(photo, str):
+			mapped[("", str(index))] = photo
+			continue
+
+		key = (photo.get("section") or "", photo.get("item_label") or "")
+		if key[1]:
+			mapped[key] = photo.get("photo") or photo.get("file_url")
+	return mapped
+
+
+def _checklist_items(checklist):
+	checklist = _as_dict(checklist)
+	return _as_list(checklist.get("items") or checklist.get("result_items"))
+
+
+def _validate_and_save_checklist_result(task_doc, checklist=None, notes=None, photos=None, exception_approval=None):
+	template_name = task_doc.get("checklist_template")
+	checklist_payload = _as_dict(checklist)
+	if checklist_payload.get("template"):
+		template_name = checklist_payload.get("template")
+
+	if not template_name:
+		return None
+
+	template = frappe.get_doc("Housekeeping Checklist Template", template_name)
+	template_items = list(template.get("checklist_items") or [])
+	supplied_items = _checklist_items(checklist_payload)
+	supplied_by_key = {_item_key(item): item for item in supplied_items}
+	photo_by_key = _photos_by_item(photos)
+	has_exception = bool(exception_approval or task_doc.exception_approval)
+
+	for item in supplied_items:
+		key = _item_key(item)
+		if not item.get("photo") and key in photo_by_key:
+			item["photo"] = photo_by_key[key]
+
+	missing_mandatory = []
+	missing_photos = []
+	for template_item in template_items:
+		key = (template_item.section or "", template_item.item_label or "")
+		result_item = supplied_by_key.get(key)
+		if template_item.mandatory and not result_item:
+			missing_mandatory.append(template_item.item_label)
+			continue
+		if template_item.requires_photo and (not result_item or not result_item.get("photo")):
+			missing_photos.append(template_item.item_label)
+
+	if missing_mandatory and not has_exception:
+		frappe.throw(_("Mandatory checklist items missing: {0}").format(", ".join(missing_mandatory)))
+	if missing_photos and not has_exception:
+		frappe.throw(_("Checklist photos missing: {0}").format(", ".join(missing_photos)))
+
+	if not supplied_items and not has_exception:
+		return None
+
+	result = frappe.get_doc(
+		{
+			"doctype": "Housekeeping Checklist Result",
+			"housekeeping_task": task_doc.name,
+			"template": template.name,
+			"result_status": "Exception Approved" if has_exception else "Completed",
+			"completed_by": frappe.session.user,
+			"completed_at": now(),
+			"notes": notes,
+		}
+	)
+	for item in supplied_items:
+		result.append(
+			"result_items",
+			{
+				"section": item.get("section"),
+				"item_label": item.get("item_label"),
+				"result": item.get("result"),
+				"notes": item.get("notes"),
+				"photo": item.get("photo"),
+				"exception_flag": 1 if item.get("exception_flag") else 0,
+			},
+		)
+	result.insert(ignore_permissions=True)
+	return result
+
+
 @frappe.whitelist()
-def complete_task(task, completion_notes=None):
+def complete_task(task, checklist=None, notes=None, photos=None, exception_approval=None, completion_notes=None):
 	_require_permission("Housekeeping Task", "write")
 	task_doc = _get_task(task)
 	if task_doc.dnd_status in DND_BLOCKING_STATUSES:
 		frappe.throw(_("DND, refused, or access issue tasks cannot be completed without resolution."))
+
+	completion_notes = notes if notes is not None else completion_notes
+	if exception_approval:
+		task_doc.exception_approval = exception_approval
+		if not frappe.db.exists("DocType", "Housekeeping Exception Approval"):
+			task_doc.flags.ignore_links = True
+	checklist_result = _validate_and_save_checklist_result(
+		task_doc,
+		checklist=checklist,
+		notes=completion_notes,
+		photos=photos,
+		exception_approval=exception_approval,
+	)
 
 	task_doc.task_status = "Completed"
 	task_doc.completed_at = now()
@@ -195,7 +306,11 @@ def complete_task(task, completion_notes=None):
 		task_doc.save(ignore_permissions=True)
 
 	return _envelope(
-		{"task": _task_data(task_doc), "room_condition": room_condition},
+		{
+			"task": _task_data(task_doc),
+			"room_condition": room_condition,
+			"checklist_result": checklist_result.name if checklist_result else None,
+		},
 		next_actions=["inspect_task"] if task_doc.requires_inspection else [],
 	)
 
@@ -308,7 +423,7 @@ def _has_open_blocking_maintenance(room):
 
 
 @frappe.whitelist()
-def record_inspection(inspection, outcome, notes=None):
+def record_inspection(inspection, outcome, notes=None, checklist_result=None):
 	_require_permission("Room Inspection", "write")
 	if outcome not in INSPECTION_OUTCOMES:
 		frappe.throw(_("Unsupported inspection outcome: {0}").format(outcome))
@@ -320,6 +435,8 @@ def record_inspection(inspection, outcome, notes=None):
 
 	inspection_doc.notes = notes
 	inspection_doc.inspected_at = now()
+	if checklist_result:
+		frappe.db.set_value("Housekeeping Checklist Result", checklist_result, "room_inspection", inspection_doc.name)
 
 	if outcome == "Passed":
 		if _has_open_blocking_maintenance(inspection_doc.room):

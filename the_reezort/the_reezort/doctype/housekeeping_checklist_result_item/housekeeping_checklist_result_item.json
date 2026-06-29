@@ -1,0 +1,29 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "creation": "2026-06-29 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Other",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": ["section", "item_label", "result", "notes", "photo", "exception_flag"],
+ "fields": [
+  {"fieldname": "section", "fieldtype": "Data", "in_list_view": 1, "label": "Section"},
+  {"fieldname": "item_label", "fieldtype": "Data", "in_list_view": 1, "label": "Item Label"},
+  {"fieldname": "result", "fieldtype": "Data", "in_list_view": 1, "label": "Result"},
+  {"fieldname": "notes", "fieldtype": "Small Text", "label": "Notes"},
+  {"fieldname": "photo", "fieldtype": "Attach Image", "label": "Photo"},
+  {"default": "0", "fieldname": "exception_flag", "fieldtype": "Check", "label": "Exception Flag"}
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-06-29 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Housekeeping Checklist Result Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "idx",
+ "sort_order": "ASC",
+ "states": []
+}

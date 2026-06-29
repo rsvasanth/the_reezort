@@ -1,6 +1,6 @@
 import { FrappeProvider, useFrappeAuth } from "frappe-react-sdk";
 import { useEffect, useMemo, useState } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 
 import { AppSidebar } from "@/components/app-sidebar";
@@ -15,6 +15,8 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import data from "@/app/dashboard/data.json";
 import { FolioWorkspace } from "@/app/folio/FolioWorkspace";
+import HousekeepingBoard from "@/app/housekeeping/HousekeepingBoard";
+import ConditionCaptureScreen from "@/app/condition/ConditionCaptureScreen";
 import { parseHashRoute, useHashRoute } from "@/hooks/use-hash-route";
 import { toOperationalRows, toSectionCards } from "@/lib/dashboard-adapter";
 import {
@@ -27,6 +29,25 @@ function FullScreenLoader() {
 		<div className="flex min-h-svh items-center justify-center bg-background">
 			<Loader2 className="size-6 animate-spin text-muted-foreground" />
 		</div>
+	);
+}
+
+function AppShell({ children }: { children: ReactNode }) {
+	return (
+		<SidebarProvider
+			style={
+				{
+					"--sidebar-width": "18rem",
+					"--header-height": "3rem",
+				} as CSSProperties
+			}
+		>
+			<AppSidebar />
+			<SidebarInset>
+				<SiteHeader />
+				{children}
+			</SidebarInset>
+		</SidebarProvider>
 	);
 }
 
@@ -150,6 +171,18 @@ function AuthGate() {
 
 	if (route.kind === "folio") {
 		return <FolioWorkspace folioName={route.name} />;
+	}
+
+	if (route.kind === "housekeeping") {
+		return <HousekeepingBoard />;
+	}
+
+	if (route.kind === "condition" && route.stay) {
+		return (
+			<AppShell>
+				<ConditionCaptureScreen stay={route.stay} />
+			</AppShell>
+		);
 	}
 
 	return <Workspace />;

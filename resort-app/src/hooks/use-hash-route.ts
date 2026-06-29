@@ -3,12 +3,11 @@ import { useEffect, useState } from "react";
 /**
  * Read window.location.hash and subscribe to hashchange events.
  *
- * The folio workspace is mounted on hash routes:
- *   #/folio/<name>   → folio workspace
- *   (anything else)  → dashboard
- *
- * Keeping routing as a tiny hook avoids pulling in a router library;
- * the App-level switch consumes the parsed route.
+ * Hash routes (no router library):
+ *   #/folio/<name>        → folio workspace
+ *   #/housekeeping        → housekeeping board
+ *   #/condition/<stay>    → room condition capture for a stay
+ *   (anything else)       → dashboard
  */
 export function useHashRoute(): string {
 	const [hash, setHash] = useState<string>(() =>
@@ -28,17 +27,27 @@ export function useHashRoute(): string {
 
 export type ParsedRoute =
 	| { kind: "dashboard" }
-	| { kind: "folio"; name: string }
-	| { kind: "folio"; name: null };
+	| { kind: "folio"; name: string | null }
+	| { kind: "housekeeping" }
+	| { kind: "condition"; stay: string | null };
 
 export function parseHashRoute(hash: string): ParsedRoute {
-	// strip leading '#'
 	const path = hash.startsWith("#") ? hash.slice(1) : hash;
-	if (!path || path === "/" || path === "") return { kind: "dashboard" };
+	if (!path || path === "/") return { kind: "dashboard" };
+
 	const folioMatch = path.match(/^\/folio(?:\/(.*))?$/);
 	if (folioMatch) {
 		const name = folioMatch[1];
 		return { kind: "folio", name: name ? decodeURIComponent(name) : null };
 	}
+
+	if (path === "/housekeeping") return { kind: "housekeeping" };
+
+	const conditionMatch = path.match(/^\/condition(?:\/(.*))?$/);
+	if (conditionMatch) {
+		const stay = conditionMatch[1];
+		return { kind: "condition", stay: stay ? decodeURIComponent(stay) : null };
+	}
+
 	return { kind: "dashboard" };
 }

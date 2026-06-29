@@ -1,0 +1,153 @@
+{
+  "rooms": [
+    {
+      "name": "ROOM-101",
+      "room_number": "101",
+      "room_name": "Deluxe King 101",
+      "building": "Main Wing",
+      "floor": "1",
+      "room_type": "Deluxe King",
+      "housekeeping_status": "Dirty",
+      "occupancy_status": "Due Out",
+      "maintenance_status": "None",
+      "sellable_status": "Sellable",
+      "open_task": {
+        "id": "HK-TASK-0001",
+        "type": "Room Cleaning",
+        "status": "Open",
+        "assignee": null,
+        "assigned_user": null,
+        "assigned_employee": null,
+        "priority": "High",
+        "due_at": null
+      }
+    },
+    {
+      "name": "ROOM-102",
+      "room_number": "102",
+      "room_name": "Deluxe Twin 102",
+      "building": "Main Wing",
+      "floor": "1",
+      "room_type": "Deluxe Twin",
+      "housekeeping_status": "In Progress",
+      "occupancy_status": "Vacant",
+      "maintenance_status": "None",
+      "sellable_status": "Sellable",
+      "open_task": {
+        "id": "HK-TASK-0002",
+        "type": "Room Cleaning",
+        "status": "In Progress",
+        "assignee": "Priya S.",
+        "assigned_user": "priya@thereezort.com",
+        "assigned_employee": "EMP-0041",
+        "priority": "Normal",
+        "due_at": "2026-06-29T10:00:00"
+      }
+    },
+    {
+      "name": "ROOM-103",
+      "room_number": "103",
+      "room_name": "Standard Queen 103",
+      "building": "Main Wing",
+      "floor": "1",
+      "room_type": "Standard Queen",
+      "housekeeping_status": "Clean",
+      "occupancy_status": "Vacant",
+      "maintenance_status": "None",
+      "sellable_status": "Sellable",
+      "open_task": null
+    },
+    {
+      "name": "ROOM-201",
+      "room_number": "201",
+      "room_name": "Superior King 201",
+      "building": "Main Wing",
+      "floor": "2",
+      "room_type": "Superior King",
+      "housekeeping_status": "Inspected",
+      "occupancy_status": "Vacant",
+      "maintenance_status": "None",
+      "sellable_status": "Sellable",
+      "open_task": null
+    },
+    {
+      "name": "ROOM-202",
+      "room_number": "202",
+      "room_name": "Turndown Suite 202",
+      "building": "Main Wing",
+      "floor": "2",
+      "room_type": "Suite",
+      "housekeeping_status": "Turndown Required",
+      "occupancy_status": "Occupied",
+      "maintenance_status": "None",
+      "sellable_status": "Sellable",
+      "open_task": {
+        "id": "HK-TASK-0003",
+        "type": "Turndown",
+        "status": "Assigned",
+        "assignee": "Ravi K.",
+        "assigned_user": "ravi@thereezort.com",
+        "assigned_employee": "EMP-0055",
+        "priority": "Normal",
+        "due_at": "2026-06-29T18:00:00"
+      }
+    },
+    {
+      "name": "ROOM-203",
+      "room_number": "203",
+      "room_name": "Pickup Room 203",
+      "building": "Main Wing",
+      "floor": "2",
+      "room_type": "Deluxe King",
+      "housekeeping_status": "Pickup",
+      "occupancy_status": "Due In",
+      "maintenance_status": "None",
+      "sellable_status": "Sellable",
+      "open_task": {
+        "id": "HK-TASK-0004",
+        "type": "Pickup",
+        "status": "Assigned",
+        "assignee": "Meena R.",
+        "assigned_user": "meena@thereezort.com",
+        "assigned_employee": "EMP-0062",
+        "priority": "Urgent",
+        "due_at": "2026-06-29T14:00:00"
+      }
+    },
+    {
+      "name": "ROOM-301",
+      "room_number": "301",
+      "room_name": "Pool Villa 301",
+      "building": "Pool Wing",
+      "floor": "3",
+      "room_type": "Pool Villa",
+      "housekeeping_status": "Out of Service Cleaning",
+      "occupancy_status": "Vacant",
+      "maintenance_status": "Under Maintenance",
+      "sellable_status": "Not Sellable",
+      "open_task": {
+        "id": "HK-TASK-0005",
+        "type": "Deep Clean",
+        "status": "In Progress",
+        "assignee": "Suresh P.",
+        "assigned_user": "suresh@thereezort.com",
+        "assigned_employee": "EMP-0038",
+        "priority": "Normal",
+        "due_at": null
+      }
+    },
+    {
+      "name": "ROOM-302",
+      "room_number": "302",
+      "room_name": "Garden Cottage 302",
+      "building": "Pool Wing",
+      "floor": "3",
+      "room_type": "Garden Cottage",
+      "housekeeping_status": "Dirty",
+      "occupancy_status": "Due Out",
+      "maintenance_status": "None",
+      "sellable_status": "Sellable",
+      "open_task": null
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import { FrappeProvider } from "frappe-react-sdk";
+import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 
 import { AppSidebar } from "@/components/app-sidebar";
@@ -10,8 +11,47 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import data from "@/app/dashboard/data.json";
+import { toOperationalRows, toSectionCards } from "@/lib/dashboard-adapter";
+import {
+	getManagementDashboardSnapshot,
+	type DashboardSnapshot,
+} from "@/lib/resort-api";
 
 function App() {
+	const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
+	const [snapshotState, setSnapshotState] = useState<"loading" | "live" | "mock">(
+		"loading"
+	);
+
+	useEffect(() => {
+		let active = true;
+
+		getManagementDashboardSnapshot()
+			.then((nextSnapshot) => {
+				if (!active) return;
+				setSnapshot(nextSnapshot);
+				setSnapshotState("live");
+			})
+			.catch(() => {
+				if (!active) return;
+				setSnapshot(null);
+				setSnapshotState("mock");
+			});
+
+		return () => {
+			active = false;
+		};
+	}, []);
+
+	const cards = useMemo(
+		() => (snapshot ? toSectionCards(snapshot) : undefined),
+		[snapshot]
+	);
+	const tableData = useMemo(
+		() => (snapshot ? toOperationalRows(snapshot) : data),
+		[snapshot]
+	);
+
 	return (
 		<FrappeProvider>
 			<SidebarProvider
@@ -30,9 +70,17 @@ function App() {
 							<div className="grid gap-8 border-b pb-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-end">
 								<div className="max-w-3xl">
 									<div className="mb-6 flex flex-wrap gap-2">
-										<Badge variant="outline">Mock data</Badge>
+										<Badge variant="outline">
+											{snapshotState === "live"
+												? "Live Frappe data"
+												: snapshotState === "loading"
+													? "Loading data"
+													: "Mock fallback"}
+										</Badge>
 										<Badge variant="secondary">Management preview</Badge>
-										<Badge variant="secondary">ERPNext v15</Badge>
+										<Badge variant="secondary">
+											{snapshot?.property ?? "ERPNext v15"}
+										</Badge>
 									</div>
 									<h1 className="max-w-4xl text-5xl font-light leading-[0.94] text-foreground md:text-7xl">
 										Resort management cockpit.
@@ -52,11 +100,11 @@ function App() {
 								</div>
 							</div>
 						</section>
-						<SectionCards />
+						<SectionCards cards={cards} />
 						<div className="px-4 lg:px-6">
 							<ChartAreaInteractive />
 						</div>
-						<DataTable data={data} />
+						<DataTable data={tableData} />
 					</main>
 				</SidebarInset>
 			</SidebarProvider>

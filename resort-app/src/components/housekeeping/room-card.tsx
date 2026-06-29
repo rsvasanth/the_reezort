@@ -213,7 +213,7 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 							<TooltipContent>{occupancyStatusTooltip(room.occupancy_status)}</TooltipContent>
 						</Tooltip>
 					</TooltipProvider>
-					{room.maintenance_status !== "None" && (
+					{room.maintenance_status !== "Available" && (
 						<Badge
 							variant={maintStyle.variant}
 							className={`text-xs ${maintStyle.className ?? ""}`}

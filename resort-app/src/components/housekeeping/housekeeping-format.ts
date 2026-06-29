@@ -62,14 +62,16 @@ export function housekeepingStatusTooltip(status: HousekeepingStatus): string {
 export function occupancyStatusBadge(status: OccupancyStatus): StatusBadgeStyle {
 	switch (status) {
 		case "Occupied":
-		case "Stayover":
 			return { variant: "default" };
+		case "Reserved":
+			return { variant: "secondary" };
 		case "Due In":
 			return { variant: "secondary", className: "text-amber-700 dark:text-amber-300" };
 		case "Due Out":
 			return { variant: "secondary", className: "text-rose-700 dark:text-rose-300" };
-		case "Day Use":
-			return { variant: "secondary" };
+		case "Hold":
+			return { variant: "outline", className: "border-amber-500 text-amber-700 dark:text-amber-300" };
+		case "Checked Out":
 		case "Vacant":
 		default:
 			return { variant: "outline" };
@@ -80,14 +82,16 @@ export function occupancyStatusTooltip(status: OccupancyStatus): string {
 	switch (status) {
 		case "Occupied":
 			return "Room is currently occupied by a guest.";
-		case "Stayover":
-			return "Guest is staying over — do not disturb unless requested.";
+		case "Reserved":
+			return "Room is reserved for an upcoming arrival.";
 		case "Due In":
 			return "Guest is expected to check in today.";
 		case "Due Out":
 			return "Guest is expected to check out today.";
-		case "Day Use":
-			return "Day-use reservation in progress.";
+		case "Checked Out":
+			return "Guest has checked out — room awaiting turnover.";
+		case "Hold":
+			return "Room is on hold.";
 		case "Vacant":
 			return "Room is vacant.";
 		default:
@@ -102,7 +106,11 @@ export function maintenanceStatusBadge(status: MaintenanceStatus): StatusBadgeSt
 		case "Out of Service":
 		case "Under Maintenance":
 			return { variant: "destructive", className: "bg-orange-600 hover:bg-orange-600/90" };
-		case "None":
+		case "Maintenance Requested":
+			return { variant: "outline", className: "border-amber-500 text-amber-700 dark:text-amber-300" };
+		case "Preventive Maintenance":
+			return { variant: "outline", className: "border-blue-500 text-blue-700 dark:text-blue-300" };
+		case "Available":
 		default:
 			return { variant: "outline" };
 	}
@@ -134,6 +142,8 @@ export function taskStatusBadge(status: TaskStatus): StatusBadgeStyle {
 
 export function priorityBadge(priority: TaskPriority): StatusBadgeStyle {
 	switch (priority) {
+		case "VIP":
+			return { variant: "default", className: "bg-violet-600 hover:bg-violet-600/90" };
 		case "Urgent":
 			return { variant: "destructive" };
 		case "High":

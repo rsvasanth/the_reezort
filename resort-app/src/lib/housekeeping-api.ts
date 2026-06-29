@@ -27,21 +27,32 @@ export type HousekeepingStatus =
 	| "Turndown Required"
 	| "Out of Service Cleaning";
 
+// Mirrors the Room `occupancy_status` Select options exactly.
 export type OccupancyStatus =
 	| "Vacant"
+	| "Reserved"
 	| "Occupied"
 	| "Due In"
 	| "Due Out"
-	| "Stayover"
-	| "Day Use";
+	| "Checked Out"
+	| "Hold";
 
+// Mirrors the Room `maintenance_status` Select options exactly.
+// "Available" is the no-active-maintenance sentinel.
 export type MaintenanceStatus =
-	| "None"
+	| "Available"
+	| "Maintenance Requested"
+	| "Under Maintenance"
 	| "Out of Order"
 	| "Out of Service"
-	| "Under Maintenance";
+	| "Preventive Maintenance";
 
-export type SellableStatus = "Sellable" | "Not Sellable" | "Blocked";
+// Mirrors the Room `sellable_status` Select options exactly.
+export type SellableStatus =
+	| "Sellable"
+	| "Not Sellable"
+	| "Restricted"
+	| "Temporarily Blocked";
 
 // Mirrors the Housekeeping Task `task_type` Select options exactly.
 export type TaskType =
@@ -71,7 +82,7 @@ export type TaskStatus =
 	| "Skipped"
 	| "Cancelled";
 
-export type TaskPriority = "Low" | "Normal" | "High" | "Urgent";
+export type TaskPriority = "Low" | "Normal" | "High" | "Urgent" | "VIP";
 
 export type InspectionOutcome =
 	| "Passed"

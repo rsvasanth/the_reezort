@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --base=/assets/the_reezort/resort-app/ && yarn copy-html-entry",
+    "check:contracts": "node scripts/check-doctype-parity.mjs",
+    "build": "yarn check:contracts && vite build --base=/assets/the_reezort/resort-app/ && yarn copy-html-entry",
     "lint": "oxlint",
     "preview": "vite preview",
     "test:e2e": "playwright test",

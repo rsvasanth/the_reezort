@@ -451,6 +451,12 @@ def record_inspection(inspection, outcome, notes=None, checklist_result=None):
 			source_name=inspection_doc.name,
 			reason=notes,
 		)
+		# Close the task on a passed inspection so it leaves the open board.
+		if inspection_doc.housekeeping_task:
+			passed_task = frappe.get_doc("Housekeeping Task", inspection_doc.housekeeping_task)
+			if passed_task.task_status != "Completed":
+				passed_task.task_status = "Completed"
+				passed_task.save(ignore_permissions=True)
 		return _envelope({"inspection": _inspection_data(inspection_doc)}, next_actions=[])
 
 	if outcome == "Accepted With Exception":

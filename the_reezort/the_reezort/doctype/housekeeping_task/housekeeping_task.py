@@ -10,7 +10,7 @@ ALLOWED_TRANSITIONS = {
 	"In Progress": {"Paused", "Completed", "Cancelled"},
 	"Paused": {"In Progress", "Cancelled"},
 	"Completed": {"Inspection Required", "Cancelled"},
-	"Inspection Required": {"Rework Required", "Cancelled"},
+	"Inspection Required": {"Completed", "Rework Required", "Cancelled"},
 	"Rework Required": {"Assigned", "Cancelled"},
 }
 

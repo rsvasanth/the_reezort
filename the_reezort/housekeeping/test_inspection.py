@@ -84,6 +84,8 @@ class TestRoomInspectionAPI(FrappeTestCase):
 
 		self.assertEqual(result["inspection_status"], "Passed")
 		self.assertEqual(room.housekeeping_status, "Inspected")
+		# A passed inspection closes the task so it leaves the open board.
+		self.assertEqual(frappe.db.get_value("Housekeeping Task", task_name, "task_status"), "Completed")
 		self.assertEqual(
 			frappe.db.count(
 				"Room Condition Log",

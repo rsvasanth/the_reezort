@@ -43,21 +43,32 @@ export type MaintenanceStatus =
 
 export type SellableStatus = "Sellable" | "Not Sellable" | "Blocked";
 
+// Mirrors the Housekeeping Task `task_type` Select options exactly.
 export type TaskType =
-	| "Room Cleaning"
+	| "Departure Cleaning"
+	| "Stayover Cleaning"
+	| "Arrival Touch-up"
 	| "Turndown"
-	| "Inspection"
-	| "Deep Clean"
-	| "Maintenance"
-	| "Special Request"
-	| "Pickup";
+	| "Deep Cleaning"
+	| "Amenity Replenishment"
+	| "Minibar Check"
+	| "Linen Change"
+	| "Room Inspection"
+	| "Public Area Cleaning"
+	| "Guest Request Support"
+	| "Maintenance Follow-up";
 
+// Mirrors the Housekeeping Task `task_status` Select options exactly.
 export type TaskStatus =
-	| "Open"
+	| "Draft"
+	| "Queued"
 	| "Assigned"
 	| "In Progress"
 	| "Paused"
 	| "Completed"
+	| "Inspection Required"
+	| "Rework Required"
+	| "Skipped"
 	| "Cancelled";
 
 export type TaskPriority = "Low" | "Normal" | "High" | "Urgent";
@@ -111,8 +122,11 @@ export type InspectionResult = {
 export type CreateTaskPayload = {
 	room: string;
 	task_type: TaskType;
+	/** Required server-side for dedup; generate one per create intent. */
+	idempotency_key: string;
 	priority?: TaskPriority;
 	due_at?: string | null;
+	requires_inspection?: boolean;
 	notes?: string | null;
 };
 

@@ -118,9 +118,15 @@ export function taskStatusBadge(status: TaskStatus): StatusBadgeStyle {
 			return { variant: "secondary" };
 		case "Paused":
 			return { variant: "outline", className: "border-amber-500 text-amber-700 dark:text-amber-300" };
-		case "Cancelled":
+		case "Inspection Required":
+			return { variant: "default", className: "bg-violet-600 hover:bg-violet-600/90" };
+		case "Rework Required":
 			return { variant: "destructive" };
-		case "Open":
+		case "Cancelled":
+		case "Skipped":
+			return { variant: "destructive" };
+		case "Queued":
+		case "Draft":
 		default:
 			return { variant: "outline" };
 	}

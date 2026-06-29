@@ -1,13 +1,14 @@
 /**
  * RoomCard — renders a single room tile in the housekeeping board.
  *
- * Action buttons are determined by the open_task.status state machine:
- *   (no task)             → [Assign Task button creates + assigns]
- *   Open                  → [Assign]
- *   Assigned              → [Start]
+ * Action buttons are determined by the open_task.status state machine
+ * (statuses mirror the Housekeeping Task doctype):
+ *   (no task)             → [Create Task]
+ *   Queued                → [Assign]
+ *   Assigned / Paused     → [Start]
  *   In Progress           → [Pause] [Complete]
- *   Paused                → [Start (resume)]
- *   Completed             → [Inspect]
+ *   Inspection Required   → [Inspect]
+ *   Completed             → leaves the board (room clean/inspected)
  *
  * In mock mode (isMock=true) all action buttons are hidden.
  */
@@ -92,10 +93,17 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 
 	async function handleAssign() {
 		if (!task) {
-			// No task yet — create one (Room Cleaning by default) then the board refresh
-			// will show the new task in Open status. Staff can assign from next render.
+			// No task yet — open a Departure Cleaning task (the turnover default for a
+			// vacant dirty room). requires_inspection keeps it on the board through the
+			// inspection step. A fresh idempotency key per click; the busy-guard and the
+			// hidden-when-open button prevent duplicate creates.
 			await runMutation("Create task", () =>
-				createTask({ room: room.name, task_type: "Room Cleaning" }),
+				createTask({
+					room: room.name,
+					task_type: "Departure Cleaning",
+					idempotency_key: crypto.randomUUID(),
+					requires_inspection: true,
+				}),
 				"Task created"
 			);
 			return;
@@ -156,16 +164,17 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 
 	// Derive valid next actions from task status
 	const showCreate = !isMock && !task;
-	const showAssign = !isMock && task?.status === "Open";
+	const showAssign = !isMock && task?.status === "Queued";
 	const showStart = !isMock && (task?.status === "Assigned" || task?.status === "Paused");
 	const showPause = !isMock && task?.status === "In Progress";
 	const showComplete = !isMock && task?.status === "In Progress";
-	const showInspect = !isMock && task?.status === "Completed";
+	const showInspect =
+		!isMock && (task?.status === "Inspection Required" || task?.status === "Completed");
 
 	const hasActions = showCreate || showAssign || showStart || showPause || showComplete || showInspect;
 
 	return (
-		<Card className="flex flex-col gap-0 overflow-hidden">
+		<Card className="flex flex-col gap-0 overflow-hidden" data-testid={`room-${room.room_number}`}>
 			<CardContent className="flex flex-col gap-3 p-4">
 				{/* Header: room number + housekeeping status */}
 				<div className="flex items-start justify-between gap-2">

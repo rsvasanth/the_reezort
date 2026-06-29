@@ -8,7 +8,10 @@ export default defineConfig({
 	testDir: "./e2e",
 	timeout: 45_000,
 	expect: { timeout: 15_000 },
+	// Tests share one demo user and mutate live server state (sessions, tasks),
+	// so run serially — parallel workers cross-contaminate the shared session.
 	fullyParallel: false,
+	workers: 1,
 	retries: 0,
 	reporter: [["list"]],
 	use: {

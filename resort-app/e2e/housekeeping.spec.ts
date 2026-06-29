@@ -30,4 +30,43 @@ test.describe("Housekeeping", () => {
 				.first()
 		).toBeVisible();
 	});
+
+	test("task lifecycle: create → assign → start → complete → inspect", async ({ page }) => {
+		await login(page);
+		await page.getByRole("link", { name: "Housekeeping" }).click();
+		await expect(page).toHaveURL(/#\/housekeeping/);
+
+		// Pick a room that currently has no open task (shows "Create Task").
+		const createCard = page
+			.locator('[data-testid^="room-"]')
+			.filter({ has: page.getByRole("button", { name: "Create Task" }) })
+			.first();
+		await expect(createCard).toBeVisible();
+		const testid = await createCard.getAttribute("data-testid");
+		expect(testid).toBeTruthy();
+
+		// Re-scope by testid — the board re-fetches after every mutation and re-renders.
+		const card = page.locator(`[data-testid="${testid}"]`);
+
+		// Create → task is Queued → [Assign]
+		await card.getByRole("button", { name: "Create Task" }).click();
+		await expect(card.getByRole("button", { name: "Assign" })).toBeVisible();
+		await expect(card.getByText("Departure Cleaning")).toBeVisible();
+
+		// Assign → Assigned → [Start]
+		await card.getByRole("button", { name: "Assign" }).click();
+		await expect(card.getByRole("button", { name: "Start" })).toBeVisible();
+
+		// Start → In Progress → [Pause] [Complete]
+		await card.getByRole("button", { name: "Start" }).click();
+		await expect(card.getByRole("button", { name: "Complete" })).toBeVisible();
+
+		// Complete → Inspection Required → [Inspect]
+		await card.getByRole("button", { name: "Complete" }).click();
+		await expect(card.getByRole("button", { name: "Inspect" })).toBeVisible();
+
+		// Inspect (Passed) closes the task → card returns to [Create Task]
+		await card.getByRole("button", { name: "Inspect" }).click();
+		await expect(card.getByRole("button", { name: "Create Task" })).toBeVisible();
+	});
 });

@@ -13,8 +13,8 @@
       "sellable_status": "Sellable",
       "open_task": {
         "id": "HK-TASK-0001",
-        "type": "Room Cleaning",
-        "status": "Open",
+        "type": "Departure Cleaning",
+        "status": "Queued",
         "assignee": null,
         "assigned_user": null,
         "assigned_employee": null,
@@ -35,7 +35,7 @@
       "sellable_status": "Sellable",
       "open_task": {
         "id": "HK-TASK-0002",
-        "type": "Room Cleaning",
+        "type": "Stayover Cleaning",
         "status": "In Progress",
         "assignee": "Priya S.",
         "assigned_user": "priya@thereezort.com",
@@ -105,7 +105,7 @@
       "sellable_status": "Sellable",
       "open_task": {
         "id": "HK-TASK-0004",
-        "type": "Pickup",
+        "type": "Arrival Touch-up",
         "status": "Assigned",
         "assignee": "Meena R.",
         "assigned_user": "meena@thereezort.com",
@@ -127,7 +127,7 @@
       "sellable_status": "Not Sellable",
       "open_task": {
         "id": "HK-TASK-0005",
-        "type": "Deep Clean",
+        "type": "Deep Cleaning",
         "status": "In Progress",
         "assignee": "Suresh P.",
         "assigned_user": "suresh@thereezort.com",

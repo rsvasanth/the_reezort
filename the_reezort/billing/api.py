@@ -390,3 +390,39 @@ def get_folio_detail(guest_folio):
 		},
 		next_actions=next_actions,
 	)
+
+
+@frappe.whitelist()
+def get_active_folios(limit=20):
+	"""Live list of in-house / open folios for the workspace sidebar."""
+	_require_permission("Guest Folio", "read")
+
+	folios = frappe.get_all(
+		"Guest Folio",
+		filters={"folio_status": ["in", ["Draft", "Open", "Under Review", "Ready for Settlement"]]},
+		fields=["name", "customer", "stay", "folio_status", "outstanding_amount", "currency"],
+		order_by="modified desc",
+		limit=int(limit),
+	)
+
+	result = []
+	for folio in folios:
+		guest = folio.customer
+		room = None
+		if folio.stay:
+			stay = frappe.db.get_value("Stay", folio.stay, ["primary_guest_name", "current_room"], as_dict=True)
+			if stay:
+				guest = stay.primary_guest_name or guest
+				room = stay.current_room
+		result.append(
+			{
+				"name": folio.name,
+				"guest": guest,
+				"room": room,
+				"folio_status": folio.folio_status,
+				"outstanding": flt(folio.outstanding_amount),
+				"currency": folio.currency,
+			}
+		)
+
+	return _envelope({"folios": result})

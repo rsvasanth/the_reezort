@@ -4,6 +4,7 @@ import { LogOutIcon, MoreVerticalIcon } from "lucide-react"
 import { useFrappeAuth } from "frappe-react-sdk"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +25,7 @@ export function NavUser({
 }: {
   user: {
     name: string
+    role: string
     email: string
     avatar: string
   }
@@ -39,7 +41,8 @@ export function NavUser({
     }
   }
 
-  const initials = (user.name || "?").replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() || "RZ"
+  const initials =
+    (user.name || "?").replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() || "RZ"
 
   return (
     <SidebarMenu>
@@ -48,17 +51,22 @@ export function NavUser({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
+              data-testid="user-menu-trigger"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg grayscale">
                 <AvatarImage src={user.avatar} alt={user.name} />
                 <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
+              <div className="grid flex-1 gap-0.5 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs text-muted-foreground">
-                  {user.email}
-                </span>
+                <Badge
+                  variant="secondary"
+                  data-testid="user-role"
+                  className="w-fit px-1.5 py-0 text-[10px] font-normal"
+                >
+                  {user.role}
+                </Badge>
               </div>
               <MoreVerticalIcon className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -83,7 +91,7 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
+            <DropdownMenuItem onClick={handleLogout} data-testid="logout">
               <LogOutIcon />
               Log out
             </DropdownMenuItem>

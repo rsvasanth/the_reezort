@@ -23,6 +23,7 @@ import { useFrappeAuth } from "frappe-react-sdk";
 
 import { NavMain, type NavItem } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
+import { useUserProfile } from "@/hooks/use-user-profile";
 import {
 	Sidebar,
 	SidebarContent,
@@ -57,6 +58,7 @@ type ActiveFolio = { name: string; guest: string; room: string | null };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const { currentUser } = useFrappeAuth();
+	const profile = useUserProfile(currentUser);
 	const [folios, setFolios] = useState<ActiveFolio[]>([]);
 
 	useEffect(() => {
@@ -80,8 +82,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	}));
 
 	const user = {
-		name: currentUser ?? "Resort staff",
-		email: currentUser ? "Signed in" : "",
+		name: profile?.fullName ?? "Resort staff",
+		role: profile?.primaryRole ?? "Staff",
+		email: profile?.user ?? "",
 		avatar: "",
 	};
 

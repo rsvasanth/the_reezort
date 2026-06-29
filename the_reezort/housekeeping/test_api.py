@@ -108,8 +108,8 @@ class TestHousekeepingAPI(FrappeTestCase):
 		room.reload()
 
 		self.assertEqual(result["task"]["task_status"], "Inspection Required")
-		self.assertEqual(result["room_condition"], "Inspected-pending")
-		self.assertEqual(room.housekeeping_status, "Inspected-pending")
+		self.assertEqual(result["room_condition"], "Clean")
+		self.assertEqual(room.housekeeping_status, "Clean")
 
 	def test_create_task_is_idempotent_on_idempotency_key(self):
 		_property_doc, room = self.make_inventory_setup("IDEMP")

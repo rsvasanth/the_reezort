@@ -291,7 +291,7 @@ def complete_task(task, checklist=None, notes=None, photos=None, exception_appro
 
 	room_condition = None
 	if task_doc.room:
-		room_condition = "Inspected-pending" if task_doc.requires_inspection else "Clean"
+		room_condition = "Clean"
 		log_room_condition(
 			task_doc.room,
 			"Housekeeping",

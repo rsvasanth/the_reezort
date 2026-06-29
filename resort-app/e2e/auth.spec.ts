@@ -2,6 +2,8 @@ import { test, expect } from "@playwright/test";
 
 const DEMO_USER = process.env.E2E_USER ?? "gm@thereezort.com";
 const DEMO_PASSWORD = process.env.E2E_PASSWORD ?? "Reezort@Demo2026";
+const DEMO_NAME = process.env.E2E_NAME ?? "General Manager";
+const DEMO_ROLE = process.env.E2E_ROLE ?? "Resort Manager";
 
 test.describe("Auth", () => {
 	test("login lands on the workspace, then logout returns to sign-in", async ({ page }) => {
@@ -18,12 +20,13 @@ test.describe("Auth", () => {
 		// Login reloads; the workspace shell should appear.
 		await expect(page.getByRole("link", { name: "Executive cockpit" })).toBeVisible();
 
-		// Identity is shown in the sidebar footer.
-		await expect(page.getByText(DEMO_USER).first()).toBeVisible();
+		// Role-synced identity: name + role badge in the sidebar footer.
+		await expect(page.getByText(DEMO_NAME).first()).toBeVisible();
+		await expect(page.getByTestId("user-role")).toHaveText(DEMO_ROLE);
 
 		// Log out via the user menu.
-		await page.getByRole("button", { name: new RegExp(DEMO_USER, "i") }).first().click();
-		await page.getByRole("menuitem", { name: "Log out" }).click();
+		await page.getByTestId("user-menu-trigger").click();
+		await page.getByTestId("logout").click();
 
 		// Back to the sign-in screen.
 		await expect(page.getByRole("heading", { name: "Staff Workspace" })).toBeVisible();

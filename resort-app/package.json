@@ -8,6 +8,7 @@
     "build": "vite build --base=/assets/the_reezort/resort-app/ && yarn copy-html-entry",
     "lint": "oxlint",
     "preview": "vite preview",
+    "test:e2e": "playwright test",
     "copy-html-entry": "cp ../the_reezort/public/resort-app/index.html ../the_reezort/www/resort-app.html"
   },
   "dependencies": {
@@ -42,6 +43,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",

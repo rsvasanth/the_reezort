@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
 	BarChartIcon,
 	BedDoubleIcon,
+	ClockIcon,
 	BellIcon,
 	CalendarDaysIcon,
 	DatabaseIcon,
@@ -52,6 +53,7 @@ const operations: NavItem[] = [
 const system: NavItem[] = [
 	{ title: "Property management", url: "/resort-app#/setup", icon: HotelIcon, status: "live" },
 	{ title: "Staff & access", url: "/resort-app#/staff", icon: UsersIcon, status: "live" },
+	{ title: "Attendance", url: "/resort-app#/attendance", icon: ClockIcon, status: "live" },
 	{ title: "ERPNext desk", url: "/app", icon: DatabaseIcon, status: "live" },
 	{ title: "Integrations", url: "#", icon: PlugIcon, status: "soon" },
 	{ title: "Security & audit", url: "#", icon: ShieldCheckIcon, status: "soon" },

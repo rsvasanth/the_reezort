@@ -133,3 +133,49 @@ export async function setStaffEnabled(user: string, enabled: boolean): Promise<{
 		body: { user, enabled: enabled ? 1 : 0 },
 	});
 }
+
+// ---------- Attendance & Roster ----------
+
+export type AttendanceRow = {
+	employee: string;
+	employee_name: string;
+	designation: string | null;
+	image: string | null;
+	user: string | null;
+	clocked: "IN" | "OUT" | null;
+	last_time: string | null;
+	attendance_status: string | null;
+	shift: string | null;
+};
+
+export type AttendanceBoard = {
+	date: string;
+	board: AttendanceRow[];
+	statuses: string[];
+};
+
+export async function getAttendanceBoard(date?: string): Promise<AttendanceBoard> {
+	return callStaff("the_reezort.staff.attendance_api.get_attendance_board", {
+		method: "GET",
+		params: date ? { date } : {},
+	});
+}
+
+export async function clockIn(employee: string): Promise<{ employee: string; log_type: string }> {
+	return callStaff("the_reezort.staff.attendance_api.clock_in", { method: "POST", body: { employee } });
+}
+
+export async function clockOut(employee: string): Promise<{ employee: string; log_type: string }> {
+	return callStaff("the_reezort.staff.attendance_api.clock_out", { method: "POST", body: { employee } });
+}
+
+export async function markAttendance(
+	employee: string,
+	status: string,
+	date?: string
+): Promise<{ attendance: string; status: string; reused: boolean }> {
+	return callStaff("the_reezort.staff.attendance_api.mark_attendance", {
+		method: "POST",
+		body: { employee, status, date },
+	});
+}

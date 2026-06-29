@@ -19,6 +19,7 @@ import HousekeepingBoard from "@/app/housekeeping/HousekeepingBoard";
 import ConditionCaptureScreen from "@/app/condition/ConditionCaptureScreen";
 import PropertyManagementScreen from "@/app/property/PropertyManagementScreen";
 import StaffAccessScreen from "@/app/staff/StaffAccessScreen";
+import AttendanceScreen from "@/app/staff/AttendanceScreen";
 import { parseHashRoute, useHashRoute } from "@/hooks/use-hash-route";
 import { canAccessDesk, useUserProfile } from "@/hooks/use-user-profile";
 import { toOperationalRows, toSectionCards } from "@/lib/dashboard-adapter";
@@ -196,6 +197,14 @@ function AuthGate() {
 		return (
 			<AppShell>
 				<StaffAccessScreen />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "attendance") {
+		return (
+			<AppShell>
+				<AttendanceScreen />
 			</AppShell>
 		);
 	}

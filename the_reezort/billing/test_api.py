@@ -170,7 +170,8 @@ class TestBillingAPI(FrappeTestCase):
 		self.assertTrue(result["ok"])
 		self.assertEqual(result["data"]["folio"]["name"], folio["name"])
 		self.assertEqual(result["data"]["totals"]["total_charges"], 900)
-		self.assertEqual(result["next_actions"], ["add_line"])
+		# A folio carrying unposted charges now offers settlement too.
+		self.assertEqual(result["next_actions"], ["add_line", "open_settlement"])
 		self.assertIn("guest_image", result["data"]["folio"])
 		self.assertIsNone(result["data"]["folio"]["guest_image"])
 		self.assertEqual(str(result["data"]["lines"][0]["service_date"]), today())

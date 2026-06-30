@@ -208,6 +208,27 @@ class TestCheckInProcess(FrappeTestCase):
 		self.assertEqual(charges[0].qty, 2)  # 2 nights
 		self.assertGreater(charges[0].amount, 0)
 
+	def test_finalize_posts_gst_estimate_to_folio(self):
+		res = self._reservation()
+		save_guest_kyc(res.name, {"id_type": "Passport", "id_number": "P9"}, verify=1)
+		save_registration_card(res.name, {"signature": "data:image/png;base64,AAAA", "terms_accepted": 1})
+		result = finalize_check_in(res.name)
+
+		tax = frappe.get_all(
+			"Folio Line",
+			filters={"guest_folio": result["folio"], "line_type": "Tax Preview"},
+			fields=["amount"],
+		)
+		self.assertEqual(len(tax), 1)
+		self.assertGreater(tax[0].amount, 0)
+		# Folio outstanding now includes the GST estimate.
+		folio = frappe.get_doc("Guest Folio", result["folio"])
+		self.assertGreater(folio.total_taxes_estimated, 0)
+		self.assertEqual(
+			folio.outstanding_amount,
+			folio.total_charges + folio.total_taxes_estimated - folio.total_paid,
+		)
+
 	def test_room_charge_is_idempotent_on_recheckin(self):
 		res = self._reservation()
 		save_guest_kyc(res.name, {"id_type": "Passport", "id_number": "P9"}, verify=1)

@@ -236,6 +236,7 @@ def _post_accommodation_charge(stay_doc, folio_name):
 	) or {}
 	item_code = rt.get("erpnext_item") or ROOM_ITEM_BY_CODE.get(rt.get("room_type_code"))
 
+	amount = nights * per_night
 	line = frappe.get_doc(
 		{
 			"doctype": "Folio Line",
@@ -249,13 +250,48 @@ def _post_accommodation_charge(stay_doc, folio_name):
 			"item_code": item_code,
 			"qty": nights,
 			"rate": per_night,
-			"amount": nights * per_night,
+			"amount": amount,
 			"tax_treatment": "Standard",
 			"description": f"Accommodation: {rt.get('room_type_name') or stay_doc.room_type} × {nights} night(s)",
 		}
 	)
 	line.insert(ignore_permissions=True)
+
+	# Estimated GST so the folio's outstanding reflects the tax-inclusive amount
+	# before the invoice is posted (the authoritative tax lands on the SI at settle).
+	_post_tax_estimate(stay_doc, folio_name, amount)
 	return line.name
+
+
+def _post_tax_estimate(stay_doc, folio_name, taxable_amount):
+	"""Post/refresh a Tax Preview folio line estimating GST on the accommodation charge."""
+	from the_reezort.billing.erpnext_posting import default_sales_tax_rate
+
+	key = f"room-tax:{stay_doc.name}"
+	if frappe.db.get_value("Folio Line", {"idempotency_key": key}, "name"):
+		return
+	company = frappe.db.get_value("Guest Folio", folio_name, "company")
+	rate_pct = default_sales_tax_rate(company) if company else 0
+	if rate_pct <= 0:
+		return
+	tax_amount = flt(taxable_amount) * rate_pct / 100.0
+	frappe.get_doc(
+		{
+			"doctype": "Folio Line",
+			"guest_folio": folio_name,
+			"line_type": "Tax Preview",
+			"source_module": "Room",
+			"source_doctype": "Stay",
+			"source_name": stay_doc.name,
+			"idempotency_key": key,
+			"service_date": today(),
+			"qty": 1,
+			"rate": tax_amount,
+			"amount": tax_amount,
+			"tax_treatment": "Standard",
+			"description": f"Estimated GST @ {rate_pct:g}%",
+		}
+	).insert(ignore_permissions=True)
 
 
 def _ensure_guest_profile(reservation_doc):

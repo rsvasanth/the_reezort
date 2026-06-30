@@ -5,6 +5,7 @@ from frappe.utils import add_days, today
 from frappe.utils import flt
 
 from the_reezort.billing.api import get_folio_detail, get_or_create_folio
+from the_reezort.billing.deposits import record_deposit
 from the_reezort.billing.settlement import settle_folio
 from the_reezort.pms.api import check_in
 from the_reezort.setup.demo_seed import (
@@ -126,6 +127,24 @@ class TestFolioSettlement(FrappeTestCase):
 		settle_folio(folio)
 		after = get_folio_detail(folio)["next_actions"]
 		self.assertNotIn("open_settlement", after)  # posted → no longer offered
+
+	def test_deposit_is_allocated_and_folio_nets_to_zero(self):
+		folio, _stay, net = self._folio_with_room_charge()
+		grand_total = net * 1.18
+		# Take a deposit, then settle paying the GST-inclusive remainder.
+		record_deposit(folio, amount=10000, mode_of_payment="Cash")
+		remainder = grand_total - 10000
+
+		result = settle_folio(folio, payments=[{"mode_of_payment": "Cash", "amount": remainder}])
+
+		invoice = frappe.get_doc("Sales Invoice", result["data"]["sales_invoices"][0])
+		# The deposit advance is allocated onto the invoice.
+		self.assertAlmostEqual(flt(invoice.total_advance), 10000, delta=1)
+		# Folio fully settled: deposit + settlement payment cover the grand total.
+		fol = frappe.db.get_value("Guest Folio", folio, ["folio_status", "outstanding_amount", "total_paid"], as_dict=True)
+		self.assertEqual(fol.folio_status, "Settled")
+		self.assertEqual(fol.outstanding_amount, 0)
+		self.assertAlmostEqual(fol.total_paid, grand_total, delta=1)
 
 	def test_settle_without_charges_is_blocked(self):
 		# Open a folio directly (no check-in) so it carries no charges.

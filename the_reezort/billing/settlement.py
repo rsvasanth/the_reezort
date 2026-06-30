@@ -59,6 +59,23 @@ def _billable_charge_lines(guest_folio):
 	return [row for row in rows if row.item_code]
 
 
+def _folio_deposit_pes(guest_folio):
+	"""The on-account Payment Entries from this folio's deposits, to net at settle."""
+	return frappe.get_all(
+		"Folio Line",
+		filters={"guest_folio": guest_folio, "line_type": "Deposit Application", "erpnext_payment_entry": ["is", "set"]},
+		pluck="erpnext_payment_entry",
+	)
+
+
+def _deposit_total(guest_folio):
+	return flt(
+		frappe.db.get_value(
+			"Folio Line", {"guest_folio": guest_folio, "line_type": "Deposit Application"}, "sum(amount)"
+		)
+	)
+
+
 def _create_sales_invoice(folio, charge_lines):
 	return build_and_submit_sales_invoice(
 		company=folio.company,
@@ -66,6 +83,7 @@ def _create_sales_invoice(folio, charge_lines):
 		currency=folio.currency or "INR",
 		lines=charge_lines,
 		remarks=_("Folio {0}").format(folio.name),
+		advance_pes=_folio_deposit_pes(folio.name),
 	)
 
 
@@ -88,8 +106,10 @@ def _mark_lines_posted(charge_lines, sales_invoice):
 		)
 
 
-def _finalize_folio(folio, sales_invoice, payments_total, grand_total):
-	fully_paid = payments_total >= grand_total and grand_total > 0
+def _finalize_folio(folio, sales_invoice, payments_total, grand_total, deposit_total=0):
+	# Effective paid = settlement payments + the deposit advance already collected.
+	effective_paid = flt(payments_total) + flt(deposit_total)
+	fully_paid = effective_paid >= grand_total and grand_total > 0
 	frappe.db.set_value(
 		"Guest Folio",
 		folio.name,
@@ -97,8 +117,8 @@ def _finalize_folio(folio, sales_invoice, payments_total, grand_total):
 			"posting_status": "Posted",
 			"folio_status": "Settled" if fully_paid else "Ready for Settlement",
 			"balance_status": "Settled" if fully_paid else "Outstanding",
-			"total_paid": payments_total,
-			"outstanding_amount": max(grand_total - payments_total, 0),
+			"total_paid": effective_paid,
+			"outstanding_amount": max(grand_total - effective_paid, 0),
 		},
 		update_modified=False,
 	)
@@ -142,12 +162,14 @@ def settle_folio(guest_folio, payments=None, idempotency_key=None):
 	if not charge_lines:
 		frappe.throw(_("Folio {0} has no billable charges to settle.").format(folio.name))
 
+	deposit_total = _deposit_total(guest_folio)
+
 	def operation():
 		sales_invoice = _create_sales_invoice(folio, charge_lines)
 		payment_entries = [_create_payment_entry(folio, sales_invoice.name, p) for p in payments]
 		payments_total = sum(flt(p.get("amount")) for p in payments)
 		_mark_lines_posted(charge_lines, sales_invoice.name)
-		_finalize_folio(folio, sales_invoice.name, payments_total, flt(sales_invoice.grand_total))
+		_finalize_folio(folio, sales_invoice.name, payments_total, flt(sales_invoice.grand_total), deposit_total)
 		return {
 			"sales_invoices": [sales_invoice.name],
 			"payment_entries": payment_entries,

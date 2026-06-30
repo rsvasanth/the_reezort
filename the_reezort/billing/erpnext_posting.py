@@ -15,7 +15,42 @@ def default_sales_taxes_template(company):
 	)
 
 
-def build_and_submit_sales_invoice(company, customer, currency, lines, taxes_template=None, remarks=None):
+def default_sales_tax_rate(company):
+	"""Total % from the company's default sales-taxes template — for folio GST estimates."""
+	template = default_sales_taxes_template(company)
+	if not template:
+		return 0
+	rates = frappe.get_all(
+		"Sales Taxes and Charges",
+		filters={"parent": template, "parenttype": "Sales Taxes and Charges Template"},
+		pluck="rate",
+	)
+	return sum(flt(r) for r in rates)
+
+
+def _allocate_advances(si, advance_pe_names):
+	"""Allocate specific on-account Payment Entries (deposits) to this invoice.
+
+	Scoped to the given PEs (e.g. the folio's own deposits) and capped at the
+	invoice total, so the SI nets the advance instead of leaving it floating.
+	"""
+	si.set_advances()  # populate from the customer's unallocated advances
+	grand_total = flt(si.rounded_total or si.grand_total)
+	wanted = set(advance_pe_names or [])
+	kept, allocated = [], 0.0
+	for adv in si.get("advances") or []:
+		if adv.reference_name in wanted and allocated < grand_total:
+			cap = min(flt(adv.advance_amount), grand_total - allocated)
+			if cap <= 0:
+				continue
+			adv.allocated_amount = cap
+			allocated += cap
+			kept.append(adv)
+	si.set("advances", kept)
+	return allocated
+
+
+def build_and_submit_sales_invoice(company, customer, currency, lines, taxes_template=None, remarks=None, advance_pes=None):
 	"""Build and submit a Sales Invoice for already-validated billing lines."""
 	from erpnext.controllers.accounts_controller import get_taxes_and_charges
 
@@ -49,6 +84,9 @@ def build_and_submit_sales_invoice(company, customer, currency, lines, taxes_tem
 			si.append("taxes", tax)
 
 	si.insert(ignore_permissions=True)
+	if advance_pes:
+		if _allocate_advances(si, advance_pes):
+			si.save(ignore_permissions=True)
 	si.submit()
 	return si
 

@@ -442,6 +442,106 @@ export async function recordDeposit(input: {
 	});
 }
 
+// ---------- Razorpay (card/UPI) ----------
+
+import { openRazorpayCheckout, type RazorpayOrder, type RazorpayPaymentResult } from "@/lib/razorpay";
+
+export async function createRazorpayDepositOrder(input: {
+	guest_folio: string;
+	amount: number;
+}): Promise<RazorpayOrder> {
+	const env = await callBilling<RazorpayOrder>("the_reezort.billing.razorpay_gateway.create_deposit_order", {
+		method: "POST",
+		body: { guest_folio: input.guest_folio, amount: input.amount },
+	});
+	if (!env.data) throw new FolioApiError("Razorpay order returned no data", { status: 500 });
+	return env.data;
+}
+
+export async function createRazorpaySettleOrder(guest_folio: string): Promise<RazorpayOrder> {
+	const env = await callBilling<RazorpayOrder>("the_reezort.billing.razorpay_gateway.create_order", {
+		method: "POST",
+		body: { guest_folio },
+	});
+	if (!env.data) throw new FolioApiError("Razorpay order returned no data", { status: 500 });
+	return env.data;
+}
+
+export async function captureRazorpayDeposit(input: {
+	guest_folio: string;
+	payment: RazorpayPaymentResult;
+}): Promise<FolioApiEnvelope<DepositResult>> {
+	return callBilling<DepositResult>("the_reezort.billing.razorpay_gateway.capture_deposit", {
+		method: "POST",
+		body: {
+			guest_folio: input.guest_folio,
+			razorpay_order_id: input.payment.order_id,
+			razorpay_payment_id: input.payment.payment_id,
+			razorpay_signature: input.payment.signature,
+			amount: input.payment.amount / 100,
+		},
+	});
+}
+
+export async function captureRazorpaySettlement(input: {
+	guest_folio: string;
+	payment: RazorpayPaymentResult;
+}): Promise<FolioApiEnvelope<SettleFolioResult>> {
+	return callBilling<SettleFolioResult>("the_reezort.billing.razorpay_gateway.capture_payment", {
+		method: "POST",
+		body: {
+			guest_folio: input.guest_folio,
+			razorpay_order_id: input.payment.order_id,
+			razorpay_payment_id: input.payment.payment_id,
+			razorpay_signature: input.payment.signature,
+			amount: input.payment.amount / 100,
+		},
+	});
+}
+
+/**
+ * Orchestrates a deposit via Razorpay: create order → open modal → capture.
+ * Returns the deposit envelope (with the real Payment Entry id).
+ */
+export async function payDepositViaRazorpay(input: {
+	guest_folio: string;
+	amount: number;
+	guestName?: string;
+	guestEmail?: string | null;
+	guestPhone?: string | null;
+}): Promise<FolioApiEnvelope<DepositResult>> {
+	const order = await createRazorpayDepositOrder({ guest_folio: input.guest_folio, amount: input.amount });
+	const payment = await openRazorpayCheckout({
+		order,
+		guestName: input.guestName,
+		guestEmail: input.guestEmail,
+		guestPhone: input.guestPhone,
+		description: `Deposit · ${input.guest_folio}`,
+	});
+	return captureRazorpayDeposit({ guest_folio: input.guest_folio, payment });
+}
+
+/**
+ * Orchestrates settlement via Razorpay: create order → open modal → capture.
+ * Returns the settlement envelope (Sales Invoice + Payment Entry created).
+ */
+export async function paySettlementViaRazorpay(input: {
+	guest_folio: string;
+	guestName?: string;
+	guestEmail?: string | null;
+	guestPhone?: string | null;
+}): Promise<FolioApiEnvelope<SettleFolioResult>> {
+	const order = await createRazorpaySettleOrder(input.guest_folio);
+	const payment = await openRazorpayCheckout({
+		order,
+		guestName: input.guestName,
+		guestEmail: input.guestEmail,
+		guestPhone: input.guestPhone,
+		description: `Folio settlement · ${input.guest_folio}`,
+	});
+	return captureRazorpaySettlement({ guest_folio: input.guest_folio, payment });
+}
+
 // ---------- Utility ----------
 
 /**

@@ -16,6 +16,8 @@ import requests
 from frappe import _
 from frappe.utils import flt
 
+from the_reezort.billing.api import _envelope
+from the_reezort.billing.deposits import record_deposit
 from the_reezort.billing.settlement import settle_folio
 
 RAZORPAY_ORDERS_URL = "https://api.razorpay.com/v1/orders"
@@ -65,39 +67,61 @@ def verify_signature(order_id, payment_id, signature, key_secret=None):
 	return hmac.compare_digest(expected, signature or "")
 
 
-@frappe.whitelist()
-def create_order(guest_folio):
-	"""Create a Razorpay order for a folio's payable amount; returns checkout params."""
-	_require_login()
+def _create_order(amount, currency, receipt, notes):
+	"""Create a Razorpay order and return the checkout params."""
 	key_id, key_secret = _keys()
-
-	folio = frappe.get_doc("Guest Folio", guest_folio)
-	amount = _folio_payable(folio)
-	if amount <= 0:
-		frappe.throw(_("Folio {0} has no payable amount.").format(guest_folio))
-
-	amount_in_paise = int(round(amount * 100))
+	amount_in_paise = int(round(flt(amount) * 100))
 	response = requests.post(
 		RAZORPAY_ORDERS_URL,
 		auth=(key_id, key_secret),
 		json={
 			"amount": amount_in_paise,
-			"currency": folio.currency or "INR",
-			"receipt": guest_folio,
-			"notes": {"guest_folio": guest_folio},
+			"currency": currency or "INR",
+			"receipt": receipt,
+			"notes": notes,
 		},
 		timeout=30,
 	)
 	response.raise_for_status()
 	order = response.json()
-
 	return {
 		"order_id": order["id"],
 		"amount": amount_in_paise,
 		"currency": order.get("currency", "INR"),
 		"key_id": key_id,
-		"guest_folio": guest_folio,
 	}
+
+
+@frappe.whitelist()
+def create_order(guest_folio):
+	"""Create a Razorpay order for a folio's full payable amount (settlement path)."""
+	_require_login()
+	folio = frappe.get_doc("Guest Folio", guest_folio)
+	amount = _folio_payable(folio)
+	if amount <= 0:
+		frappe.throw(_("Folio {0} has no payable amount.").format(guest_folio))
+	order = _create_order(amount, folio.currency, guest_folio, {"guest_folio": guest_folio, "intent": "settle"})
+	order["guest_folio"] = guest_folio
+	return _envelope(order)
+
+
+@frappe.whitelist()
+def create_deposit_order(guest_folio, amount):
+	"""Create a Razorpay order for a specific DEPOSIT amount (advance, not settle).
+
+	The capture step posts a real advance Payment Entry via record_deposit; no
+	Sales Invoice is created until the folio actually settles.
+	"""
+	_require_login()
+	amount = flt(amount)
+	if amount <= 0:
+		frappe.throw(_("Deposit amount must be positive."))
+	folio = frappe.get_doc("Guest Folio", guest_folio)
+	order = _create_order(
+		amount, folio.currency, f"DEP-{guest_folio}", {"guest_folio": guest_folio, "intent": "deposit"}
+	)
+	order["guest_folio"] = guest_folio
+	return _envelope(order)
 
 
 @frappe.whitelist()
@@ -119,4 +143,26 @@ def capture_payment(guest_folio, razorpay_order_id, razorpay_payment_id, razorpa
 			}
 		],
 		idempotency_key=f"razorpay:{razorpay_payment_id}",
+	)
+
+
+@frappe.whitelist()
+def capture_deposit(guest_folio, razorpay_order_id, razorpay_payment_id, razorpay_signature, amount):
+	"""Verify the Razorpay signature, then record an advance deposit on the folio.
+
+	Idempotent on the Razorpay payment id (a duplicate callback returns the same
+	deposit line + PE instead of double-posting).
+	"""
+	_require_login()
+
+	if not verify_signature(razorpay_order_id, razorpay_payment_id, razorpay_signature):
+		frappe.throw(_("Razorpay signature verification failed."))
+
+	mode_of_payment = _ensure_razorpay_mode_of_payment()
+	return record_deposit(
+		guest_folio=guest_folio,
+		amount=flt(amount),
+		mode_of_payment=mode_of_payment,
+		reference_no=razorpay_payment_id,
+		idempotency_key=f"razorpay-deposit:{razorpay_payment_id}",
 	)

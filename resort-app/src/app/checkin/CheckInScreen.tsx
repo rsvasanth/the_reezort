@@ -34,7 +34,7 @@ import { KpiStrip, RecordHeader, WorkspacePage } from "@/components/workspace/wo
 import ConditionCaptureScreen from "@/app/condition/ConditionCaptureScreen";
 
 import { uploadConditionPhoto } from "@/lib/condition-api";
-import { getOrCreateFolio, recordDeposit } from "@/lib/folio-api";
+import { getOrCreateFolio, payDepositViaRazorpay, recordDeposit } from "@/lib/folio-api";
 import {
 	finalizeCheckIn,
 	getCheckInContext,
@@ -48,7 +48,7 @@ import {
 
 const ID_TYPES: IdType[] = ["Aadhaar", "Passport", "Driving License", "Voter ID", "PAN Card", "Other"];
 const PURPOSES: PurposeOfVisit[] = ["Leisure", "Business", "Event", "Honeymoon", "Other"];
-const PAYMENT_MODES = ["Cash", "Credit Card", "UPI", "Bank Draft"];
+const PAYMENT_MODES = ["Razorpay (card / UPI)", "Cash", "Credit Card", "UPI", "Bank Draft"];
 
 const STEPS = [
 	{ key: "kyc", label: "Identity & KYC", icon: IdCard },
@@ -585,7 +585,7 @@ function DepositStep({
 	onDone: () => void;
 }) {
 	const [amount, setAmount] = useState("");
-	const [mode, setMode] = useState("Cash");
+	const [mode, setMode] = useState("Razorpay (card / UPI)");
 	const [busy, setBusy] = useState(false);
 
 	async function take() {
@@ -602,12 +602,27 @@ function DepositStep({
 				folio = opened.data?.folio?.name ?? null;
 			}
 			if (!folio) throw new Error("Could not open a folio for the deposit");
-			await recordDeposit({ guest_folio: folio, amount: amt, mode_of_payment: mode });
+			if (mode === "Razorpay (card / UPI)") {
+				await payDepositViaRazorpay({
+					guest_folio: folio,
+					amount: amt,
+					guestName: ctx.guest?.guest_full_name ?? undefined,
+					guestEmail: ctx.guest?.email,
+					guestPhone: ctx.guest?.phone,
+				});
+			} else {
+				await recordDeposit({ guest_folio: folio, amount: amt, mode_of_payment: mode });
+			}
 			toast.success(`Deposit of ${rupees(amt)} recorded`);
 			setAmount("");
 			await refresh();
 		} catch (error) {
-			toast.error("Deposit failed", { description: error instanceof Error ? error.message : undefined });
+			const msg = error instanceof Error ? error.message : undefined;
+			if (msg === "Payment cancelled") {
+				toast.info("Payment cancelled");
+			} else {
+				toast.error("Deposit failed", { description: msg });
+			}
 		} finally {
 			setBusy(false);
 		}

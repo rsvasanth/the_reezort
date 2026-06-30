@@ -4,7 +4,7 @@ import hmac
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from the_reezort.billing.razorpay_gateway import capture_payment, verify_signature
+from the_reezort.billing.razorpay_gateway import capture_deposit, capture_payment, verify_signature
 
 
 def _sign(order_id, payment_id, secret):
@@ -29,3 +29,7 @@ class TestRazorpayGateway(FrappeTestCase):
 	def test_capture_rejects_bad_signature_before_any_posting(self):
 		with self.assertRaises(frappe.ValidationError):
 			capture_payment("RZ-FOL-DOES-NOT-EXIST", "order_x", "pay_x", "bad-signature", 100)
+
+	def test_capture_deposit_rejects_bad_signature_before_any_posting(self):
+		with self.assertRaises(frappe.ValidationError):
+			capture_deposit("RZ-FOL-DOES-NOT-EXIST", "order_x", "pay_x", "bad-signature", 100)

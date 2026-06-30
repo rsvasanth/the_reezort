@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { AlertTriangle, Loader2, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, CreditCard, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import {
 import {
 	FolioApiError,
 	makeSettlementIdempotencyKey,
+	paySettlementViaRazorpay,
 	settleFolio,
 } from "@/lib/folio-api";
 import type {
@@ -104,6 +105,34 @@ export function SettleFolioSheet({
 
 	function updateRow(id: string, patch: Partial<LocalRow>) {
 		setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+	}
+
+	async function payByRazorpay() {
+		setSubmitting(true);
+		setBlockers([]);
+		setWarnings([]);
+		try {
+			const envelope = await paySettlementViaRazorpay({ guest_folio: folioName });
+			if (envelope.ok === false) {
+				setBlockers(envelope.blockers ?? []);
+				setWarnings(envelope.warnings ?? []);
+				return;
+			}
+			toast.success("Paid by card / UPI", {
+				description: envelope.data?.sales_invoices?.[0] ?? folioName,
+			});
+			onSettled();
+			onClose();
+		} catch (error) {
+			const detail = error instanceof FolioApiError ? error.message : String(error);
+			if (detail === "Payment cancelled") {
+				toast.info("Payment cancelled");
+			} else {
+				toast.error("Card / UPI payment failed", { description: detail });
+			}
+		} finally {
+			setSubmitting(false);
+		}
 	}
 
 	async function onSubmit(event: FormEvent) {
@@ -203,6 +232,20 @@ export function SettleFolioSheet({
 							</span>
 						</div>
 					</div>
+
+					<Button
+						type="button"
+						variant="outline"
+						onClick={payByRazorpay}
+						disabled={submitting || outstandingAmount <= 0}
+						data-testid="settle-razorpay"
+						className="w-full"
+					>
+						{submitting ? <Loader2 className="size-4 animate-spin" /> : <CreditCard className="size-4" />}
+						Pay {formatCurrency(outstandingAmount, currency)} by card / UPI (Razorpay)
+					</Button>
+
+					<div className="text-center text-xs text-muted-foreground">— or split into cash / other modes —</div>
 
 					<div className="flex flex-col gap-3">
 						{rows.map((row) => (

@@ -25,9 +25,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { FolioApiError, recordDeposit } from "@/lib/folio-api";
+import { FolioApiError, payDepositViaRazorpay, recordDeposit } from "@/lib/folio-api";
 
-const MODES = ["Cash", "Razorpay", "Credit Card", "Bank Transfer"];
+const MODES = ["Razorpay (card / UPI)", "Cash", "Credit Card", "Bank Transfer"];
 
 export function DepositSheet({
 	open,
@@ -43,7 +43,7 @@ export function DepositSheet({
 	onRecorded: () => void;
 }) {
 	const [amount, setAmount] = useState("");
-	const [mode, setMode] = useState("Cash");
+	const [mode, setMode] = useState("Razorpay (card / UPI)");
 	const [busy, setBusy] = useState(false);
 
 	async function save() {
@@ -54,12 +54,14 @@ export function DepositSheet({
 		}
 		setBusy(true);
 		try {
-			const res = await recordDeposit({
-				guest_folio: folioName,
-				amount: value,
-				mode_of_payment: mode,
-				idempotency_key: crypto.randomUUID(),
-			});
+			const res = mode === "Razorpay (card / UPI)"
+				? await payDepositViaRazorpay({ guest_folio: folioName, amount: value })
+				: await recordDeposit({
+						guest_folio: folioName,
+						amount: value,
+						mode_of_payment: mode,
+						idempotency_key: crypto.randomUUID(),
+					});
 			toast.success("Deposit recorded", {
 				description: `Outstanding now ${currency} ${res.data?.outstanding ?? "—"}`,
 			});
@@ -68,7 +70,11 @@ export function DepositSheet({
 			onClose();
 		} catch (error) {
 			const detail = error instanceof FolioApiError ? error.blockers[0]?.message ?? error.message : String(error);
-			toast.error("Could not record deposit", { description: detail });
+			if (detail === "Payment cancelled") {
+				toast.info("Payment cancelled");
+			} else {
+				toast.error("Could not record deposit", { description: detail });
+			}
 		} finally {
 			setBusy(false);
 		}

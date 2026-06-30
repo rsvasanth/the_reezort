@@ -307,6 +307,49 @@ export async function finalizeCheckIn(input: {
 	});
 }
 
+// ---------- room move (in-house room switch) ----------
+
+export type RoomMoveReason = "Maintenance" | "Guest Request" | "Upgrade" | "Downgrade" | "Overbooking" | "Other";
+
+export type RoomMoveResult = {
+	move: string;
+	stay: string;
+	from_room: string;
+	to_room: string;
+	source_out_of_order: boolean;
+	maintenance_task: string | null;
+	target_room_number: string;
+	target_room_name: string | null;
+};
+
+export type VacantRoom = {
+	name: string;
+	room_number: string;
+	room_name: string | null;
+	room_type: string;
+	housekeeping_status: string;
+};
+
+export async function listVacantRoomsForMove(stay: string): Promise<{ rooms: VacantRoom[] }> {
+	return pmsCall("the_reezort.pms.api.list_vacant_rooms_for_move", "GET", { stay });
+}
+
+export async function moveGuestRoom(input: {
+	stay: string;
+	to_room: string;
+	reason: RoomMoveReason;
+	notes?: string;
+	source_out_of_order?: boolean;
+}): Promise<RoomMoveResult> {
+	return pmsCall("the_reezort.pms.api.move_guest_room", "POST", {
+		stay: input.stay,
+		to_room: input.to_room,
+		reason: input.reason,
+		notes: input.notes,
+		source_out_of_order: input.source_out_of_order ? 1 : 0,
+	});
+}
+
 export type ExtendResult = {
 	stay: string;
 	new_departure_date: string;

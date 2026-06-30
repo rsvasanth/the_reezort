@@ -4,14 +4,22 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { CalendarPlus, Loader2, LogIn, LogOut, ReceiptText } from "lucide-react";
+import { ArrowRightLeft, CalendarPlus, Loader2, LogIn, LogOut, ReceiptText } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import {
 	Sheet,
 	SheetContent,
@@ -20,6 +28,7 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
 	Table,
 	TableBody,
@@ -29,7 +38,18 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { WorkspacePage, KpiStrip } from "@/components/workspace/workspace";
-import { FolioApiError, checkOut, extendStay, getFrontDeskBoard, type FrontDeskBoard, type FrontDeskInHouse } from "@/lib/pms-api";
+import {
+	FolioApiError,
+	checkOut,
+	extendStay,
+	getFrontDeskBoard,
+	listVacantRoomsForMove,
+	moveGuestRoom,
+	type FrontDeskBoard,
+	type FrontDeskInHouse,
+	type RoomMoveReason,
+	type VacantRoom,
+} from "@/lib/pms-api";
 
 function reportError(error: unknown, fallback: string) {
 	const detail = error instanceof FolioApiError ? error.message : String(error);
@@ -40,6 +60,7 @@ export default function FrontDeskScreen() {
 	const [board, setBoard] = useState<FrontDeskBoard | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [extending, setExtending] = useState<FrontDeskInHouse | null>(null);
+	const [moving, setMoving] = useState<FrontDeskInHouse | null>(null);
 	const [checkingOut, setCheckingOut] = useState<string | null>(null);
 
 	const reload = useCallback(async () => {
@@ -179,6 +200,9 @@ export default function FrontDeskScreen() {
 														<Button size="sm" variant="ghost" onClick={() => setExtending(s)} data-testid={`extend-${s.stay}`}>
 															<CalendarPlus className="size-4" /> Extend
 														</Button>
+														<Button size="sm" variant="ghost" onClick={() => setMoving(s)} data-testid={`move-${s.stay}`}>
+															<ArrowRightLeft className="size-4" /> Move
+														</Button>
 														<Button size="sm" variant="outline" disabled={!s.folio} onClick={() => openFolio(s.folio)}>
 															<ReceiptText className="size-4" /> Open folio
 														</Button>
@@ -208,7 +232,137 @@ export default function FrontDeskScreen() {
 			{extending ? (
 				<ExtendSheet stay={extending} onClose={() => setExtending(null)} onExtended={reload} />
 			) : null}
+
+			{moving ? (
+				<MoveRoomSheet stay={moving} onClose={() => setMoving(null)} onMoved={reload} />
+			) : null}
 		</WorkspacePage>
+	);
+}
+
+const MOVE_REASONS: RoomMoveReason[] = ["Maintenance", "Guest Request", "Upgrade", "Downgrade", "Overbooking", "Other"];
+
+function MoveRoomSheet({
+	stay,
+	onClose,
+	onMoved,
+}: {
+	stay: FrontDeskInHouse;
+	onClose: () => void;
+	onMoved: () => void;
+}) {
+	const [rooms, setRooms] = useState<VacantRoom[] | null>(null);
+	const [target, setTarget] = useState<string>("");
+	const [reason, setReason] = useState<RoomMoveReason>("Guest Request");
+	const [notes, setNotes] = useState("");
+	const [ooo, setOoo] = useState(false);
+	const [busy, setBusy] = useState(false);
+
+	useEffect(() => {
+		listVacantRoomsForMove(stay.stay)
+			.then((r) => {
+				setRooms(r.rooms);
+				if (r.rooms[0]) setTarget(r.rooms[0].name);
+			})
+			.catch((e) => reportError(e, "Could not load available rooms"));
+	}, [stay.stay]);
+
+	// Maintenance reason → suggest marking source out-of-order (engineering signal).
+	useEffect(() => {
+		setOoo(reason === "Maintenance");
+	}, [reason]);
+
+	async function save() {
+		if (!target) {
+			toast.error("Pick a target room");
+			return;
+		}
+		setBusy(true);
+		try {
+			const result = await moveGuestRoom({
+				stay: stay.stay,
+				to_room: target,
+				reason,
+				notes: notes || undefined,
+				source_out_of_order: ooo,
+			});
+			toast.success(`${stay.guest} moved`, {
+				description: `${result.from_room} → ${result.target_room_name ?? result.to_room}${result.maintenance_task ? " · maintenance task created" : ""}`,
+			});
+			onMoved();
+			onClose();
+		} catch (error) {
+			reportError(error, "Move failed");
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	return (
+		<Sheet open onOpenChange={(o) => { if (!o) onClose(); }}>
+			<SheetContent>
+				<SheetHeader>
+					<SheetTitle>Move guest to another room</SheetTitle>
+					<SheetDescription>
+						{stay.guest} · currently in {stay.room ?? "—"}
+					</SheetDescription>
+				</SheetHeader>
+
+				<div className="flex flex-col gap-4 py-4">
+					<div>
+						<Label htmlFor="move-target">Target room</Label>
+						{rooms === null ? (
+							<Skeleton className="mt-1 h-9 w-full" />
+						) : rooms.length === 0 ? (
+							<p className="mt-1 text-sm text-destructive">No vacant, sellable rooms available right now.</p>
+						) : (
+							<Select value={target} onValueChange={setTarget}>
+								<SelectTrigger id="move-target" data-testid="move-target"><SelectValue /></SelectTrigger>
+								<SelectContent>
+									{rooms.map((r) => (
+										<SelectItem key={r.name} value={r.name}>
+											{r.room_name ?? r.room_number} · {r.room_number} · {r.housekeeping_status}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						)}
+					</div>
+
+					<div>
+						<Label htmlFor="move-reason">Reason</Label>
+						<Select value={reason} onValueChange={(v) => setReason(v as RoomMoveReason)}>
+							<SelectTrigger id="move-reason"><SelectValue /></SelectTrigger>
+							<SelectContent>
+								{MOVE_REASONS.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+							</SelectContent>
+						</Select>
+					</div>
+
+					<div>
+						<Label htmlFor="move-notes">Notes</Label>
+						<Input
+							id="move-notes"
+							value={notes}
+							onChange={(e) => setNotes(e.target.value)}
+							placeholder="e.g. Sudden power trip; AC unusable"
+						/>
+					</div>
+
+					<label className="flex items-center gap-2 text-sm">
+						<Checkbox checked={ooo} onCheckedChange={(v) => setOoo(Boolean(v))} data-testid="move-ooo" />
+						Mark {stay.room ?? "source room"} <strong className="px-1">Out of Order</strong> &amp; create a maintenance task
+					</label>
+				</div>
+
+				<SheetFooter>
+					<Button onClick={save} disabled={busy || !target} data-testid="move-confirm">
+						{busy ? <Loader2 className="size-4 animate-spin" /> : <ArrowRightLeft className="size-4" />} Move guest
+					</Button>
+					<Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
 	);
 }
 

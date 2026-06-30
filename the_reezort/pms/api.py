@@ -294,6 +294,157 @@ def _post_tax_estimate(stay_doc, folio_name, taxable_amount):
 	).insert(ignore_permissions=True)
 
 
+ROOM_MOVE_REASONS = {"Maintenance", "Guest Request", "Upgrade", "Downgrade", "Overbooking", "Other"}
+
+
+@frappe.whitelist()
+def list_vacant_rooms_for_move(stay):
+	"""All vacant + sellable + active rooms in the stay's property, excluding the current one."""
+	_require_permission("Stay", "read")
+	stay_doc = frappe.db.get_value("Stay", stay, ["resort_property", "current_room"], as_dict=True)
+	if not stay_doc:
+		frappe.throw(_("Stay {0} does not exist.").format(stay))
+	rooms = frappe.get_all(
+		"Room",
+		filters={
+			"resort_property": stay_doc.resort_property,
+			"occupancy_status": "Vacant",
+			"sellable_status": "Sellable",
+			"is_active": 1,
+			"name": ["!=", stay_doc.current_room],
+		},
+		fields=["name", "room_number", "room_name", "room_type", "housekeeping_status"],
+		order_by="room_number asc",
+	)
+	return {"rooms": rooms}
+
+
+def _validate_target_room(stay_doc, to_room):
+	if to_room == stay_doc.current_room:
+		frappe.throw(_("Target room is the same as the current room."))
+	target = frappe.db.get_value(
+		"Room", to_room,
+		["name", "resort_property", "occupancy_status", "sellable_status", "is_active", "room_number", "room_name"],
+		as_dict=True,
+	)
+	if not target:
+		frappe.throw(_("Target room {0} does not exist.").format(to_room))
+	if target.resort_property != stay_doc.resort_property:
+		frappe.throw(_("Target room belongs to a different property."))
+	if not target.is_active:
+		frappe.throw(_("Target room is not active."))
+	if target.occupancy_status != "Vacant":
+		frappe.throw(_("Target room {0} is not vacant (status {1}).").format(to_room, target.occupancy_status))
+	if target.sellable_status != "Sellable":
+		frappe.throw(_("Target room {0} is not sellable.").format(to_room))
+	return target
+
+
+@frappe.whitelist()
+def move_guest_room(stay, to_room, reason, notes=None, source_out_of_order=0):
+	"""Move an in-house guest to a different room.
+
+	Use case: sudden electrical issue, guest preference, upgrade, etc.
+	Source room → Vacant + Dirty (or also Out of Order + Not Sellable if flagged).
+	Target room → Occupied. Stay's current_room updates. The folio carries over
+	(linked to stay, not room). An audit Room Move is logged. When the source is
+	flagged Out of Order, a maintenance Housekeeping Task is auto-created.
+	Idempotent stay-state guard: refuses to move a non-in-house stay.
+	"""
+	_require_permission("Stay", "write")
+	if reason not in ROOM_MOVE_REASONS:
+		frappe.throw(_("Invalid move reason {0}.").format(reason))
+
+	stay_doc = frappe.get_doc("Stay", stay)
+	if stay_doc.stay_status not in ("In House", "Due Out"):
+		frappe.throw(_("Only an in-house stay can be moved (status is {0}).").format(stay_doc.stay_status))
+	if not stay_doc.current_room:
+		frappe.throw(_("Stay has no current room to move from."))
+
+	from_room = stay_doc.current_room
+	target = _validate_target_room(stay_doc, to_room)
+	ooo = str(source_out_of_order) in ("1", "true", "True")
+
+	# Source room: free occupancy, mark dirty; if OOO also flag maintenance + block sales.
+	source_updates = {"occupancy_status": "Vacant", "housekeeping_status": "Dirty"}
+	if ooo:
+		source_updates["maintenance_status"] = "Out of Order"
+		source_updates["sellable_status"] = "Not Sellable"
+	frappe.db.set_value("Room", from_room, source_updates)
+
+	# Target room: occupied.
+	frappe.db.set_value("Room", to_room, "occupancy_status", "Occupied")
+
+	# Stay points at the new room.
+	frappe.db.set_value("Stay", stay, "current_room", to_room)
+
+	# Reservation's first room row mirrors the assignment so screens stay consistent.
+	if stay_doc.reservation:
+		res = frappe.get_doc("Reservation", stay_doc.reservation)
+		if res.rooms:
+			res.rooms[0].room = to_room
+			res.save(ignore_permissions=True)
+
+	# Auto-create a maintenance Housekeeping Task when source is OOO (engineering signal).
+	maintenance_task = None
+	if ooo and frappe.db.exists("DocType", "Housekeeping Task"):
+		key = f"room-move-ooo:{stay}:{from_room}"
+		existing = frappe.db.get_value("Housekeeping Task", {"idempotency_key": key}, "name")
+		if existing:
+			maintenance_task = existing
+		else:
+			rp, building, floor = frappe.db.get_value("Room", from_room, ["resort_property", "building", "floor"])
+			maintenance_task = frappe.get_doc(
+				{
+					"doctype": "Housekeeping Task",
+					"resort_property": rp or stay_doc.resort_property,
+					"room": from_room,
+					"building": building,
+					"floor": floor,
+					"task_type": "Maintenance Follow-up",
+					"task_status": "Queued",
+					"priority": "High",
+					"requires_inspection": 1,
+					"dnd_status": "None",
+					"stay": stay,
+					"source_doctype": "Room Move",
+					"source_name": stay,
+					"idempotency_key": key,
+				}
+			).insert(ignore_permissions=True).name
+
+	# Audit record.
+	move = frappe.get_doc(
+		{
+			"doctype": "Room Move",
+			"resort_property": stay_doc.resort_property,
+			"stay": stay,
+			"reservation": stay_doc.reservation,
+			"guest_name": stay_doc.primary_guest_name,
+			"from_room": from_room,
+			"to_room": to_room,
+			"reason": reason,
+			"source_out_of_order": 1 if ooo else 0,
+			"notes": notes,
+			"moved_by": frappe.session.user,
+			"moved_at": now(),
+			"maintenance_task": maintenance_task,
+		}
+	).insert(ignore_permissions=True)
+
+	frappe.db.commit()
+	return {
+		"move": move.name,
+		"stay": stay,
+		"from_room": from_room,
+		"to_room": to_room,
+		"source_out_of_order": bool(ooo),
+		"maintenance_task": maintenance_task,
+		"target_room_number": target.room_number,
+		"target_room_name": target.room_name,
+	}
+
+
 def _ensure_guest_profile(reservation_doc):
 	"""Create a Guest Profile from the reservation's primary guest and link it back."""
 	primary = None

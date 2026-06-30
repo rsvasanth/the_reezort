@@ -1,0 +1,39 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-06-30 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": ["naming_series", "resort_property", "stay", "reservation", "guest_name", "from_room", "to_room", "reason", "source_out_of_order", "details_section", "notes", "moved_by", "moved_at", "maintenance_task"],
+ "fields": [
+  {"default": "RZ-MOVE-.YYYY.-.#####", "fieldname": "naming_series", "fieldtype": "Select", "label": "Series", "options": "RZ-MOVE-.YYYY.-.#####", "reqd": 1},
+  {"fieldname": "resort_property", "fieldtype": "Link", "in_standard_filter": 1, "label": "Resort Property", "options": "Resort Property", "reqd": 1},
+  {"fieldname": "stay", "fieldtype": "Link", "in_list_view": 1, "in_standard_filter": 1, "label": "Stay", "options": "Stay", "reqd": 1},
+  {"fieldname": "reservation", "fieldtype": "Link", "label": "Reservation", "options": "Reservation"},
+  {"fieldname": "guest_name", "fieldtype": "Data", "in_list_view": 1, "label": "Guest"},
+  {"fieldname": "from_room", "fieldtype": "Link", "in_list_view": 1, "label": "From Room", "options": "Room", "reqd": 1},
+  {"fieldname": "to_room", "fieldtype": "Link", "in_list_view": 1, "label": "To Room", "options": "Room", "reqd": 1},
+  {"fieldname": "reason", "fieldtype": "Select", "in_standard_filter": 1, "label": "Reason", "options": "Maintenance\nGuest Request\nUpgrade\nDowngrade\nOverbooking\nOther", "reqd": 1},
+  {"default": "0", "fieldname": "source_out_of_order", "fieldtype": "Check", "label": "Mark Source Out of Order"},
+  {"fieldname": "details_section", "fieldtype": "Section Break", "label": "Details"},
+  {"fieldname": "notes", "fieldtype": "Small Text", "label": "Notes"},
+  {"fieldname": "moved_by", "fieldtype": "Link", "label": "Moved By", "options": "User", "read_only": 1},
+  {"fieldname": "moved_at", "fieldtype": "Datetime", "label": "Moved At", "read_only": 1},
+  {"fieldname": "maintenance_task", "fieldtype": "Link", "label": "Maintenance Task", "options": "Housekeeping Task", "read_only": 1}
+ ],
+ "links": [],
+ "modified": "2026-06-30 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Room Move",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

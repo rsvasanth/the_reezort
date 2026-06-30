@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { Field } from "@/components/workspace/field";
 import { useFrappeAuth } from "frappe-react-sdk";
 import { Loader2, Plus, AlarmClock, UserPlus } from "lucide-react";
 import { toast } from "sonner";
@@ -12,7 +13,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
 	Sheet,
 	SheetContent,
@@ -340,14 +340,5 @@ function NewTicketSheet({
 				</SheetFooter>
 			</SheetContent>
 		</Sheet>
-	);
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-	return (
-		<div className="flex flex-col gap-1.5">
-			<Label className="text-sm">{label}</Label>
-			{children}
-		</div>
 	);
 }

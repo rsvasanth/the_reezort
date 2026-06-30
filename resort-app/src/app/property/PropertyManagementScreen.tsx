@@ -5,6 +5,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Field } from "@/components/workspace/field";
 import { Loader2, Plus, Pencil, Power, Trash2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -348,7 +349,7 @@ function StructureTab({ tree, onMutate }: { tree: PropertyTree; onMutate: Mutate
 						<div key={bld.name} className="flex items-center justify-between text-sm">
 							<span className={bld.is_active ? "" : "text-muted-foreground line-through"}>{bld.building_name} <span className="text-muted-foreground">({bld.building_code})</span></span>
 							<div className="flex gap-1">
-								<Button variant="ghost" size="icon" onClick={() => onMutate(() => setActive("Resort Building", bld.name, !bld.is_active), "Updated")}><Power className="size-4" /></Button>
+								<Button variant="ghost" size="icon" aria-label="Toggle active" onClick={() => onMutate(() => setActive("Resort Building", bld.name, !bld.is_active), "Updated")}><Power className="size-4" /></Button>
 								<DeleteButton doctype="Resort Building" name={bld.name} onMutate={onMutate} />
 							</div>
 						</div>
@@ -368,7 +369,7 @@ function StructureTab({ tree, onMutate }: { tree: PropertyTree; onMutate: Mutate
 						<div key={flr.name} className="flex items-center justify-between text-sm">
 							<span className={flr.is_active ? "" : "text-muted-foreground line-through"}>{flr.floor_label} <span className="text-muted-foreground">({flr.building})</span></span>
 							<div className="flex gap-1">
-								<Button variant="ghost" size="icon" onClick={() => onMutate(() => setActive("Resort Floor", flr.name, !flr.is_active), "Updated")}><Power className="size-4" /></Button>
+								<Button variant="ghost" size="icon" aria-label="Toggle active" onClick={() => onMutate(() => setActive("Resort Floor", flr.name, !flr.is_active), "Updated")}><Power className="size-4" /></Button>
 								<DeleteButton doctype="Resort Floor" name={flr.name} onMutate={onMutate} />
 							</div>
 						</div>
@@ -394,7 +395,7 @@ function RoomTypesTab({ tree, onMutate }: { tree: PropertyTree; onMutate: Mutate
 					<div key={t.name} className="flex items-center justify-between text-sm">
 						<span className={t.is_active ? "" : "text-muted-foreground line-through"}>{t.room_type_name} <span className="text-muted-foreground">({t.room_type_code}, max {t.max_occupancy})</span></span>
 						<div className="flex gap-1">
-							<Button variant="ghost" size="icon" onClick={() => onMutate(() => setActive("Room Type", t.name, !t.is_active), "Updated")}><Power className="size-4" /></Button>
+							<Button variant="ghost" size="icon" aria-label="Toggle active" onClick={() => onMutate(() => setActive("Room Type", t.name, !t.is_active), "Updated")}><Power className="size-4" /></Button>
 							<DeleteButton doctype="Room Type" name={t.name} onMutate={onMutate} />
 						</div>
 					</div>
@@ -443,15 +444,6 @@ function DeleteButton({ doctype, name, onMutate }: { doctype: ManagedDoctype; na
 		>
 			<Trash2 className="size-4 text-destructive" />
 		</Button>
-	);
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-	return (
-		<div className="flex flex-col gap-1.5">
-			<Label className="text-xs text-muted-foreground">{label}</Label>
-			{children}
-		</div>
 	);
 }
 

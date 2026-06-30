@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { Field } from "@/components/workspace/field";
 import { Loader2, Plus, Pencil, UserCheck, UserX } from "lucide-react";
 import { toast } from "sonner";
 
@@ -287,14 +288,5 @@ function StaffSheet({
 				</SheetFooter>
 			</SheetContent>
 		</Sheet>
-	);
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-	return (
-		<div className="flex flex-col gap-1.5">
-			<Label className="text-sm">{label}</Label>
-			{children}
-		</div>
 	);
 }

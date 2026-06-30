@@ -35,8 +35,9 @@ import {
 
 function FullScreenLoader() {
 	return (
-		<div className="flex min-h-svh items-center justify-center bg-background">
+		<div role="status" className="flex min-h-svh items-center justify-center bg-background">
 			<Loader2 className="size-6 animate-spin text-muted-foreground" />
+			<span className="sr-only">Loading…</span>
 		</div>
 	);
 }
@@ -51,10 +52,18 @@ function AppShell({ children }: { children: ReactNode }) {
 				} as CSSProperties
 			}
 		>
+			<a
+				href="#main-content"
+				className="sr-only rounded-md bg-background px-3 py-2 text-sm shadow ring-2 ring-ring focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50"
+			>
+				Skip to main content
+			</a>
 			<AppSidebar />
 			<SidebarInset>
 				<SiteHeader />
-				{children}
+				<div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
+					{children}
+				</div>
 			</SidebarInset>
 		</SidebarProvider>
 	);

@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { Field } from "@/components/workspace/field";
 import { Loader2, Check, Building2, Layers, BedDouble, DoorOpen, ClipboardCheck } from "lucide-react";
 import { toast } from "sonner";
 
@@ -593,29 +594,6 @@ export default function PropertySetupScreen() {
 				</CardContent>
 			</Card>
 		</main>
-	);
-}
-
-function Field({
-	label,
-	required,
-	hint,
-	children,
-}: {
-	label: string;
-	required?: boolean;
-	hint?: string;
-	children: React.ReactNode;
-}) {
-	return (
-		<div className="flex flex-col gap-1.5">
-			<Label className="text-sm">
-				{label}
-				{required ? <span className="text-destructive"> *</span> : null}
-			</Label>
-			{children}
-			{hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
-		</div>
 	);
 }
 

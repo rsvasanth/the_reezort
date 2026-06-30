@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import { Field } from "@/components/workspace/field";
 import type { FormEvent } from "react";
 import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
@@ -331,24 +331,6 @@ export function AddLineSheet({ open, folioName, currency, onClose, onLineAdded }
 				)}
 			</SheetContent>
 		</Sheet>
-	);
-}
-
-function Field({
-	label,
-	hint,
-	children,
-}: {
-	label: string;
-	hint?: string;
-	children: React.ReactNode;
-}) {
-	return (
-		<div className="flex flex-col gap-1.5">
-			<Label>{label}</Label>
-			{children}
-			{hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-		</div>
 	);
 }
 

@@ -4,6 +4,7 @@
  */
 
 import { useState } from "react";
+import { Field } from "@/components/workspace/field";
 import { motion } from "motion/react";
 import { Loader2, Search, BedDouble, Check } from "lucide-react";
 import { toast } from "sonner";
@@ -11,7 +12,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { WorkspacePage } from "@/components/workspace/workspace";
 import { formatCurrency } from "@/components/folio/folio-format";
@@ -167,14 +167,5 @@ export default function NewBooking() {
 				</Card>
 			) : null}
 		</WorkspacePage>
-	);
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-	return (
-		<div className="flex flex-col gap-1.5">
-			<Label className="text-xs text-muted-foreground">{label}</Label>
-			{children}
-		</div>
 	);
 }

@@ -20,7 +20,6 @@ import {
 import { WorkspacePage, RecordHeader, KpiStrip } from "@/components/workspace/workspace";
 import { formatCurrency } from "@/components/folio/folio-format";
 import { FolioApiError, cancelReservation, getReservation, type ReservationDetail as Detail } from "@/lib/reservation-api";
-import { checkIn } from "@/lib/pms-api";
 
 function go(path: string) {
 	window.location.hash = path;
@@ -52,19 +51,6 @@ export default function ReservationDetail({ reservation }: { reservation: string
 	useEffect(() => {
 		reload();
 	}, [reload]);
-
-	async function doCheckIn() {
-		setBusy(true);
-		try {
-			const result = await checkIn(reservation);
-			toast.success("Checked in", { description: `Room ${result.current_room} · folio ${result.folio}` });
-			go(`#/folio/${encodeURIComponent(result.folio)}`);
-		} catch (error) {
-			const msg = error instanceof FolioApiError ? error.message : String(error);
-			toast.error("Check-in failed", { description: msg });
-			setBusy(false);
-		}
-	}
 
 	async function cancel() {
 		setBusy(true);
@@ -119,8 +105,8 @@ export default function ReservationDetail({ reservation }: { reservation: string
 				actions={
 					<>
 						{canCheckIn ? (
-							<Button size="sm" onClick={doCheckIn} disabled={busy} data-testid="res-checkin">
-								{busy ? <Loader2 className="size-4 animate-spin" /> : <LogIn className="size-4" />} Check in
+							<Button size="sm" onClick={() => go(`#/check-in/${encodeURIComponent(reservation)}`)} data-testid="res-checkin">
+								<LogIn className="size-4" /> Check in
 							</Button>
 						) : null}
 						{canCancel ? (

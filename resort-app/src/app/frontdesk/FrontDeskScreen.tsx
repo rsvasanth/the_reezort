@@ -29,7 +29,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { WorkspacePage, KpiStrip } from "@/components/workspace/workspace";
-import { FolioApiError, checkIn, extendStay, getFrontDeskBoard, type FrontDeskBoard, type FrontDeskInHouse } from "@/lib/pms-api";
+import { FolioApiError, extendStay, getFrontDeskBoard, type FrontDeskBoard, type FrontDeskInHouse } from "@/lib/pms-api";
 
 function reportError(error: unknown, fallback: string) {
 	const detail = error instanceof FolioApiError ? error.message : String(error);
@@ -39,7 +39,6 @@ function reportError(error: unknown, fallback: string) {
 export default function FrontDeskScreen() {
 	const [board, setBoard] = useState<FrontDeskBoard | null>(null);
 	const [loading, setLoading] = useState(true);
-	const [busy, setBusy] = useState<string | null>(null);
 	const [extending, setExtending] = useState<FrontDeskInHouse | null>(null);
 
 	const reload = useCallback(async () => {
@@ -55,21 +54,6 @@ export default function FrontDeskScreen() {
 	useEffect(() => {
 		reload();
 	}, [reload]);
-
-	async function handleCheckIn(reservation: string, guest: string) {
-		setBusy(reservation);
-		try {
-			const result = await checkIn(reservation);
-			toast.success(`${guest} checked in`, {
-				description: result.current_room ? `Room ${result.current_room} · folio ${result.folio}` : `Folio ${result.folio}`,
-			});
-			await reload();
-		} catch (error) {
-			reportError(error, "Check-in failed");
-		} finally {
-			setBusy(null);
-		}
-	}
 
 	function openFolio(folio: string | null) {
 		if (folio) window.location.hash = `#/folio/${folio}`;
@@ -125,11 +109,10 @@ export default function FrontDeskScreen() {
 												<TableCell className="text-right">
 													<Button
 														size="sm"
-														disabled={busy === a.reservation}
-														onClick={() => handleCheckIn(a.reservation, a.guest)}
+														onClick={() => { window.location.hash = `#/check-in/${encodeURIComponent(a.reservation)}`; }}
 														data-testid={`checkin-${a.reservation}`}
 													>
-														{busy === a.reservation ? <Loader2 className="size-4 animate-spin" /> : <LogIn className="size-4" />}
+														<LogIn className="size-4" />
 														Check in
 													</Button>
 												</TableCell>

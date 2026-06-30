@@ -18,6 +18,7 @@ import data from "@/app/dashboard/data.json";
 import { FolioWorkspace } from "@/app/folio/FolioWorkspace";
 import HousekeepingBoard from "@/app/housekeeping/HousekeepingBoard";
 import ConditionCaptureScreen from "@/app/condition/ConditionCaptureScreen";
+import CheckInScreen from "@/app/checkin/CheckInScreen";
 import PropertyManagementScreen from "@/app/property/PropertyManagementScreen";
 import StaffAccessScreen from "@/app/staff/StaffAccessScreen";
 import AttendanceScreen from "@/app/staff/AttendanceScreen";
@@ -252,6 +253,14 @@ function AuthGate() {
 		return (
 			<AppShell>
 				<ReservationsScreen id={route.id} />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "checkin" && route.reservation) {
+		return (
+			<AppShell>
+				<CheckInScreen reservation={route.reservation} />
 			</AppShell>
 		);
 	}

@@ -136,6 +136,161 @@ export async function checkIn(reservation: string): Promise<CheckInResult> {
 	return pmsCall<CheckInResult>("the_reezort.pms.api.check_in", "POST", { reservation });
 }
 
+// ---------- full check-in process (003) ----------
+
+export type IdType = "Aadhaar" | "Passport" | "Driving License" | "Voter ID" | "PAN Card" | "Other";
+export type PurposeOfVisit = "Leisure" | "Business" | "Event" | "Honeymoon" | "Other";
+
+export type CheckInGuest = {
+	name: string;
+	guest_full_name: string | null;
+	email: string | null;
+	phone: string | null;
+	image: string | null;
+	date_of_birth: string | null;
+	nationality: string | null;
+	address: string | null;
+	id_type: IdType | null;
+	id_number: string | null;
+	id_expiry: string | null;
+	id_document: string | null;
+	kyc_verified: number;
+	kyc_verified_by: string | null;
+	kyc_verified_at: string | null;
+};
+
+export type CheckInRoomOption = {
+	name: string;
+	room_number: string;
+	room_name: string | null;
+	housekeeping_status: string | null;
+};
+
+export type RegistrationCard = {
+	name: string;
+	reservation: string;
+	stay: string | null;
+	guest_profile: string | null;
+	guest_full_name: string | null;
+	id_type: string | null;
+	id_number: string | null;
+	nationality: string | null;
+	date_of_birth: string | null;
+	address: string | null;
+	purpose_of_visit: PurposeOfVisit | null;
+	arrival_from: string | null;
+	vehicle_number: string | null;
+	expected_departure: string | null;
+	adults: number | null;
+	children: number | null;
+	terms_accepted: number;
+	signature: string | null;
+	signed_at: string | null;
+	registered_by: string | null;
+	is_signed: boolean;
+};
+
+export type CheckInReadiness = {
+	kyc: boolean;
+	registration: boolean;
+	room_selected: boolean;
+	photos: boolean;
+	deposit: boolean;
+	can_finalize: boolean;
+};
+
+export type CheckInDeposit = {
+	name: string;
+	total_paid: number;
+	outstanding_amount: number;
+	total_charges: number;
+	folio_status: string;
+	deposits: { name: string; amount: number; description: string | null; erpnext_payment_entry: string | null; service_date: string | null }[];
+	deposit_total: number;
+};
+
+export type CheckInContext = {
+	reservation: string;
+	status: string;
+	resort_property: string;
+	room_type: string | null;
+	room_type_name: string | null;
+	arrival_date: string | null;
+	departure_date: string | null;
+	nights: number | null;
+	guest_profile: string | null;
+	guest: CheckInGuest | null;
+	available_rooms: CheckInRoomOption[];
+	registration_card: RegistrationCard | null;
+	folio: string | null;
+	deposit: CheckInDeposit | null;
+	condition_capture: { check_in_done: boolean; count: number };
+	stay: { name: string; current_room: string | null; stay_status: string } | null;
+	readiness: CheckInReadiness;
+};
+
+export type KycInput = {
+	date_of_birth?: string;
+	nationality?: string;
+	address?: string;
+	id_type?: IdType;
+	id_number?: string;
+	id_expiry?: string;
+	id_document?: string;
+};
+
+export type RegistrationCardInput = {
+	guest_full_name?: string;
+	id_type?: string;
+	id_number?: string;
+	nationality?: string;
+	date_of_birth?: string;
+	address?: string;
+	purpose_of_visit?: PurposeOfVisit;
+	arrival_from?: string;
+	vehicle_number?: string;
+	expected_departure?: string;
+	adults?: number;
+	children?: number;
+	signature?: string;
+	terms_accepted?: boolean;
+};
+
+export async function getCheckInContext(reservation: string): Promise<CheckInContext> {
+	return pmsCall<CheckInContext>("the_reezort.pms.api.get_check_in_context", "GET", { reservation });
+}
+
+export async function saveGuestKyc(
+	reservation: string,
+	kyc: KycInput,
+	verify: boolean
+): Promise<{ guest_profile: string; guest: CheckInGuest }> {
+	return pmsCall("the_reezort.pms.api.save_guest_kyc", "POST", {
+		reservation,
+		kyc,
+		verify: verify ? 1 : 0,
+	});
+}
+
+export async function saveRegistrationCard(
+	reservation: string,
+	card: RegistrationCardInput
+): Promise<{ registration_card: RegistrationCard }> {
+	return pmsCall("the_reezort.pms.api.save_registration_card", "POST", { reservation, card });
+}
+
+export async function finalizeCheckIn(input: {
+	reservation: string;
+	room?: string;
+	arrival_time?: string;
+}): Promise<CheckInResult & { registration_card: string | null }> {
+	return pmsCall("the_reezort.pms.api.finalize_check_in", "POST", {
+		reservation: input.reservation,
+		room: input.room,
+		arrival_time: input.arrival_time,
+	});
+}
+
 export type ExtendResult = {
 	stay: string;
 	new_departure_date: string;

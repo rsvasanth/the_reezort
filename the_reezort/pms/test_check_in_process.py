@@ -167,6 +167,33 @@ class TestCheckInProcess(FrappeTestCase):
 			frappe.db.get_value("Guest Registration Card", result["registration_card"], "stay"), stay.name
 		)
 
+	def test_finalize_posts_room_charge_to_folio(self):
+		res = self._reservation()
+		save_guest_kyc(res.name, {"id_type": "Passport", "id_number": "P9"}, verify=1)
+		save_registration_card(res.name, {"signature": "data:image/png;base64,AAAA", "terms_accepted": 1})
+		result = finalize_check_in(res.name)
+
+		charges = frappe.get_all(
+			"Folio Line",
+			filters={"guest_folio": result["folio"], "line_type": "Charge", "source_module": "Room"},
+			fields=["amount", "qty", "item_code"],
+		)
+		self.assertEqual(len(charges), 1)
+		self.assertTrue(charges[0].item_code)  # carries the room item so settlement applies GST
+		self.assertEqual(charges[0].qty, 2)  # 2 nights
+		self.assertGreater(charges[0].amount, 0)
+
+	def test_room_charge_is_idempotent_on_recheckin(self):
+		res = self._reservation()
+		save_guest_kyc(res.name, {"id_type": "Passport", "id_number": "P9"}, verify=1)
+		save_registration_card(res.name, {"signature": "data:image/png;base64,AAAA", "terms_accepted": 1})
+		result = finalize_check_in(res.name)
+		from the_reezort.pms.api import check_in
+
+		check_in(res.name)  # re-entry must not double-post the room charge
+		charges = frappe.db.count("Folio Line", {"guest_folio": result["folio"], "source_module": "Room", "line_type": "Charge"})
+		self.assertEqual(charges, 1)
+
 	def test_finalize_enforce_off_skips_gate(self):
 		res = self._reservation()
 		# No KYC, no card, but enforce=0 -> still checks in (used for migration/back-office).

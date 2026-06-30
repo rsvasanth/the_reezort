@@ -16,6 +16,7 @@ from frappe import _
 from frappe.utils import now, today, getdate, date_diff, flt, cint
 
 from the_reezort.billing.api import get_or_create_folio
+from the_reezort.reservation.api import _room_rate, ROOM_ITEM_BY_CODE
 
 CHECK_IN_ELIGIBLE_RESERVATION_STATUSES = {"Confirmed", "Modified", "Checked In"}
 ACTIVE_STAY_STATUSES = ("Draft", "Reserved", "Due In", "In House", "Due Out", "Checked Out")
@@ -163,6 +164,51 @@ def _as_dict(value):
 	return value or {}
 
 
+def _post_accommodation_charge(stay_doc, folio_name):
+	"""Post the room/accommodation charge to the folio (idempotent per stay).
+
+	Without this the folio has no room revenue and checkout settles ₹0 for the
+	stay. The line carries the room type's ERPNext item so settlement invoices it
+	with GST. extend_stay tops this same charge up for extra nights.
+	"""
+	if not folio_name:
+		return None
+	key = f"room-charge:{stay_doc.name}"
+	existing = frappe.db.get_value("Folio Line", {"idempotency_key": key}, "name")
+	if existing:
+		return existing
+
+	nights = date_diff(stay_doc.departure_date, stay_doc.arrival_date) or 1
+	per_night = flt(_room_rate(stay_doc.room_type, 1))
+	if per_night <= 0:
+		return None
+	rt = frappe.db.get_value(
+		"Room Type", stay_doc.room_type, ["erpnext_item", "room_type_name", "room_type_code"], as_dict=True
+	) or {}
+	item_code = rt.get("erpnext_item") or ROOM_ITEM_BY_CODE.get(rt.get("room_type_code"))
+
+	line = frappe.get_doc(
+		{
+			"doctype": "Folio Line",
+			"guest_folio": folio_name,
+			"line_type": "Charge",
+			"source_module": "Room",
+			"source_doctype": "Stay",
+			"source_name": stay_doc.name,
+			"idempotency_key": key,
+			"service_date": today(),
+			"item_code": item_code,
+			"qty": nights,
+			"rate": per_night,
+			"amount": nights * per_night,
+			"tax_treatment": "Standard",
+			"description": f"Accommodation: {rt.get('room_type_name') or stay_doc.room_type} × {nights} night(s)",
+		}
+	)
+	line.insert(ignore_permissions=True)
+	return line.name
+
+
 def _ensure_guest_profile(reservation_doc):
 	"""Create a Guest Profile from the reservation's primary guest and link it back."""
 	primary = None
@@ -222,10 +268,13 @@ def check_in(reservation, room=None, arrival_time=None):
 	if existing_stay:
 		stay = frappe.get_doc("Stay", existing_stay)
 		folio = get_or_create_folio(stay=stay.name, customer=stay.customer)
+		folio_name = folio["data"]["folio"]["name"]
+		_post_accommodation_charge(stay, folio_name)
+		frappe.db.commit()
 		return {
 			"stay": stay.name,
 			"stay_status": stay.stay_status,
-			"folio": folio["data"]["folio"]["name"],
+			"folio": folio_name,
 			"current_room": stay.current_room,
 			"reused": True,
 		}
@@ -276,6 +325,9 @@ def check_in(reservation, room=None, arrival_time=None):
 	# Link the primary folio to the new stay and mark the room occupied.
 	frappe.db.set_value("Guest Folio", folio_name, "stay", stay.name)
 	frappe.db.set_value("Room", resolved_room, "occupancy_status", "Occupied")
+
+	# Post the accommodation charge so the folio carries room revenue for checkout.
+	_post_accommodation_charge(stay, folio_name)
 
 	# Advance the reservation and its first room row. Reload first: opening the
 	# folio above may have cached the customer on the reservation and committed.

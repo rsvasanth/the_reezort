@@ -240,7 +240,7 @@ function AuthGate() {
 	if (route.kind === "reservations") {
 		return (
 			<AppShell>
-				<ReservationsScreen />
+				<ReservationsScreen id={route.id} />
 			</AppShell>
 		);
 	}

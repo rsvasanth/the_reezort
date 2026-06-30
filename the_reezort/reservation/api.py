@@ -390,6 +390,48 @@ def get_reservation_summary(reservation=None):
 
 
 @frappe.whitelist()
+def get_reservation(reservation):
+	"""Full reservation detail for the workspace view."""
+	_require_permission("Reservation", "read")
+	doc = frappe.get_doc("Reservation", reservation)
+	guest = None
+	if doc.staying_guest_profile:
+		guest = frappe.db.get_value("Guest Profile", doc.staying_guest_profile, "guest_full_name")
+	if not guest and doc.get("guests"):
+		guest = doc.guests[0].guest_name
+	stay = frappe.db.get_value("Stay", {"reservation": reservation}, "name")
+	return {
+		"reservation": doc.name,
+		"status": doc.status,
+		"guest": guest or "Guest",
+		"arrival_date": str(doc.arrival_date) if doc.arrival_date else None,
+		"departure_date": str(doc.departure_date) if doc.departure_date else None,
+		"nights": doc.nights,
+		"deposit_status": doc.deposit_status,
+		"total_estimated_amount": doc.total_estimated_amount,
+		"currency": doc.currency,
+		"resort_property": doc.resort_property,
+		"booking_source": doc.booking_source,
+		"check_in_ready": doc.status == "Confirmed",
+		"stay": stay,
+		"rooms": [
+			{
+				"room_type": r.room_type,
+				"adults": r.adults,
+				"children": r.children,
+				"estimated_amount": r.estimated_amount,
+				"status": r.status,
+			}
+			for r in doc.get("rooms")
+		],
+		"guests": [
+			{"guest_name": g.guest_name, "email": g.email, "phone": g.phone, "is_primary_guest": g.is_primary_guest}
+			for g in doc.get("guests")
+		],
+	}
+
+
+@frappe.whitelist()
 def list_reservations(resort_property=None):
 	"""Active reservations for the Reservations board (booking pipeline)."""
 	_require_permission("Reservation", "read")

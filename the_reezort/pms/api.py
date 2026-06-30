@@ -230,3 +230,71 @@ def get_room_condition_captures(stay):
 		order_by="captured_at asc",
 	)
 	return {"captures": [_condition_capture_data(frappe.get_doc("Room Condition Capture", row.name)) for row in captures]}
+
+
+@frappe.whitelist()
+def check_out(stay):
+	"""Check a stay out: close the folio side, free the room, and kick housekeeping.
+
+	The spine of the back-half lifecycle. Requires the folio to be settled first
+	(settlement already flips the stay to Checked Out and the room to "Checked Out").
+	This then:
+	  - confirms Stay = Checked Out,
+	  - returns the room to Vacant + Dirty (sellable only after housekeeping),
+	  - auto-creates a Departure Cleaning Housekeeping Task (requires inspection),
+	  - leaves a check-out condition capture as the next action.
+	Idempotent on the stay: re-running returns the same departure task.
+	"""
+	_require_permission("Stay", "write")
+	stay_doc = frappe.get_doc("Stay", stay)
+	if stay_doc.stay_status in ("Cancelled", "No Show"):
+		frappe.throw(_("Stay {0} cannot be checked out (status {1}).").format(stay, stay_doc.stay_status))
+	# Block only while the folio still has un-invoiced charges (open). An invoiced
+	# folio — paid or on credit ("Ready for Settlement"/"Settled"/"Closed") — may check out.
+	folio_status = frappe.db.get_value("Guest Folio", {"stay": stay}, "folio_status")
+	if folio_status in ("Draft", "Open", "Under Review"):
+		frappe.throw(_("Settle the folio before checkout (folio is {0}).").format(folio_status))
+
+	room = stay_doc.current_room
+	key = f"checkout-clean:{stay}"
+	existing_task = frappe.db.get_value("Housekeeping Task", {"idempotency_key": key}, "name")
+
+	frappe.db.set_value("Stay", stay, "stay_status", "Checked Out")
+
+	task_name = existing_task
+	if room:
+		frappe.db.set_value("Room", room, {"occupancy_status": "Vacant", "housekeeping_status": "Dirty"})
+		if not existing_task:
+			rp, building, floor = frappe.db.get_value("Room", room, ["resort_property", "building", "floor"])
+			task = frappe.get_doc(
+				{
+					"doctype": "Housekeeping Task",
+					"resort_property": rp or stay_doc.resort_property,
+					"room": room,
+					"building": building,
+					"floor": floor,
+					"task_type": "Departure Cleaning",
+					"task_status": "Queued",
+					"priority": "High",
+					"requires_inspection": 1,
+					"dnd_status": "None",
+					"stay": stay,
+					"source_doctype": "Stay",
+					"source_name": stay,
+					"idempotency_key": key,
+				}
+			)
+			task.insert(ignore_permissions=True)
+			task_name = task.name
+
+	# No explicit commit: the request commits on success (keeps this testable).
+	folio = frappe.db.get_value("Guest Folio", {"stay": stay}, "name")
+	return {
+		"stay": stay,
+		"stay_status": "Checked Out",
+		"room": room,
+		"housekeeping_task": task_name,
+		"folio": folio,
+		"reused": bool(existing_task),
+		"next_actions": ["capture_checkout_condition"],
+	}

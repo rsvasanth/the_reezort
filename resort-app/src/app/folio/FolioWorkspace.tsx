@@ -18,8 +18,11 @@ import {
 	ReadOnlyBanner,
 } from "@/components/folio/folio-states";
 
+import { toast } from "sonner";
+
 import { FolioApiError, getFolioDetail } from "@/lib/folio-api";
 import type { FolioDetail } from "@/lib/folio-api";
+import { checkOut } from "@/lib/pms-api";
 
 import mockFolio from "./mock.json";
 
@@ -37,6 +40,7 @@ export function FolioWorkspace({ folioName }: Props) {
 	const [errorMessage, setErrorMessage] = useState<string>("");
 	const [addLineOpen, setAddLineOpen] = useState(false);
 	const [settleOpen, setSettleOpen] = useState(false);
+	const [checkingOut, setCheckingOut] = useState(false);
 
 	const load = useCallback(() => {
 		if (!folioName) return;
@@ -84,6 +88,26 @@ export function FolioWorkspace({ folioName }: Props) {
 		window.location.hash = "#/";
 	}
 
+	async function handleCheckOut() {
+		const stay = detail?.folio.stay;
+		if (!stay) return;
+		setCheckingOut(true);
+		try {
+			const result = await checkOut(stay);
+			toast.success("Checked out", {
+				description: result.housekeeping_task
+					? `Room ${result.room} freed and sent to housekeeping`
+					: `Stay ${stay} checked out`,
+			});
+			load();
+		} catch (error) {
+			const message = error instanceof FolioApiError ? error.message : String(error);
+			toast.error("Checkout failed", { description: message });
+		} finally {
+			setCheckingOut(false);
+		}
+	}
+
 	return (
 		<SidebarProvider
 			style={
@@ -119,6 +143,8 @@ export function FolioWorkspace({ folioName }: Props) {
 						onBack={navigateBack}
 						onAddLine={() => setAddLineOpen(true)}
 						onSettle={() => setSettleOpen(true)}
+						onCheckOut={handleCheckOut}
+						checkingOut={checkingOut}
 					/>
 				</main>
 
@@ -155,6 +181,8 @@ function BodyContent({
 	onBack,
 	onAddLine,
 	onSettle,
+	onCheckOut,
+	checkingOut,
 }: {
 	folioName: string | null;
 	snapshotState: SnapshotState;
@@ -164,6 +192,8 @@ function BodyContent({
 	onBack: () => void;
 	onAddLine: () => void;
 	onSettle: () => void;
+	onCheckOut: () => void;
+	checkingOut: boolean;
 }) {
 	if (!folioName) {
 		return <FolioNoSelectionState onBack={onBack} />;
@@ -206,6 +236,8 @@ function BodyContent({
 				onAddLine={onAddLine}
 				onSettle={onSettle}
 				onRefresh={onRetry}
+				onCheckOut={onCheckOut}
+				checkingOut={checkingOut}
 			/>
 			<FolioTotalsStrip
 				totals={detail.totals}

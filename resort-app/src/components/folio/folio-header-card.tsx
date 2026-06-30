@@ -47,6 +47,8 @@ type Props = {
 	onAddLine: () => void;
 	onSettle: () => void;
 	onRefresh: () => void;
+	onCheckOut: () => void;
+	checkingOut?: boolean;
 };
 
 export function FolioHeaderCard({
@@ -55,6 +57,8 @@ export function FolioHeaderCard({
 	onAddLine,
 	onSettle,
 	onRefresh,
+	onCheckOut,
+	checkingOut,
 }: Props) {
 	const { folio, balance_status, posting_status, next_actions } = detail;
 	const actions = next_actions ?? [];
@@ -65,6 +69,10 @@ export function FolioHeaderCard({
 
 	const showAddLine = !mutationsDisabled && actions.includes("add_line");
 	const showSettle = !mutationsDisabled && actions.includes("open_settlement");
+	// Once the folio is invoiced (settled or on credit), the guest can check out:
+	// this frees the room and sends it to housekeeping.
+	const showCheckOut =
+		!!folio.stay && ["Ready for Settlement", "Settled", "Closed"].includes(folio.folio_status);
 
 	function copyFolioName() {
 		navigator.clipboard
@@ -150,6 +158,11 @@ export function FolioHeaderCard({
 							{showSettle && (
 								<Button size="sm" variant="outline" onClick={onSettle}>
 									Prepare Settlement
+								</Button>
+							)}
+							{showCheckOut && (
+								<Button size="sm" onClick={onCheckOut} disabled={checkingOut} data-testid="folio-checkout">
+									{checkingOut ? "Checking out…" : "Check out"}
 								</Button>
 							)}
 							<DropdownMenu>

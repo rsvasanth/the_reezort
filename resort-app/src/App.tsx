@@ -1,4 +1,5 @@
 import { FrappeProvider, useFrappeAuth } from "frappe-react-sdk";
+import { MotionConfig } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { Loader2 } from "lucide-react";
@@ -259,8 +260,10 @@ function AuthGate() {
 function App() {
 	return (
 		<FrappeProvider>
-			<AuthGate />
-			<Toaster richColors closeButton position="top-right" />
+			<MotionConfig reducedMotion="user">
+				<AuthGate />
+				<Toaster richColors closeButton position="top-right" />
+			</MotionConfig>
 		</FrappeProvider>
 	);
 }

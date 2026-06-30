@@ -4,6 +4,7 @@
  */
 
 import { useState } from "react";
+import { motion } from "motion/react";
 import { Loader2, Search, BedDouble, Check } from "lucide-react";
 import { toast } from "sonner";
 
@@ -118,9 +119,11 @@ export default function NewBooking() {
 						) : (
 							<div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3" data-testid="offers">
 								{offers.map((o) => (
-									<button
+									<motion.button
 										key={o.room_type}
 										type="button"
+										whileHover={{ y: -3 }}
+										whileTap={{ scale: 0.98 }}
 										onClick={() => setRoomType(o.room_type)}
 										data-testid={`offer-${o.room_type}`}
 										className={[
@@ -136,7 +139,7 @@ export default function NewBooking() {
 											<span>{o.available_count} available</span>
 											{typeof o.estimated_amount === "number" ? <span>{formatCurrency(o.estimated_amount, "INR")}</span> : null}
 										</div>
-									</button>
+									</motion.button>
 								))}
 							</div>
 						)}

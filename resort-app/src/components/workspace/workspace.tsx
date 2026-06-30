@@ -11,12 +11,14 @@
  */
 
 import type { ReactNode } from "react";
+import { motion } from "motion/react";
 
 import { GuestAvatar } from "@/components/guest-avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { pageEnter, staggerContainer, staggerItem, fadeIn } from "@/lib/motion";
 
 type BadgeVariant = "default" | "secondary" | "outline" | "destructive";
 
@@ -40,7 +42,13 @@ export function WorkspacePage({
 	children: ReactNode;
 }) {
 	return (
-		<main data-testid={testId} className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 lg:px-6">
+		<motion.main
+			data-testid={testId}
+			variants={pageEnter}
+			initial="hidden"
+			animate="show"
+			className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 lg:px-6"
+		>
 			<header className="flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<div className="mb-2 flex items-center gap-2">
@@ -62,7 +70,7 @@ export function WorkspacePage({
 				{actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
 			</header>
 			{children}
-		</main>
+		</motion.main>
 	);
 }
 
@@ -70,28 +78,33 @@ export type Kpi = { label: string; value: ReactNode; accent?: "danger" | "warn" 
 
 export function KpiStrip({ items }: { items: Kpi[] }) {
 	return (
-		<div
+		<motion.div
+			variants={staggerContainer}
+			initial="hidden"
+			animate="show"
 			className="grid gap-3"
 			style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}
 		>
 			{items.map((k) => (
-				<Card key={k.label}>
-					<CardContent className="p-4">
-						<div className="text-xs uppercase tracking-wide text-muted-foreground">{k.label}</div>
-						<div
-							className={cn(
-								"mt-1 text-xl font-semibold tabular-nums",
-								k.accent === "danger" && "text-destructive",
-								k.accent === "warn" && "text-amber-600",
-								k.accent === "good" && "text-emerald-600"
-							)}
-						>
-							{k.value}
-						</div>
-					</CardContent>
-				</Card>
+				<motion.div key={k.label} variants={staggerItem} whileHover={{ y: -2 }}>
+					<Card>
+						<CardContent className="p-4">
+							<div className="text-xs uppercase tracking-wide text-muted-foreground">{k.label}</div>
+							<div
+								className={cn(
+									"mt-1 text-xl font-semibold tabular-nums",
+									k.accent === "danger" && "text-destructive",
+									k.accent === "warn" && "text-amber-600",
+									k.accent === "good" && "text-emerald-600"
+								)}
+							>
+								{k.value}
+							</div>
+						</CardContent>
+					</Card>
+				</motion.div>
 			))}
-		</div>
+		</motion.div>
 	);
 }
 
@@ -125,6 +138,7 @@ export function RecordHeader({
 	actions?: ReactNode;
 }) {
 	return (
+		<motion.div variants={fadeIn} initial="hidden" animate="show">
 		<Card>
 			<CardContent className="flex flex-col gap-4 p-6">
 				<div className="flex flex-wrap items-start justify-between gap-4">
@@ -190,5 +204,6 @@ export function RecordHeader({
 				{actions ? <div className="flex flex-wrap gap-2 pt-1">{actions}</div> : null}
 			</CardContent>
 		</Card>
+		</motion.div>
 	);
 }

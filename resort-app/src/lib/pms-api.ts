@@ -135,3 +135,18 @@ export async function getFrontDeskBoard(resortProperty?: string): Promise<FrontD
 export async function checkIn(reservation: string): Promise<CheckInResult> {
 	return pmsCall<CheckInResult>("the_reezort.pms.api.check_in", "POST", { reservation });
 }
+
+export type ExtendResult = {
+	stay: string;
+	new_departure_date: string;
+	extra_nights: number;
+	charge_added: string | null;
+	folio: string | null;
+};
+
+export async function extendStay(stay: string, newDepartureDate: string): Promise<ExtendResult> {
+	return pmsCall<ExtendResult>("the_reezort.pms.api.extend_stay", "POST", {
+		stay,
+		new_departure_date: newDepartureDate,
+	});
+}

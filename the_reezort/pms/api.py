@@ -7,7 +7,7 @@ No ERPNext financial documents are created here.
 
 import frappe
 from frappe import _
-from frappe.utils import now
+from frappe.utils import now, today, getdate, date_diff
 
 from the_reezort.billing.api import get_or_create_folio
 
@@ -297,4 +297,72 @@ def check_out(stay):
 		"folio": folio,
 		"reused": bool(existing_task),
 		"next_actions": ["capture_checkout_condition"],
+	}
+
+
+@frappe.whitelist()
+def extend_stay(stay, new_departure_date):
+	"""Extend an in-house stay: push the departure date and charge the extra nights.
+
+	The extra-night rate is taken from the guest's existing room charge so they pay
+	the same nightly rate. Idempotent on (stay, new departure).
+	"""
+	_require_permission("Stay", "write")
+	stay_doc = frappe.get_doc("Stay", stay)
+	if stay_doc.stay_status not in ("In House", "Due Out"):
+		frappe.throw(_("Only an in-house stay can be extended (status is {0}).").format(stay_doc.stay_status))
+
+	new_dep = getdate(new_departure_date)
+	cur_dep = getdate(stay_doc.departure_date)
+	if new_dep <= cur_dep:
+		frappe.throw(_("New departure must be after the current departure ({0}).").format(cur_dep))
+	extra_nights = date_diff(new_dep, cur_dep)
+
+	folio = frappe.db.get_value("Guest Folio", {"stay": stay}, "name")
+	charge_added = None
+	if folio:
+		key = f"extend:{stay}:{new_dep}"
+		existing_line = frappe.db.get_value("Folio Line", {"idempotency_key": key}, "name")
+		if existing_line:
+			charge_added = existing_line
+		else:
+			room_line = frappe.get_all(
+				"Folio Line",
+				filters={"guest_folio": folio, "line_type": "Charge", "source_module": ["in", ["Room", "PMS"]]},
+				fields=["rate"],
+				order_by="creation asc",
+				limit=1,
+			)
+			nightly = room_line[0].rate if room_line and room_line[0].rate else None
+			if nightly:
+				line = frappe.get_doc(
+					{
+						"doctype": "Folio Line",
+						"guest_folio": folio,
+						"line_type": "Charge",
+						"source_module": "Room",
+						"source_doctype": "Stay",
+						"source_name": stay,
+						"idempotency_key": key,
+						"service_date": today(),
+						"qty": extra_nights,
+						"rate": nightly,
+						"amount": extra_nights * nightly,
+						"tax_treatment": "Standard",
+						"description": f"Extended stay: {extra_nights} extra night(s)",
+					}
+				)
+				line.insert(ignore_permissions=True)
+				charge_added = line.name
+
+	frappe.db.set_value("Stay", stay, "departure_date", new_dep)
+	if stay_doc.reservation:
+		frappe.db.set_value("Reservation", stay_doc.reservation, "departure_date", new_dep)
+
+	return {
+		"stay": stay,
+		"new_departure_date": str(new_dep),
+		"extra_nights": extra_nights,
+		"charge_added": charge_added,
+		"folio": folio,
 	}

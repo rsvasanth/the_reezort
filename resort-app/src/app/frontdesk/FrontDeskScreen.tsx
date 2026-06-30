@@ -4,12 +4,22 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, LogIn, ReceiptText } from "lucide-react";
+import { CalendarPlus, Loader2, LogIn, ReceiptText } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetFooter,
+	SheetHeader,
+	SheetTitle,
+} from "@/components/ui/sheet";
 import {
 	Table,
 	TableBody,
@@ -18,7 +28,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { FolioApiError, checkIn, getFrontDeskBoard, type FrontDeskBoard } from "@/lib/pms-api";
+import { FolioApiError, checkIn, extendStay, getFrontDeskBoard, type FrontDeskBoard, type FrontDeskInHouse } from "@/lib/pms-api";
 
 function reportError(error: unknown, fallback: string) {
 	const detail = error instanceof FolioApiError ? error.message : String(error);
@@ -29,6 +39,7 @@ export default function FrontDeskScreen() {
 	const [board, setBoard] = useState<FrontDeskBoard | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [busy, setBusy] = useState<string | null>(null);
+	const [extending, setExtending] = useState<FrontDeskInHouse | null>(null);
 
 	const reload = useCallback(async () => {
 		try {
@@ -156,9 +167,14 @@ export default function FrontDeskScreen() {
 												</TableCell>
 												<TableCell className="text-sm">{s.folio ?? "—"}</TableCell>
 												<TableCell className="text-right">
-													<Button size="sm" variant="outline" disabled={!s.folio} onClick={() => openFolio(s.folio)}>
-														<ReceiptText className="size-4" /> Open folio
-													</Button>
+													<div className="flex justify-end gap-1">
+														<Button size="sm" variant="ghost" onClick={() => setExtending(s)} data-testid={`extend-${s.stay}`}>
+															<CalendarPlus className="size-4" /> Extend
+														</Button>
+														<Button size="sm" variant="outline" disabled={!s.folio} onClick={() => openFolio(s.folio)}>
+															<ReceiptText className="size-4" /> Open folio
+														</Button>
+													</div>
 												</TableCell>
 											</TableRow>
 										))
@@ -171,6 +187,65 @@ export default function FrontDeskScreen() {
 			) : (
 				<Card><CardContent className="py-8 text-sm text-muted-foreground">Could not load the front desk.</CardContent></Card>
 			)}
+
+			{extending ? (
+				<ExtendSheet stay={extending} onClose={() => setExtending(null)} onExtended={reload} />
+			) : null}
 		</main>
+	);
+}
+
+function ExtendSheet({
+	stay,
+	onClose,
+	onExtended,
+}: {
+	stay: FrontDeskInHouse;
+	onClose: () => void;
+	onExtended: () => void;
+}) {
+	const [date, setDate] = useState(stay.departure_date ?? "");
+	const [busy, setBusy] = useState(false);
+
+	async function save() {
+		setBusy(true);
+		try {
+			const result = await extendStay(stay.stay, date);
+			toast.success("Stay extended", {
+				description: result.charge_added
+					? `+${result.extra_nights} night(s) charged to the folio`
+					: `New departure ${result.new_departure_date}`,
+			});
+			onExtended();
+			onClose();
+		} catch (error) {
+			reportError(error, "Could not extend the stay");
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	return (
+		<Sheet open onOpenChange={(o) => !o && onClose()}>
+			<SheetContent className="flex w-full flex-col gap-0 sm:max-w-sm" data-testid="extend-sheet">
+				<SheetHeader>
+					<SheetTitle>Extend stay</SheetTitle>
+					<SheetDescription>{stay.guest} · room {stay.room ?? "—"}</SheetDescription>
+				</SheetHeader>
+				<div className="flex flex-col gap-3 px-4 py-4">
+					<div className="text-sm text-muted-foreground">Current departure: {stay.departure_date ?? "—"}</div>
+					<div className="flex flex-col gap-1.5">
+						<Label className="text-sm">New departure</Label>
+						<Input type="date" value={date} onChange={(e) => setDate(e.target.value)} data-testid="extend-date" />
+					</div>
+				</div>
+				<SheetFooter>
+					<Button onClick={save} disabled={busy || !date} data-testid="extend-confirm">
+						{busy ? <Loader2 className="size-4 animate-spin" /> : null} Extend &amp; charge
+					</Button>
+					<Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
 	);
 }

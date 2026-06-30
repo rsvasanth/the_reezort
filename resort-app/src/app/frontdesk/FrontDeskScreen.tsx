@@ -28,6 +28,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { WorkspacePage, KpiStrip } from "@/components/workspace/workspace";
 import { FolioApiError, checkIn, extendStay, getFrontDeskBoard, type FrontDeskBoard, type FrontDeskInHouse } from "@/lib/pms-api";
 
 function reportError(error: unknown, fallback: string) {
@@ -75,24 +76,25 @@ export default function FrontDeskScreen() {
 	}
 
 	return (
-		<main className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 lg:px-6" data-testid="frontdesk-screen">
-			<header>
-				<Badge variant="outline" className="mb-2">Front desk</Badge>
-				<h1 className="text-3xl font-light text-foreground md:text-4xl">Front desk</h1>
-				<p className="mt-1 text-sm text-muted-foreground">Arrivals, in-house guests, and departures.</p>
-			</header>
-
+		<WorkspacePage
+			testId="frontdesk-screen"
+			badge="Front desk"
+			title="Front desk"
+			subtitle="Arrivals, in-house guests, and departures."
+		>
 			{loading ? (
 				<div className="flex items-center gap-2 text-sm text-muted-foreground">
 					<Loader2 className="size-4 animate-spin" /> Loading…
 				</div>
 			) : board ? (
 				<>
-					<div className="flex flex-wrap gap-2">
-						<Badge variant="secondary">{board.counts.arrivals} arrivals</Badge>
-						<Badge variant="secondary">{board.counts.in_house} in-house</Badge>
-						{board.counts.due_out > 0 ? <Badge variant="destructive">{board.counts.due_out} due out</Badge> : null}
-					</div>
+					<KpiStrip
+						items={[
+							{ label: "Arrivals", value: board.counts.arrivals },
+							{ label: "In-house", value: board.counts.in_house },
+							{ label: "Due out", value: board.counts.due_out, accent: board.counts.due_out > 0 ? "danger" : undefined },
+						]}
+					/>
 
 					{/* Arrivals */}
 					<section className="flex flex-col gap-2">
@@ -191,7 +193,7 @@ export default function FrontDeskScreen() {
 			{extending ? (
 				<ExtendSheet stay={extending} onClose={() => setExtending(null)} onExtended={reload} />
 			) : null}
-		</main>
+		</WorkspacePage>
 	);
 }
 

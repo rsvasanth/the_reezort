@@ -27,6 +27,7 @@ export function WorkspacePage({
 	subtitle,
 	actions,
 	onBack,
+	testId,
 	children,
 }: {
 	badge?: string;
@@ -35,10 +36,11 @@ export function WorkspacePage({
 	subtitle?: ReactNode;
 	actions?: ReactNode;
 	onBack?: () => void;
+	testId?: string;
 	children: ReactNode;
 }) {
 	return (
-		<main className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 lg:px-6">
+		<main data-testid={testId} className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 lg:px-6">
 			<header className="flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<div className="mb-2 flex items-center gap-2">

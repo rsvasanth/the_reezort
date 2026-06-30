@@ -46,6 +46,7 @@ type Props = {
 	mutationsDisabled: boolean;
 	onAddLine: () => void;
 	onSettle: () => void;
+	onDeposit: () => void;
 	onRefresh: () => void;
 	onCheckOut: () => void;
 	checkingOut?: boolean;
@@ -56,6 +57,7 @@ export function FolioHeaderCard({
 	mutationsDisabled,
 	onAddLine,
 	onSettle,
+	onDeposit,
 	onRefresh,
 	onCheckOut,
 	checkingOut,
@@ -153,6 +155,11 @@ export function FolioHeaderCard({
 							{showAddLine && (
 								<Button size="sm" onClick={onAddLine}>
 									Add Line
+								</Button>
+							)}
+							{!mutationsDisabled && (
+								<Button size="sm" variant="outline" onClick={onDeposit} data-testid="folio-deposit">
+									Deposit
 								</Button>
 							)}
 							{showSettle && (

@@ -11,6 +11,7 @@ import { FolioHeaderCard } from "@/components/folio/folio-header-card";
 import { FolioLinesTable } from "@/components/folio/folio-lines-table";
 import { FolioTotalsStrip } from "@/components/folio/folio-totals-strip";
 import { SettleFolioSheet } from "@/components/folio/settle-folio-sheet";
+import { DepositSheet } from "@/components/folio/deposit-sheet";
 import {
 	FolioErrorState,
 	FolioLoadingState,
@@ -40,6 +41,7 @@ export function FolioWorkspace({ folioName }: Props) {
 	const [errorMessage, setErrorMessage] = useState<string>("");
 	const [addLineOpen, setAddLineOpen] = useState(false);
 	const [settleOpen, setSettleOpen] = useState(false);
+	const [depositOpen, setDepositOpen] = useState(false);
 	const [checkingOut, setCheckingOut] = useState(false);
 
 	const load = useCallback(() => {
@@ -143,6 +145,7 @@ export function FolioWorkspace({ folioName }: Props) {
 						onBack={navigateBack}
 						onAddLine={() => setAddLineOpen(true)}
 						onSettle={() => setSettleOpen(true)}
+						onDeposit={() => setDepositOpen(true)}
 						onCheckOut={handleCheckOut}
 						checkingOut={checkingOut}
 					/>
@@ -165,6 +168,13 @@ export function FolioWorkspace({ folioName }: Props) {
 							onClose={() => setSettleOpen(false)}
 							onSettled={() => load()}
 						/>
+						<DepositSheet
+							open={depositOpen}
+							folioName={detail.folio.name}
+							currency={detail.folio.currency}
+							onClose={() => setDepositOpen(false)}
+							onRecorded={() => load()}
+						/>
 					</>
 				)}
 			</SidebarInset>
@@ -181,6 +191,7 @@ function BodyContent({
 	onBack,
 	onAddLine,
 	onSettle,
+	onDeposit,
 	onCheckOut,
 	checkingOut,
 }: {
@@ -192,6 +203,7 @@ function BodyContent({
 	onBack: () => void;
 	onAddLine: () => void;
 	onSettle: () => void;
+	onDeposit: () => void;
 	onCheckOut: () => void;
 	checkingOut: boolean;
 }) {
@@ -235,6 +247,7 @@ function BodyContent({
 				mutationsDisabled={mutationsDisabled}
 				onAddLine={onAddLine}
 				onSettle={onSettle}
+				onDeposit={onDeposit}
 				onRefresh={onRetry}
 				onCheckOut={onCheckOut}
 				checkingOut={checkingOut}

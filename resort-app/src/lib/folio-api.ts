@@ -414,6 +414,34 @@ export async function settleFolio(input: {
 	);
 }
 
+export type DepositResult = {
+	guest_folio: string;
+	folio_line: string;
+	payment_entry: string | null;
+	outstanding: number;
+	total_paid: number;
+	reused: boolean;
+};
+
+export async function recordDeposit(input: {
+	guest_folio: string;
+	amount: number;
+	mode_of_payment: string;
+	reference_no?: string;
+	idempotency_key?: string;
+}): Promise<FolioApiEnvelope<DepositResult>> {
+	return callBilling<DepositResult>("the_reezort.billing.deposits.record_deposit", {
+		method: "POST",
+		body: {
+			guest_folio: input.guest_folio,
+			amount: input.amount,
+			mode_of_payment: input.mode_of_payment,
+			reference_no: input.reference_no,
+			idempotency_key: input.idempotency_key,
+		},
+	});
+}
+
 // ---------- Utility ----------
 
 /**

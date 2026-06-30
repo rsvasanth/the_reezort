@@ -257,11 +257,11 @@ async function callHousekeeping<T>(
  * data.rooms: HousekeepingRoom[]
  */
 export async function getHousekeepingBoard(
-	resort_property = "RZ-DEMO"
+	resort_property?: string
 ): Promise<FolioApiEnvelope<HousekeepingBoard>> {
 	return callHousekeeping<HousekeepingBoard>(
 		"the_reezort.housekeeping.api.get_housekeeping_board",
-		{ method: "GET", params: { resort_property } }
+		{ method: "GET", params: resort_property ? { resort_property } : {} }
 	);
 }
 

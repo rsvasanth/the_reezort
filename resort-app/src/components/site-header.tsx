@@ -1,4 +1,5 @@
 import { ModeToggle } from "@/components/mode-toggle";
+import { MyDayClock } from "@/components/my-day-clock";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -14,6 +15,7 @@ export function SiteHeader() {
 						<h1 className="truncate text-sm font-medium">Resort operations</h1>
 					</div>
 					<div className="flex items-center gap-2">
+						<MyDayClock />
 						<ModeToggle />
 						<div className="hidden items-center gap-2 sm:flex">
 							<Badge variant="outline">app.thereezort.com</Badge>

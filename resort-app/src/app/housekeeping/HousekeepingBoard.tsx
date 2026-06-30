@@ -35,8 +35,6 @@ import mockData from "./mock.json";
 
 type SnapshotState = "loading" | "live" | "mock" | "error";
 
-const DEFAULT_PROPERTY = "RZ-DEMO";
-
 export default function HousekeepingBoard() {
 	const [rooms, setRooms] = useState<HousekeepingRoom[]>([]);
 	const [snapshotState, setSnapshotState] = useState<SnapshotState>("loading");
@@ -46,7 +44,7 @@ export default function HousekeepingBoard() {
 		setSnapshotState("loading");
 		setErrorMessage("");
 
-		getHousekeepingBoard(DEFAULT_PROPERTY)
+		getHousekeepingBoard()
 			.then((envelope) => {
 				if (envelope.ok && envelope.data) {
 					setRooms(envelope.data.rooms);
@@ -122,7 +120,9 @@ export default function HousekeepingBoard() {
 							)}
 						</div>
 						<div className="flex items-center gap-2">
-							<Badge variant="secondary">{DEFAULT_PROPERTY}</Badge>
+							{rooms.length > 0 ? (
+								<Badge variant="secondary">{rooms.length} room{rooms.length === 1 ? "" : "s"}</Badge>
+							) : null}
 							{snapshotState !== "loading" && (
 								<Button
 									size="sm"

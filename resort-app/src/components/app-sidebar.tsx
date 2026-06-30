@@ -26,7 +26,7 @@ import { useFrappeAuth } from "frappe-react-sdk";
 
 import { NavMain, type NavItem } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
-import { canAccessDesk, useUserProfile } from "@/hooks/use-user-profile";
+import { allowedSidebarTitles, canAccessDesk, useUserProfile } from "@/hooks/use-user-profile";
 import {
 	Sidebar,
 	SidebarContent,
@@ -97,9 +97,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	};
 
 	// Desk is reserved for admin / accounts / management; operational roles are SPA-only.
-	const systemItems = canAccessDesk(profile)
+	const allowed = allowedSidebarTitles(profile);
+	const operationsItems = allowed ? operations.filter((i) => allowed.has(i.title)) : operations;
+	const systemBase = canAccessDesk(profile)
 		? system
 		: system.filter((item) => item.title !== "ERPNext desk");
+	const systemItems = allowed ? systemBase.filter((i) => allowed.has(i.title)) : systemBase;
 
 	return (
 		<Sidebar collapsible="offcanvas" {...props}>
@@ -116,9 +119,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				</SidebarMenu>
 			</SidebarHeader>
 			<SidebarContent>
-				<NavMain label="Operations" items={operations} />
+				<NavMain label="Operations" items={operationsItems} />
 				{folioItems.length > 0 ? <NavMain label="Guest folios · live" items={folioItems} /> : null}
-				<NavMain label="System" items={systemItems} className="mt-auto" />
+				{systemItems.length > 0 ? <NavMain label="System" items={systemItems} className="mt-auto" /> : null}
 			</SidebarContent>
 			<SidebarFooter>
 				<NavUser user={user} />

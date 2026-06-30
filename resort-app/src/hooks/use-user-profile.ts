@@ -17,6 +17,55 @@ export function canAccessDesk(profile: UserProfile | null): boolean {
 	return profile.isSystemManager || profile.roles.some((r) => DESK_ROLES.includes(r));
 }
 
+const MANAGER_ROLES = ["System Manager", "Resort Manager"];
+
+export function isManager(profile: UserProfile | null): boolean {
+	if (!profile) return false;
+	if (profile.isSystemManager) return true;
+	return profile.roles.some((r) => MANAGER_ROLES.includes(r));
+}
+
+/**
+ * The screen a user lands on when they open the app with no hash route.
+ * Managers see the cockpit; operational roles go straight to their workspace.
+ */
+export function defaultLandingRoute(profile: UserProfile | null): string {
+	if (!profile) return "";
+	if (isManager(profile)) return "";
+	if (profile.roles.includes("Front Desk") || profile.roles.includes("Reservation Agent")) return "#/frontdesk";
+	if (profile.roles.includes("Housekeeping")) return "#/housekeeping";
+	if (profile.roles.includes("Accounts User") || profile.roles.includes("Accounts Manager")) return "#/billing";
+	if (profile.roles.includes("Maintenance")) return "#/servicedesk";
+	return "";
+}
+
+/**
+ * Which sidebar items each non-manager role gets — managers see everything.
+ * Including extras beyond the must-haves keeps the shell discoverable.
+ */
+const ROLE_SIDEBAR: Record<string, string[]> = {
+	"Front Desk": ["Executive cockpit", "Reservations", "Front desk", "Housekeeping", "Billing", "Service desk"],
+	"Reservation Agent": ["Executive cockpit", "Reservations", "Front desk", "Billing"],
+	Housekeeping: ["Executive cockpit", "Housekeeping", "Service desk"],
+	Maintenance: ["Executive cockpit", "Service desk", "Housekeeping"],
+	"Accounts User": ["Executive cockpit", "Billing", "Reservations", "Front desk"],
+	"Accounts Manager": ["Executive cockpit", "Billing", "Reservations", "Front desk"],
+	Restaurant: ["Executive cockpit", "Restaurant & bar"],
+	Concierge: ["Executive cockpit", "Concierge", "Front desk", "Reservations"],
+};
+
+/** Returns the set of sidebar titles a user may see — null = everything (managers). */
+export function allowedSidebarTitles(profile: UserProfile | null): Set<string> | null {
+	if (!profile || isManager(profile)) return null;
+	const allowed = new Set<string>();
+	for (const role of profile.roles) {
+		const items = ROLE_SIDEBAR[role];
+		if (items) items.forEach((i) => allowed.add(i));
+	}
+	if (allowed.size === 0) allowed.add("Executive cockpit");
+	return allowed;
+}
+
 /**
  * Loads the logged-in user's profile (name + roles) from
  * the_reezort.account.api.get_current_user_profile. Falls back to the bare

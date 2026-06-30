@@ -27,7 +27,7 @@ import BillingOverviewScreen from "@/app/billing/BillingOverviewScreen";
 import FrontDeskScreen from "@/app/frontdesk/FrontDeskScreen";
 import ReservationsScreen from "@/app/reservations/ReservationsScreen";
 import { parseHashRoute, useHashRoute } from "@/hooks/use-hash-route";
-import { canAccessDesk, useUserProfile } from "@/hooks/use-user-profile";
+import { canAccessDesk, defaultLandingRoute, useUserProfile } from "@/hooks/use-user-profile";
 import { useVersionCheck } from "@/hooks/use-version-check";
 import { toOperationalRows, toSectionCards } from "@/lib/dashboard-adapter";
 import {
@@ -184,6 +184,15 @@ function AuthGate() {
 	const { currentUser, isLoading } = useFrappeAuth();
 	const hash = useHashRoute();
 	const route = parseHashRoute(hash);
+	const profile = useUserProfile(currentUser ?? null);
+
+	// Redirect operational roles to their workspace if they land on the bare URL.
+	useEffect(() => {
+		if (!currentUser || !profile) return;
+		if (hash && hash !== "" && hash !== "#" && hash !== "#/") return;
+		const target = defaultLandingRoute(profile);
+		if (target) window.location.hash = target;
+	}, [currentUser, profile, hash]);
 
 	if (isLoading) {
 		return <FullScreenLoader />;

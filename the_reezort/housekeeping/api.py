@@ -316,8 +316,11 @@ def complete_task(task, checklist=None, notes=None, photos=None, exception_appro
 
 
 @frappe.whitelist()
-def get_housekeeping_board(resort_property):
+def get_housekeeping_board(resort_property=None):
 	_require_permission("Housekeeping Task", "read")
+	# Default to the first active property so the board works after the demo wipe.
+	if not resort_property:
+		resort_property = frappe.db.get_value("Resort Property", {"is_active": 1}, "name")
 	rooms = frappe.get_all(
 		"Room",
 		filters={"resort_property": resort_property, "is_active": 1},

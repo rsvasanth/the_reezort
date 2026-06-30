@@ -169,6 +169,31 @@ export async function clockOut(employee: string): Promise<{ employee: string; lo
 	return callStaff("the_reezort.staff.attendance_api.clock_out", { method: "POST", body: { employee } });
 }
 
+// ---------- Self-service: "my day" widget for any signed-in staff ----------
+
+export type MyDay = {
+	user: string;
+	employee: string | null;
+	employee_name: string | null;
+	designation: string | null;
+	date: string;
+	clocked: "IN" | "OUT" | null;
+	last_time: string | null;
+	open_tasks: number;
+};
+
+export async function getMyDay(): Promise<MyDay> {
+	return callStaff("the_reezort.staff.attendance_api.get_my_day", { method: "GET", params: {} });
+}
+
+export async function selfClockIn(): Promise<{ employee: string; log_type: string }> {
+	return callStaff("the_reezort.staff.attendance_api.clock_in", { method: "POST", body: {} });
+}
+
+export async function selfClockOut(): Promise<{ employee: string; log_type: string }> {
+	return callStaff("the_reezort.staff.attendance_api.clock_out", { method: "POST", body: {} });
+}
+
 export async function markAttendance(
 	employee: string,
 	status: string,

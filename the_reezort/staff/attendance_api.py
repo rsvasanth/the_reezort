@@ -92,6 +92,42 @@ def get_attendance_board(date=None):
 	return _envelope({"date": date_str, "board": board, "statuses": ATTENDANCE_STATUSES})
 
 
+# ---------- self-service "my day" widget ----------
+
+@frappe.whitelist()
+def get_my_day(date=None):
+	"""Today's attendance state for the logged-in user, for the clock widget.
+
+	Returns whether the user has an Employee record (some accounts are SPA-only
+	with no payroll link), their last IN/OUT checkin today, and a count of
+	open Housekeeping Tasks assigned to them — drives the per-role landing card.
+	"""
+	_require_login()
+	emp = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["name", "employee_name", "designation"], as_dict=True)
+	date_str = str(getdate(date) if date else getdate(today()))
+
+	checkin = _last_checkin(emp.name, date_str) if emp else None
+	open_tasks = frappe.db.count(
+		"Housekeeping Task",
+		{
+			"assigned_user": frappe.session.user,
+			"task_status": ["in", ["Queued", "Assigned", "In Progress", "Paused"]],
+		},
+	)
+	return _envelope(
+		{
+			"user": frappe.session.user,
+			"employee": emp.name if emp else None,
+			"employee_name": emp.employee_name if emp else None,
+			"designation": emp.designation if emp else None,
+			"date": date_str,
+			"clocked": checkin.log_type if checkin else None,
+			"last_time": str(checkin.time) if checkin else None,
+			"open_tasks": open_tasks,
+		}
+	)
+
+
 # ---------- clock in / out (self-service; managers for others) ----------
 
 def _record_checkin(employee, log_type):

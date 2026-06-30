@@ -341,8 +341,8 @@ export async function getOrCreateFolio(input: {
 	stay?: string;
 	customer?: string;
 	folio_type?: FolioType;
-}): Promise<FolioApiEnvelope<GuestFolioHeader>> {
-	return callBilling<GuestFolioHeader>(
+}): Promise<FolioApiEnvelope<{ folio: GuestFolioHeader }>> {
+	return callBilling<{ folio: GuestFolioHeader }>(
 		"the_reezort.billing.api.get_or_create_folio",
 		{
 			method: "GET",

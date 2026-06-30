@@ -527,7 +527,7 @@ function DepositStep({
 			let folio = ctx.folio;
 			if (!folio) {
 				const opened = await getOrCreateFolio({ reservation });
-				folio = opened.data?.name ?? null;
+				folio = opened.data?.folio?.name ?? null;
 			}
 			if (!folio) throw new Error("Could not open a folio for the deposit");
 			await recordDeposit({ guest_folio: folio, amount: amt, mode_of_payment: mode });

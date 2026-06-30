@@ -131,6 +131,16 @@ class TestCheckInProcess(FrappeTestCase):
 
 	# ---------- finalize gate ----------
 
+	def test_registration_card_snapshots_identity_from_profile(self):
+		res = self._reservation()
+		save_guest_kyc(res.name, {"id_type": "Passport", "id_number": "P55", "nationality": "Indian"}, verify=1)
+		# Card payload carries no ID fields — they must be snapshotted from the profile.
+		out = save_registration_card(res.name, {"purpose_of_visit": "Leisure"})
+		card = out["registration_card"]
+		self.assertEqual(card["id_type"], "Passport")
+		self.assertEqual(card["id_number"], "P55")
+		self.assertEqual(card["nationality"], "Indian")
+
 	def test_finalize_blocked_without_kyc(self):
 		res = self._reservation()
 		with self.assertRaises(frappe.ValidationError):

@@ -426,6 +426,14 @@ def save_registration_card(reservation, card):
 			doc.set(field, card.get(field))
 	doc.terms_accepted = 1 if card.get("terms_accepted") else 0
 
+	# Snapshot the verified identity from the guest profile so the card stays a
+	# self-contained legal record (independent of later profile edits).
+	guest = _guest_context(res.staying_guest_profile)
+	if guest:
+		for field in ("id_type", "id_number", "nationality", "date_of_birth", "address"):
+			if not doc.get(field) and guest.get(field):
+				doc.set(field, guest.get(field))
+
 	now_signed = bool(doc.signature and doc.terms_accepted)
 	if now_signed and not doc.signed_at:
 		doc.signed_at = now()

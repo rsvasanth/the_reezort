@@ -21,6 +21,7 @@ import PropertyManagementScreen from "@/app/property/PropertyManagementScreen";
 import StaffAccessScreen from "@/app/staff/StaffAccessScreen";
 import AttendanceScreen from "@/app/staff/AttendanceScreen";
 import ServiceDeskScreen from "@/app/servicedesk/ServiceDeskScreen";
+import BillingOverviewScreen from "@/app/billing/BillingOverviewScreen";
 import { parseHashRoute, useHashRoute } from "@/hooks/use-hash-route";
 import { canAccessDesk, useUserProfile } from "@/hooks/use-user-profile";
 import { toOperationalRows, toSectionCards } from "@/lib/dashboard-adapter";
@@ -214,6 +215,14 @@ function AuthGate() {
 		return (
 			<AppShell>
 				<ServiceDeskScreen />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "billing") {
+		return (
+			<AppShell>
+				<BillingOverviewScreen />
 			</AppShell>
 		);
 	}

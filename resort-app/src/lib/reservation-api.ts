@@ -31,6 +31,24 @@ export type ReservationRow = {
 	currency: string | null;
 };
 
+export type ReservationDetail = {
+	reservation: string;
+	status: string;
+	guest: string;
+	arrival_date: string | null;
+	departure_date: string | null;
+	nights: number | null;
+	deposit_status: string | null;
+	total_estimated_amount: number | null;
+	currency: string | null;
+	resort_property: string;
+	booking_source: string | null;
+	check_in_ready: boolean;
+	stay: string | null;
+	rooms: { room_type: string; adults: number; children: number; estimated_amount: number | null; status: string }[];
+	guests: { guest_name: string; email: string | null; phone: string | null; is_primary_guest: number }[];
+};
+
 const BASE = "/api/method";
 
 function readCsrfToken(): string {
@@ -77,6 +95,10 @@ async function call<T>(path: string, method: "GET" | "POST", body?: Record<strin
 
 export async function listReservations(): Promise<{ reservations: ReservationRow[] }> {
 	return call("the_reezort.reservation.api.list_reservations", "GET");
+}
+
+export async function getReservation(reservation: string): Promise<ReservationDetail> {
+	return call("the_reezort.reservation.api.get_reservation", "GET", { reservation });
 }
 
 export async function searchAvailability(

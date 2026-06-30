@@ -10,6 +10,7 @@ other record links the row (Frappe's LinkExistsError is the guard).
 
 import frappe
 from frappe import _
+from frappe.utils import flt
 
 from the_reezort.setup.api import (
 	_as_dict,
@@ -117,6 +118,14 @@ def update_record(doctype, name, payload):
 			doc.set(field, _clean(value) if isinstance(value, str) else value)
 			changed.append(field)
 	doc.save(ignore_permissions=True)
+
+	# Room Type nightly rate lives in an ERPNext Item Price, not on the doctype.
+	if doctype == "Room Type" and "nightly_rate" in payload:
+		from the_reezort.setup.api import _attach_room_rate
+
+		_attach_room_rate(doc.name, doc.room_type_code, doc.room_type_name, flt(payload.get("nightly_rate")))
+		changed.append("nightly_rate")
+
 	serializer = _SERIALIZERS.get(doctype, lambda d: {"name": d.name})
 	return _envelope({"record": serializer(doc), "changed": changed})
 

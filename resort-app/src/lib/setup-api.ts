@@ -76,6 +76,7 @@ export type TreeRoomType = {
 	room_type_code: string;
 	max_occupancy: number;
 	is_active: number;
+	nightly_rate?: number;
 };
 export type TreeRoom = {
 	name: string;
@@ -176,6 +177,7 @@ export type CreateRoomTypePayload = {
 	standard_children?: number;
 	description?: string | null;
 	bed_configuration?: string | null;
+	nightly_rate?: number;
 };
 
 export type CreateRoomsBulkPayload = {

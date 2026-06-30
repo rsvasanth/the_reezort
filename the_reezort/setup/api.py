@@ -13,9 +13,81 @@ import json
 
 import frappe
 from frappe import _
+from frappe.utils import flt
 
 
 # ---------- helpers ----------
+
+def _resort_company():
+	return frappe.defaults.get_global_default("company") or frappe.db.get_value("Company", {}, "name")
+
+
+def ensure_room_item(item_code, item_name, nightly_rate, company=None):
+	"""Ensure an ERPNext sellable service Item + its selling Item Price for a room type.
+
+	This is what makes a console-created room type actually price (availability,
+	estimates, folio room charges all read the Item Price via reservation._room_rate).
+	"""
+	company = company or _resort_company()
+	if not frappe.db.exists("Item", item_code):
+		item = frappe.get_doc(
+			{
+				"doctype": "Item",
+				"item_code": item_code,
+				"item_name": item_name,
+				"item_group": "Services",
+				"stock_uom": "Nos",
+				"is_stock_item": 0,
+				"include_item_in_manufacturing": 0,
+			}
+		)
+		gst = frappe.db.get_value("Item Tax Template", {"title": "GST 18%", "company": company}, "name") or frappe.db.get_value(
+			"Item Tax Template", {"title": ["like", "GST 18%%"]}, "name"
+		)
+		if gst:
+			item.set("taxes", [{"item_tax_template": gst}])
+		item.insert(ignore_permissions=True)
+
+	rate = flt(nightly_rate)
+	if rate > 0:
+		price_list = frappe.db.get_value("Price List", {"selling": 1, "enabled": 1}, "name") or "Standard Selling"
+		existing = frappe.db.get_value(
+			"Item Price", {"item_code": item_code, "price_list": price_list, "selling": 1}, "name"
+		)
+		if existing:
+			frappe.db.set_value("Item Price", existing, "price_list_rate", rate)
+		else:
+			frappe.get_doc(
+				{
+					"doctype": "Item Price",
+					"item_code": item_code,
+					"price_list": price_list,
+					"selling": 1,
+					"price_list_rate": rate,
+				}
+			).insert(ignore_permissions=True)
+	return item_code
+
+
+def _attach_room_rate(room_type_name, code, name, nightly_rate):
+	"""Create/link the room type's ERPNext item + price so it actually prices."""
+	item_code = f"ROOM-{code}"
+	ensure_room_item(item_code, f"{name} (Room)", nightly_rate)
+	frappe.db.set_value("Room Type", room_type_name, "erpnext_item", item_code)
+	return item_code
+
+
+def _room_type_rate(erpnext_item):
+	"""The selling nightly rate for a room type's linked item (0 if unpriced)."""
+	if not erpnext_item:
+		return 0
+	price_list = frappe.db.get_value("Price List", {"selling": 1, "enabled": 1}, "name")
+	return flt(
+		frappe.db.get_value(
+			"Item Price", {"item_code": erpnext_item, "price_list": price_list, "selling": 1}, "price_list_rate"
+		)
+	)
+
 
 def _as_dict(value):
 	if isinstance(value, str):
@@ -150,9 +222,11 @@ def get_property_tree(resort_property):
 	room_types = frappe.get_all(
 		"Room Type",
 		filters={"resort_property": resort_property},
-		fields=["name", "room_type_name", "room_type_code", "max_occupancy", "is_active"],
+		fields=["name", "room_type_name", "room_type_code", "max_occupancy", "is_active", "erpnext_item"],
 		order_by="room_type_name asc",
 	)
+	for rt in room_types:
+		rt["nightly_rate"] = _room_type_rate(rt.get("erpnext_item"))
 	rooms = frappe.get_all(
 		"Room",
 		filters={"resort_property": resort_property},
@@ -323,6 +397,7 @@ def create_room_type(payload):
 	code = _clean(payload.get("room_type_code"))
 	standard_adults = int(payload.get("standard_adults") or 2)
 	max_occupancy = int(payload.get("max_occupancy") or standard_adults)
+	nightly_rate = flt(payload.get("nightly_rate"))
 
 	if not resort_property or not frappe.db.exists("Resort Property", resort_property):
 		frappe.throw(_("A valid resort property is required."))
@@ -335,6 +410,8 @@ def create_room_type(payload):
 
 	existing = _exists("Room Type", {"resort_property": resort_property, "room_type_code": code})
 	if existing:
+		if nightly_rate > 0:
+			_attach_room_rate(existing, code, name, nightly_rate)
 		return _envelope(
 			{"room_type": _room_type_data(frappe.get_doc("Room Type", existing)), "reused": True}
 		)
@@ -354,7 +431,12 @@ def create_room_type(payload):
 		}
 	)
 	doc.insert(ignore_permissions=True)
-	return _envelope({"room_type": _room_type_data(doc), "reused": False}, next_actions=["create_rooms"])
+	if nightly_rate > 0:
+		_attach_room_rate(doc.name, code, name, nightly_rate)
+	return _envelope(
+		{"room_type": _room_type_data(frappe.get_doc("Room Type", doc.name)), "reused": False},
+		next_actions=["create_rooms"],
+	)
 
 
 @frappe.whitelist()

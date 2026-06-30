@@ -44,12 +44,18 @@ import {
 	listAmenities,
 	listSetupOptions,
 	setActive,
+	updateRecord,
 	type Amenity,
 	type ManagedDoctype,
 	type PropertyOption,
 	type PropertyTree,
 	type TreeRoom,
+	type TreeRoomType,
 } from "@/lib/setup-api";
+
+function rupees(n?: number): string {
+	return `₹${Number(n ?? 0).toLocaleString("en-IN")}`;
+}
 
 function reportError(error: unknown, fallback: string) {
 	const detail = error instanceof FolioApiError ? error.blockers[0]?.message ?? error.message : String(error);
@@ -386,26 +392,54 @@ function StructureTab({ tree, onMutate }: { tree: PropertyTree; onMutate: Mutate
 	);
 }
 
+function RoomTypeRow({ t, onMutate }: { t: TreeRoomType; onMutate: MutateFn }) {
+	const [rate, setRate] = useState(String(t.nightly_rate ?? ""));
+	const dirty = rate !== String(t.nightly_rate ?? "");
+	return (
+		<div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+			<span className={t.is_active ? "" : "text-muted-foreground line-through"}>
+				{t.room_type_name} <span className="text-muted-foreground">({t.room_type_code}, max {t.max_occupancy})</span>
+			</span>
+			<div className="flex items-center gap-1">
+				<span className="text-xs text-muted-foreground">₹/night</span>
+				<Input
+					className="h-8 w-28"
+					type="number"
+					min="0"
+					value={rate}
+					onChange={(e) => setRate(e.target.value)}
+					data-testid={`rate-${t.room_type_code}`}
+				/>
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={!dirty}
+					onClick={() => onMutate(() => updateRecord("Room Type", t.name, { nightly_rate: parseFloat(rate) || 0 }), "Rate updated")}
+				>
+					Set
+				</Button>
+				<Button variant="ghost" size="icon" aria-label="Toggle active" onClick={() => onMutate(() => setActive("Room Type", t.name, !t.is_active), "Updated")}><Power className="size-4" /></Button>
+				<DeleteButton doctype="Room Type" name={t.name} onMutate={onMutate} />
+			</div>
+		</div>
+	);
+}
+
 function RoomTypesTab({ tree, onMutate }: { tree: PropertyTree; onMutate: MutateFn }) {
-	const [rt, setRt] = useState({ room_type_name: "", room_type_code: "", standard_adults: "2", max_occupancy: "2" });
+	const [rt, setRt] = useState({ room_type_name: "", room_type_code: "", standard_adults: "2", max_occupancy: "2", nightly_rate: "" });
 	return (
 		<Card>
 			<CardContent className="flex flex-col gap-3 py-4">
 				{tree.room_types.map((t) => (
-					<div key={t.name} className="flex items-center justify-between text-sm">
-						<span className={t.is_active ? "" : "text-muted-foreground line-through"}>{t.room_type_name} <span className="text-muted-foreground">({t.room_type_code}, max {t.max_occupancy})</span></span>
-						<div className="flex gap-1">
-							<Button variant="ghost" size="icon" aria-label="Toggle active" onClick={() => onMutate(() => setActive("Room Type", t.name, !t.is_active), "Updated")}><Power className="size-4" /></Button>
-							<DeleteButton doctype="Room Type" name={t.name} onMutate={onMutate} />
-						</div>
-					</div>
+					<RoomTypeRow key={t.name} t={t} onMutate={onMutate} />
 				))}
-				<div className="grid grid-cols-[1.4fr_1fr_0.7fr_0.7fr_auto] items-end gap-2">
-					<Field label="Name"><Input value={rt.room_type_name} onChange={(e) => setRt({ ...rt, room_type_name: e.target.value })} placeholder="Suite" /></Field>
-					<Field label="Code"><Input value={rt.room_type_code} onChange={(e) => setRt({ ...rt, room_type_code: e.target.value })} placeholder="STE" /></Field>
+				<div className="grid grid-cols-[1.3fr_0.9fr_0.6fr_0.6fr_0.9fr_auto] items-end gap-2">
+					<Field label="Name"><Input value={rt.room_type_name} onChange={(e) => setRt({ ...rt, room_type_name: e.target.value })} placeholder="Signature Arch Villa" /></Field>
+					<Field label="Code"><Input value={rt.room_type_code} onChange={(e) => setRt({ ...rt, room_type_code: e.target.value })} placeholder="SAV" /></Field>
 					<Field label="Adults"><Input type="number" value={rt.standard_adults} onChange={(e) => setRt({ ...rt, standard_adults: e.target.value })} /></Field>
 					<Field label="Max"><Input type="number" value={rt.max_occupancy} onChange={(e) => setRt({ ...rt, max_occupancy: e.target.value })} /></Field>
-					<Button disabled={!rt.room_type_name || !rt.room_type_code} onClick={() => onMutate(() => createRoomType({ resort_property: tree.resort_property, room_type_name: rt.room_type_name, room_type_code: rt.room_type_code, standard_adults: parseInt(rt.standard_adults, 10) || 2, max_occupancy: parseInt(rt.max_occupancy, 10) || 2 }), "Room type added").then(() => setRt({ room_type_name: "", room_type_code: "", standard_adults: "2", max_occupancy: "2" }))}><Plus className="size-4" /></Button>
+					<Field label="₹/night"><Input type="number" min="0" value={rt.nightly_rate} onChange={(e) => setRt({ ...rt, nightly_rate: e.target.value })} placeholder="18000" /></Field>
+					<Button disabled={!rt.room_type_name || !rt.room_type_code} onClick={() => onMutate(() => createRoomType({ resort_property: tree.resort_property, room_type_name: rt.room_type_name, room_type_code: rt.room_type_code, standard_adults: parseInt(rt.standard_adults, 10) || 2, max_occupancy: parseInt(rt.max_occupancy, 10) || 2, nightly_rate: parseFloat(rt.nightly_rate) || 0 }), "Room type added").then(() => setRt({ room_type_name: "", room_type_code: "", standard_adults: "2", max_occupancy: "2", nightly_rate: "" }))}><Plus className="size-4" /></Button>
 				</div>
 			</CardContent>
 		</Card>

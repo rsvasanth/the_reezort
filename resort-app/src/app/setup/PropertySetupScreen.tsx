@@ -106,6 +106,7 @@ export default function PropertySetupScreen() {
 		room_type_code: "",
 		standard_adults: "2",
 		max_occupancy: "2",
+		nightly_rate: "",
 	});
 	const [roomForm, setRoomForm] = useState({
 		start: "101",
@@ -215,6 +216,7 @@ export default function PropertySetupScreen() {
 					room_type_code: rtForm.room_type_code,
 					standard_adults: parseInt(rtForm.standard_adults, 10) || 2,
 					max_occupancy: parseInt(rtForm.max_occupancy, 10) || 2,
+					nightly_rate: parseFloat(rtForm.nightly_rate) || 0,
 				}),
 			"Could not save the room type"
 		);
@@ -260,7 +262,7 @@ export default function PropertySetupScreen() {
 		setStep(0);
 		setBForm({ building_name: "", building_code: "" });
 		setFForm({ floor_label: "", floor_code: "" });
-		setRtForm({ room_type_name: "", room_type_code: "", standard_adults: "2", max_occupancy: "2" });
+		setRtForm({ room_type_name: "", room_type_code: "", standard_adults: "2", max_occupancy: "2", nightly_rate: "" });
 		setRoomForm({ start: "101", count: "10", smoking_policy: "Non-Smoking" });
 	}
 
@@ -461,6 +463,16 @@ export default function PropertySetupScreen() {
 											value={rtForm.max_occupancy}
 											onChange={(e) => setRtForm({ ...rtForm, max_occupancy: e.target.value })}
 											data-testid="f-roomtype-max"
+										/>
+									</Field>
+									<Field label="Nightly rate (₹)">
+										<Input
+											type="number"
+											min="0"
+											value={rtForm.nightly_rate}
+											onChange={(e) => setRtForm({ ...rtForm, nightly_rate: e.target.value })}
+											placeholder="18000"
+											data-testid="f-roomtype-rate"
 										/>
 									</Field>
 								</div>

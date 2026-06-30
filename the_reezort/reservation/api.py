@@ -113,8 +113,10 @@ def _active_hold_usage(property_name, arrival_date, departure_date):
 
 
 def _room_rate(room_type, nights):
-	room_type_code = frappe.db.get_value("Room Type", room_type, "room_type_code")
-	item_code = ROOM_ITEM_BY_CODE.get(room_type_code)
+	# Prefer the Room Type's own linked ERPNext item (set when a rate is configured in
+	# the console); fall back to the legacy hardcoded map for the original demo types.
+	rt = frappe.db.get_value("Room Type", room_type, ["erpnext_item", "room_type_code"], as_dict=True) or {}
+	item_code = rt.get("erpnext_item") or ROOM_ITEM_BY_CODE.get(rt.get("room_type_code"))
 	price_list = frappe.db.get_value("Price List", {"selling": 1, "enabled": 1}, "name")
 	rate = 0
 

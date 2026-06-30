@@ -41,7 +41,7 @@ import {
 const operations: NavItem[] = [
 	{ title: "Executive cockpit", url: "/resort-app", icon: LayoutDashboardIcon, status: "live" },
 	{ title: "Reservations", url: "#", icon: CalendarDaysIcon, status: "soon" },
-	{ title: "Front desk", url: "#", icon: BedDoubleIcon, status: "soon" },
+	{ title: "Front desk", url: "/resort-app#/frontdesk", icon: BedDoubleIcon, status: "live" },
 	{ title: "Housekeeping", url: "/resort-app#/housekeeping", icon: SparklesIcon, status: "live" },
 	{ title: "Billing", url: "/resort-app#/billing", icon: ReceiptTextIcon, status: "live" },
 	{ title: "Restaurant & bar", url: "#", icon: UtensilsIcon, status: "soon" },

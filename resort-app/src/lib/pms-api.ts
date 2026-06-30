@@ -16,6 +16,41 @@ export type CheckOutResult = {
 	reused: boolean;
 };
 
+export type CheckInResult = {
+	stay: string;
+	stay_status: string;
+	folio: string;
+	current_room: string | null;
+	reused: boolean;
+};
+
+export type FrontDeskArrival = {
+	reservation: string;
+	guest: string;
+	arrival_date: string | null;
+	departure_date: string | null;
+	room_type: string | null;
+	nights: number | null;
+	due_today: boolean;
+};
+
+export type FrontDeskInHouse = {
+	stay: string;
+	guest: string;
+	room: string | null;
+	arrival_date: string | null;
+	departure_date: string | null;
+	folio: string | null;
+	folio_status: string | null;
+	due_out: boolean;
+};
+
+export type FrontDeskBoard = {
+	arrivals: FrontDeskArrival[];
+	in_house: FrontDeskInHouse[];
+	counts: { arrivals: number; in_house: number; due_out: number };
+};
+
 const BASE = "/api/method";
 
 function readCsrfToken(): string {
@@ -52,4 +87,51 @@ export async function checkOut(stay: string): Promise<CheckOutResult> {
 	const data = (parsed as { message?: CheckOutResult } | undefined)?.message;
 	if (!data) throw new FolioApiError("Checkout returned an unexpected body", { status: response.status });
 	return data;
+}
+
+async function pmsCall<T>(path: string, method: "GET" | "POST", body?: Record<string, unknown>): Promise<T> {
+	let url = `${BASE}/${path}`;
+	if (method === "GET" && body) {
+		const search = new URLSearchParams();
+		for (const [k, v] of Object.entries(body)) {
+			if (v !== undefined && v !== null && v !== "") search.set(k, String(v));
+		}
+		const qs = search.toString();
+		if (qs) url += `?${qs}`;
+	}
+	const response = await fetch(url, {
+		method,
+		credentials: "include",
+		headers: {
+			Accept: "application/json",
+			"X-Frappe-CSRF-Token": readCsrfToken(),
+			...(method === "POST" ? { "Content-Type": "application/json" } : {}),
+		},
+		body: method === "POST" ? JSON.stringify(body ?? {}) : undefined,
+	});
+	const text = await response.text();
+	let parsed: unknown;
+	try {
+		parsed = text ? JSON.parse(text) : undefined;
+	} catch {
+		parsed = undefined;
+	}
+	if (!response.ok) {
+		const msg =
+			(parsed as { exception?: string } | undefined)?.exception ?? `${path} failed with ${response.status}`;
+		throw new FolioApiError(msg, { status: response.status });
+	}
+	const data = (parsed as { message?: T } | undefined)?.message;
+	if (data === undefined) throw new FolioApiError(`${path} returned an unexpected body`, { status: response.status });
+	return data;
+}
+
+export async function getFrontDeskBoard(resortProperty?: string): Promise<FrontDeskBoard> {
+	return pmsCall<FrontDeskBoard>("the_reezort.pms.front_desk.get_front_desk_board", "GET", {
+		resort_property: resortProperty,
+	});
+}
+
+export async function checkIn(reservation: string): Promise<CheckInResult> {
+	return pmsCall<CheckInResult>("the_reezort.pms.api.check_in", "POST", { reservation });
 }

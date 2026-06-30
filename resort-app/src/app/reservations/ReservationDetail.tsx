@@ -3,12 +3,28 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, CalendarDays, BedDouble, LogIn } from "lucide-react";
+import { Loader2, CalendarDays, BedDouble, BadgeCheck, CreditCard, LogIn, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetFooter,
+	SheetHeader,
+	SheetTitle,
+} from "@/components/ui/sheet";
 import {
 	Table,
 	TableBody,
@@ -17,9 +33,20 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { Field } from "@/components/workspace/field";
 import { WorkspacePage, RecordHeader, KpiStrip } from "@/components/workspace/workspace";
 import { formatCurrency } from "@/components/folio/folio-format";
-import { FolioApiError, cancelReservation, getReservation, type ReservationDetail as Detail } from "@/lib/reservation-api";
+import {
+	FolioApiError,
+	cancelReservation,
+	ensureBookingFolio,
+	getReservation,
+	getReservationDepositState,
+	recordBookingDeposit,
+	type ReservationDepositState,
+	type ReservationDetail as Detail,
+} from "@/lib/reservation-api";
+import { payDepositViaRazorpay } from "@/lib/folio-api";
 
 function go(path: string) {
 	window.location.hash = path;
@@ -34,12 +61,19 @@ const STATUS_VARIANT: Record<string, "secondary" | "outline" | "destructive"> = 
 
 export default function ReservationDetail({ reservation }: { reservation: string }) {
 	const [detail, setDetail] = useState<Detail | null>(null);
+	const [depositState, setDepositState] = useState<ReservationDepositState | null>(null);
+	const [depositOpen, setDepositOpen] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [busy, setBusy] = useState(false);
 
 	const reload = useCallback(async () => {
 		try {
-			setDetail(await getReservation(reservation));
+			const [d, s] = await Promise.all([
+				getReservation(reservation),
+				getReservationDepositState(reservation).catch(() => null),
+			]);
+			setDetail(d);
+			setDepositState(s);
 		} catch (error) {
 			const msg = error instanceof FolioApiError ? error.message : String(error);
 			toast.error("Could not load reservation", { description: msg });
@@ -104,6 +138,11 @@ export default function ReservationDetail({ reservation }: { reservation: string
 				]}
 				actions={
 					<>
+						{depositState && depositState.required_amount > 0 && depositState.outstanding_amount > 0 ? (
+							<Button size="sm" variant="default" onClick={() => setDepositOpen(true)} data-testid="res-take-deposit">
+								<CreditCard className="size-4" /> Take deposit
+							</Button>
+						) : null}
 						{canCheckIn ? (
 							<Button size="sm" onClick={() => go(`#/check-in/${encodeURIComponent(reservation)}`)} data-testid="res-checkin">
 								<LogIn className="size-4" /> Check in
@@ -115,6 +154,14 @@ export default function ReservationDetail({ reservation }: { reservation: string
 					</>
 				}
 			/>
+
+			{depositState && depositState.required_amount > 0 ? (
+				<DepositGatePanel
+					state={depositState}
+					currency={cur}
+					onTakeDeposit={() => setDepositOpen(true)}
+				/>
+			) : null}
 
 			<KpiStrip
 				items={[
@@ -172,6 +219,168 @@ export default function ReservationDetail({ reservation }: { reservation: string
 					</CardContent>
 				</Card>
 			) : null}
+
+			{depositOpen && depositState ? (
+				<TakeDepositSheet
+					reservation={reservation}
+					state={depositState}
+					booker={detail?.guests?.[0]}
+					onClose={() => setDepositOpen(false)}
+					onRecorded={() => { setDepositOpen(false); void reload(); }}
+				/>
+			) : null}
 		</WorkspacePage>
+	);
+}
+
+// ---------- deposit gate panel ----------
+
+function DepositGatePanel({
+	state,
+	currency,
+	onTakeDeposit,
+}: {
+	state: ReservationDepositState;
+	currency: string;
+	onTakeDeposit: () => void;
+}) {
+	const met = state.met;
+	return (
+		<Card>
+			<CardContent className="flex flex-col gap-3 py-5">
+				<div className="flex flex-wrap items-center justify-between gap-2">
+					<div className="flex items-center gap-2">
+						{met ? (
+							<Badge className="gap-1"><BadgeCheck className="size-3.5" /> Deposit gate met</Badge>
+						) : (
+							<Badge variant="destructive" className="gap-1"><ShieldAlert className="size-3.5" /> Deposit required to confirm</Badge>
+						)}
+						<span className="text-sm text-muted-foreground">Policy: <strong>{state.deposit_policy}</strong> ({state.required_percent}% of estimate)</span>
+					</div>
+					{!met ? (
+						<Button size="sm" onClick={onTakeDeposit} data-testid="gate-take-deposit">
+							<CreditCard className="size-4" /> Take {formatCurrency(state.outstanding_amount, currency)}
+						</Button>
+					) : null}
+				</div>
+				<div className="grid gap-3 sm:grid-cols-4">
+					<Stat label="Required" value={formatCurrency(state.required_amount, currency)} />
+					<Stat label="Paid" value={formatCurrency(state.paid_amount, currency)} accent={state.paid_amount > 0 ? "good" : undefined} />
+					<Stat label="Outstanding" value={formatCurrency(state.outstanding_amount, currency)} accent={state.outstanding_amount > 0 ? "warn" : "good"} />
+					<Stat label="Total estimate" value={formatCurrency(state.total_estimated_amount, currency)} />
+				</div>
+			</CardContent>
+		</Card>
+	);
+}
+
+function Stat({ label, value, accent }: { label: string; value: string; accent?: "good" | "warn" | "danger" }) {
+	const tone = accent === "good"
+		? "text-emerald-700 dark:text-emerald-300"
+		: accent === "warn"
+			? "text-amber-700 dark:text-amber-300"
+			: accent === "danger"
+				? "text-destructive"
+				: "";
+	return (
+		<div>
+			<div className="text-xs uppercase text-muted-foreground">{label}</div>
+			<div className={`text-lg font-semibold tabular-nums ${tone}`}>{value}</div>
+		</div>
+	);
+}
+
+// ---------- take deposit sheet ----------
+
+const MODES = ["Razorpay (card / UPI)", "Cash", "Credit Card", "Bank Transfer"];
+
+function TakeDepositSheet({
+	reservation,
+	state,
+	booker,
+	onClose,
+	onRecorded,
+}: {
+	reservation: string;
+	state: ReservationDepositState;
+	booker?: { guest_name: string; email: string | null; phone: string | null };
+	onClose: () => void;
+	onRecorded: () => void;
+}) {
+	const [fullName, setFullName] = useState(booker?.guest_name ?? "");
+	const [email, setEmail] = useState(booker?.email ?? "");
+	const [phone, setPhone] = useState(booker?.phone ?? "");
+	const [amount, setAmount] = useState(String(state.outstanding_amount));
+	const [mode, setMode] = useState<string>("Razorpay (card / UPI)");
+	const [busy, setBusy] = useState(false);
+
+	async function take() {
+		const amt = parseFloat(amount);
+		if (!fullName.trim()) { toast.error("Booker name is required"); return; }
+		if (!amt || amt <= 0) { toast.error("Enter a deposit amount"); return; }
+		setBusy(true);
+		try {
+			const booker = { full_name: fullName, email: email || undefined, phone: phone || undefined };
+			if (mode === "Razorpay (card / UPI)") {
+				// Bootstrap the customer/folio first, then open the Razorpay modal against the folio.
+				const { folio } = await ensureBookingFolio({ reservation, booker });
+				await payDepositViaRazorpay({
+					guest_folio: folio,
+					amount: amt,
+					guestName: fullName,
+					guestEmail: email || undefined,
+					guestPhone: phone || undefined,
+				});
+			} else {
+				await recordBookingDeposit({ reservation, booker, amount: amt, mode_of_payment: mode });
+			}
+			toast.success(`Deposit of ${formatCurrency(amt, state.currency)} recorded`);
+			onRecorded();
+		} catch (error) {
+			const msg = error instanceof Error ? error.message : "Could not record deposit";
+			if (msg === "Payment cancelled") toast.info("Payment cancelled");
+			else toast.error("Could not record deposit", { description: msg });
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	return (
+		<Sheet open onOpenChange={(o) => { if (!o) onClose(); }}>
+			<SheetContent>
+				<SheetHeader>
+					<SheetTitle>Take booking deposit</SheetTitle>
+					<SheetDescription>
+						{formatCurrency(state.required_amount, state.currency)} required to confirm ({state.required_percent}% of {formatCurrency(state.total_estimated_amount, state.currency)}).
+					</SheetDescription>
+				</SheetHeader>
+				<div className="flex flex-col gap-4 py-4">
+					<Field label="Booker name" required>
+						<Input value={fullName} onChange={(e) => setFullName(e.target.value)} data-testid="dep-name" />
+					</Field>
+					<div className="grid gap-3 sm:grid-cols-2">
+						<Field label="Email"><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
+						<Field label="Phone"><Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+91 ..." /></Field>
+					</div>
+					<div className="grid gap-3 sm:grid-cols-[1fr_1fr]">
+						<Field label={`Amount (${state.currency})`}>
+							<Input type="number" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} data-testid="dep-amount" />
+						</Field>
+						<Field label="Mode">
+							<Select value={mode} onValueChange={setMode}>
+								<SelectTrigger><SelectValue /></SelectTrigger>
+								<SelectContent>{MODES.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+							</Select>
+						</Field>
+					</div>
+				</div>
+				<SheetFooter>
+					<Button onClick={take} disabled={busy} data-testid="dep-take">
+						{busy ? <Loader2 className="size-4 animate-spin" /> : <CreditCard className="size-4" />} Take deposit
+					</Button>
+					<Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
 	);
 }

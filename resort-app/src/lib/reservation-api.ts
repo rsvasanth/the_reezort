@@ -101,6 +101,50 @@ export async function getReservation(reservation: string): Promise<ReservationDe
 	return call("the_reezort.reservation.api.get_reservation", "GET", { reservation });
 }
 
+// ---------- booking deposit gate ----------
+
+export type ReservationDepositState = {
+	reservation: string;
+	deposit_policy: string;
+	deposit_status: string;
+	required_percent: number;
+	required_amount: number;
+	paid_amount: number;
+	outstanding_amount: number;
+	met: boolean;
+	total_estimated_amount: number;
+	folio: string | null;
+	currency: string;
+};
+
+export async function getReservationDepositState(reservation: string): Promise<ReservationDepositState> {
+	return call("the_reezort.reservation.api.get_reservation_deposit_state", "GET", { reservation });
+}
+
+export async function ensureBookingFolio(input: {
+	reservation: string;
+	booker: { full_name: string; email?: string; phone?: string };
+}): Promise<{ reservation: string; folio: string }> {
+	return call("the_reezort.reservation.api.ensure_booking_folio", "POST", {
+		reservation: input.reservation,
+		booker: input.booker,
+	});
+}
+
+export async function recordBookingDeposit(input: {
+	reservation: string;
+	booker: { full_name: string; email?: string; phone?: string };
+	amount: number;
+	mode_of_payment: string;
+}): Promise<{ folio: string; state: ReservationDepositState }> {
+	return call("the_reezort.reservation.api.record_booking_deposit", "POST", {
+		reservation: input.reservation,
+		booker: input.booker,
+		amount: input.amount,
+		mode_of_payment: input.mode_of_payment,
+	});
+}
+
 export async function searchAvailability(
 	arrivalDate: string,
 	departureDate: string,

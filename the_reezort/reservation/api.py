@@ -3,9 +3,12 @@ from collections import Counter
 
 import frappe
 from frappe import _
-from frappe.utils import add_to_date, date_diff, getdate, now_datetime
+from frappe.utils import add_to_date, date_diff, flt, getdate, now_datetime
 
 BLOCKING_RESERVATION_STATUSES = ("Deposit Pending", "Confirmed", "Modified", "Checked In")
+# Owner policy ("Require deposit to confirm"): % of total estimated amount
+# the guest must pay before the reservation can be confirmed under each policy.
+DEPOSIT_POLICY_PERCENT = {"None": 0, "Partial": 20, "Full": 100, "Corporate Credit": 0, "Voucher": 0, "Manual Approval": 0}
 BLOCKING_ROOM_STATUSES = ("Held", "Confirmed", "Checked In")
 BLOCKING_MAINTENANCE_STATUSES = ("Under Maintenance", "Out of Order", "Out of Service")
 ROOM_ITEM_BY_CODE = {
@@ -301,6 +304,135 @@ def _get_or_create_guest_profile(booker):
 	return doc.name
 
 
+def _deposit_paid_on_reservation(reservation):
+	"""Sum of Deposit Application folio lines across this reservation's folios."""
+	folios = frappe.get_all("Guest Folio", {"reservation": reservation}, pluck="name")
+	if not folios:
+		return 0
+	return flt(
+		frappe.db.get_value(
+			"Folio Line",
+			{"guest_folio": ["in", folios], "line_type": "Deposit Application"},
+			"sum(amount)",
+		)
+	)
+
+
+@frappe.whitelist()
+def ensure_booking_folio(reservation, booker=None):
+	"""Ensure the reservation has a guest profile, ERPNext customer and an open
+	folio so a deposit can be taken (Cash or Razorpay). Idempotent."""
+	from the_reezort.billing.api import get_or_create_folio
+
+	_require_permission("Reservation", "write")
+	doc = frappe.get_doc("Reservation", reservation)
+	booker = _as_dict(booker)
+
+	if booker and not doc.staying_guest_profile:
+		profile = _get_or_create_guest_profile(booker)
+		doc.booker_guest_profile = profile
+		doc.staying_guest_profile = profile
+		if not doc.guests:
+			doc.append(
+				"guests",
+				{
+					"guest_profile": profile,
+					"guest_name": booker.get("full_name"),
+					"email": booker.get("email"),
+					"phone": booker.get("phone"),
+					"guest_type": "Adult",
+					"is_primary_guest": 1,
+				},
+			)
+		doc.save(ignore_permissions=True)
+
+	folio = get_or_create_folio(reservation=reservation)["data"]["folio"]["name"]
+	return {"reservation": reservation, "folio": folio}
+
+
+@frappe.whitelist()
+def record_booking_deposit(reservation, booker=None, amount=None, mode_of_payment="Cash"):
+	"""Take a deposit on a Hold-stage reservation before it can be confirmed.
+
+	The booker contact is captured first (creates the guest profile + ERPNext
+	customer so a folio can open), then the deposit posts via the standard
+	billing path — real advance Payment Entry, idempotent on (reservation, amount,
+	mode). Reservation status moves to 'Deposit Pending' for the UI gate to flip.
+	"""
+	from the_reezort.billing.api import get_or_create_folio
+	from the_reezort.billing.deposits import record_deposit
+
+	_require_permission("Reservation", "write")
+	amount = flt(amount)
+	if amount <= 0:
+		frappe.throw(_("Deposit amount must be positive."))
+
+	doc = frappe.get_doc("Reservation", reservation)
+	booker = _as_dict(booker)
+
+	# Make sure the reservation has a guest profile + customer so a folio can open.
+	if booker and not doc.staying_guest_profile:
+		profile = _get_or_create_guest_profile(booker)
+		doc.booker_guest_profile = profile
+		doc.staying_guest_profile = profile
+		if not doc.guests:
+			doc.append(
+				"guests",
+				{
+					"guest_profile": profile,
+					"guest_name": booker.get("full_name"),
+					"email": booker.get("email"),
+					"phone": booker.get("phone"),
+					"guest_type": "Adult",
+					"is_primary_guest": 1,
+				},
+			)
+		doc.save(ignore_permissions=True)
+
+	folio = get_or_create_folio(reservation=reservation)["data"]["folio"]["name"]
+	deposit = record_deposit(
+		guest_folio=folio,
+		amount=amount,
+		mode_of_payment=mode_of_payment,
+		idempotency_key=f"booking-deposit:{reservation}:{int(amount * 100)}:{mode_of_payment}",
+	)
+
+	state = get_reservation_deposit_state(reservation)
+	# Flip the deposit-pending flag so the UI surfaces the gate (or its meeting).
+	if state["met"]:
+		frappe.db.set_value("Reservation", reservation, "deposit_status", "Paid")
+	else:
+		frappe.db.set_value("Reservation", reservation, {"status": "Deposit Pending", "deposit_status": "Partially Paid"})
+	frappe.db.commit()
+
+	return {"deposit": deposit, "state": get_reservation_deposit_state(reservation), "folio": folio}
+
+
+@frappe.whitelist()
+def get_reservation_deposit_state(reservation):
+	"""Required/paid/outstanding/met for the booking deposit gate (drives UI)."""
+	_require_permission("Reservation", "read")
+	doc = frappe.get_doc("Reservation", reservation)
+	pct = DEPOSIT_POLICY_PERCENT.get(doc.deposit_policy or "None", 0)
+	required = round(flt(doc.total_estimated_amount) * pct / 100.0, 2)
+	paid = _deposit_paid_on_reservation(reservation)
+	outstanding = max(required - paid, 0)
+	folio = frappe.db.get_value("Guest Folio", {"reservation": reservation}, "name")
+	return {
+		"reservation": doc.name,
+		"deposit_policy": doc.deposit_policy,
+		"deposit_status": doc.deposit_status,
+		"required_percent": pct,
+		"required_amount": required,
+		"paid_amount": paid,
+		"outstanding_amount": outstanding,
+		"met": paid >= required and required > 0 or pct == 0,
+		"total_estimated_amount": flt(doc.total_estimated_amount),
+		"folio": folio,
+		"currency": doc.currency,
+	}
+
+
 @frappe.whitelist()
 def confirm_reservation(reservation=None, booker=None, guests=None, guarantee=None, accepted_terms=False):
 	_require_permission("Reservation", "write")
@@ -311,6 +443,23 @@ def confirm_reservation(reservation=None, booker=None, guests=None, guarantee=No
 	doc = frappe.get_doc("Reservation", reservation)
 	if doc.status not in {"Hold", "Draft", "Deposit Pending"}:
 		frappe.throw(_("Reservation cannot be confirmed from status {0}.").format(doc.status))
+
+	# Owner policy: a Partial/Full deposit must be paid before confirmation.
+	pct = DEPOSIT_POLICY_PERCENT.get(doc.deposit_policy or "None", 0)
+	if pct > 0:
+		required = round(flt(doc.total_estimated_amount) * pct / 100.0, 2)
+		paid = _deposit_paid_on_reservation(reservation)
+		if paid < required:
+			doc.deposit_status = "Pending"
+			doc.status = "Deposit Pending"
+			doc.save(ignore_permissions=True)
+			frappe.db.commit()
+			frappe.throw(
+				_("Deposit required: {0} of {1} ({2}%) — paid {3}. Take the deposit before confirming.").format(
+					required, flt(doc.total_estimated_amount), pct, paid
+				),
+				frappe.ValidationError,
+			)
 
 	booker = _as_dict(booker)
 	guests = _as_list(guests)
@@ -343,7 +492,11 @@ def confirm_reservation(reservation=None, booker=None, guests=None, guarantee=No
 	doc.booker_guest_profile = primary_profile
 	doc.staying_guest_profile = primary_profile
 	doc.status = "Confirmed"
-	doc.deposit_status = "Paid" if guarantee.get("method") == "Payment" else doc.deposit_status
+	if pct > 0:
+		paid = _deposit_paid_on_reservation(reservation)
+		doc.deposit_status = "Paid" if paid >= round(flt(doc.total_estimated_amount) * pct / 100.0, 2) else "Partially Paid"
+	elif guarantee.get("method") == "Payment":
+		doc.deposit_status = "Paid"
 	doc.save(ignore_permissions=True)
 	frappe.db.commit()
 

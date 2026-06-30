@@ -27,6 +27,7 @@ import FrontDeskScreen from "@/app/frontdesk/FrontDeskScreen";
 import ReservationsScreen from "@/app/reservations/ReservationsScreen";
 import { parseHashRoute, useHashRoute } from "@/hooks/use-hash-route";
 import { canAccessDesk, useUserProfile } from "@/hooks/use-user-profile";
+import { useVersionCheck } from "@/hooks/use-version-check";
 import { toOperationalRows, toSectionCards } from "@/lib/dashboard-adapter";
 import {
 	getManagementDashboardSnapshot,
@@ -267,6 +268,7 @@ function AuthGate() {
 }
 
 function App() {
+	useVersionCheck();
 	return (
 		<FrappeProvider>
 			<MotionConfig reducedMotion="user">

@@ -387,3 +387,39 @@ def get_reservation_summary(reservation=None):
 		"total_estimated_amount": doc.total_estimated_amount,
 		"check_in_ready": doc.status == "Confirmed",
 	}
+
+
+@frappe.whitelist()
+def list_reservations(resort_property=None):
+	"""Active reservations for the Reservations board (booking pipeline)."""
+	_require_permission("Reservation", "read")
+	filters = {"status": ["in", ["Draft", "Quoted", "Hold", "Deposit Pending", "Confirmed", "Modified"]]}
+	if resort_property:
+		filters["resort_property"] = resort_property
+
+	out = []
+	for r in frappe.get_all(
+		"Reservation",
+		filters=filters,
+		fields=["name", "status", "arrival_date", "departure_date", "staying_guest_profile", "hold_expires_at", "total_estimated_amount", "currency"],
+		order_by="creation desc",
+		limit=50,
+	):
+		guest = frappe.db.get_value("Guest Profile", r.staying_guest_profile, "guest_full_name") if r.staying_guest_profile else None
+		if not guest:
+			g = frappe.get_all("Reservation Guest", filters={"parent": r.name}, fields=["guest_name"], limit=1)
+			guest = (g[0].guest_name if g and g[0].guest_name else "—")
+		rt = frappe.get_all("Reservation Room", filters={"parent": r.name}, fields=["room_type"], limit=1)
+		out.append(
+			{
+				"reservation": r.name,
+				"status": r.status,
+				"guest": guest,
+				"arrival_date": str(r.arrival_date) if r.arrival_date else None,
+				"departure_date": str(r.departure_date) if r.departure_date else None,
+				"room_type": rt[0].room_type if rt else None,
+				"total_estimated_amount": r.total_estimated_amount,
+				"currency": r.currency,
+			}
+		)
+	return {"reservations": out}

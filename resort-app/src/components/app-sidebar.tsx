@@ -40,7 +40,7 @@ import {
 // Operational modules — Live = built and working, Soon = on the roadmap.
 const operations: NavItem[] = [
 	{ title: "Executive cockpit", url: "/resort-app", icon: LayoutDashboardIcon, status: "live" },
-	{ title: "Reservations", url: "#", icon: CalendarDaysIcon, status: "soon" },
+	{ title: "Reservations", url: "/resort-app#/reservations", icon: CalendarDaysIcon, status: "live" },
 	{ title: "Front desk", url: "/resort-app#/frontdesk", icon: BedDoubleIcon, status: "live" },
 	{ title: "Housekeeping", url: "/resort-app#/housekeeping", icon: SparklesIcon, status: "live" },
 	{ title: "Billing", url: "/resort-app#/billing", icon: ReceiptTextIcon, status: "live" },

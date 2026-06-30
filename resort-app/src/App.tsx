@@ -23,6 +23,7 @@ import AttendanceScreen from "@/app/staff/AttendanceScreen";
 import ServiceDeskScreen from "@/app/servicedesk/ServiceDeskScreen";
 import BillingOverviewScreen from "@/app/billing/BillingOverviewScreen";
 import FrontDeskScreen from "@/app/frontdesk/FrontDeskScreen";
+import ReservationsScreen from "@/app/reservations/ReservationsScreen";
 import { parseHashRoute, useHashRoute } from "@/hooks/use-hash-route";
 import { canAccessDesk, useUserProfile } from "@/hooks/use-user-profile";
 import { toOperationalRows, toSectionCards } from "@/lib/dashboard-adapter";
@@ -232,6 +233,14 @@ function AuthGate() {
 		return (
 			<AppShell>
 				<FrontDeskScreen />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "reservations") {
+		return (
+			<AppShell>
+				<ReservationsScreen />
 			</AppShell>
 		);
 	}

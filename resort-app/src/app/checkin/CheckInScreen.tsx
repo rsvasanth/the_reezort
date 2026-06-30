@@ -8,6 +8,7 @@ import {
 	IdCard,
 	Loader2,
 	LogIn,
+	ShieldAlert,
 	ShieldCheck,
 	Upload,
 } from "lucide-react";
@@ -41,6 +42,7 @@ import {
 	saveRegistrationCard,
 	type CheckInContext,
 	type IdType,
+	type NameMatchStatus,
 	type PurposeOfVisit,
 } from "@/lib/pms-api";
 
@@ -224,13 +226,19 @@ function KycStep({
 		id_number: g?.id_number ?? "",
 		id_expiry: g?.id_expiry ?? "",
 		id_document: g?.id_document ?? "",
+		id_name: g?.id_name ?? "",
 		date_of_birth: g?.date_of_birth ?? "",
 		nationality: g?.nationality ?? "Indian",
 		address: g?.address ?? "",
 	});
 	const [busy, setBusy] = useState(false);
 	const [uploading, setUploading] = useState(false);
+	const [overrideReason, setOverrideReason] = useState("");
+	const [showOverride, setShowOverride] = useState(false);
 	const fileRef = useRef<HTMLInputElement | null>(null);
+
+	const reservationName = ctx.name_match.reservation_name;
+	const hint = nameMatchHint(form.id_name, reservationName);
 
 	async function onFile(file: File) {
 		setUploading(true);
@@ -250,6 +258,10 @@ function KycStep({
 			toast.error("ID type and number are required");
 			return;
 		}
+		if (showOverride && !overrideReason.trim()) {
+			toast.error("Enter a manager override reason to verify a mismatched ID");
+			return;
+		}
 		setBusy(true);
 		try {
 			await saveGuestKyc(
@@ -259,17 +271,26 @@ function KycStep({
 					id_number: form.id_number,
 					id_expiry: form.id_expiry || undefined,
 					id_document: form.id_document || undefined,
+					id_name: form.id_name || undefined,
 					date_of_birth: form.date_of_birth || undefined,
 					nationality: form.nationality || undefined,
 					address: form.address || undefined,
 				},
-				true
+				true,
+				overrideReason.trim() || undefined
 			);
 			toast.success("KYC verified");
 			await refresh();
 			onDone();
 		} catch (error) {
-			toast.error("Could not save KYC", { description: error instanceof Error ? error.message : undefined });
+			const msg = error instanceof Error ? error.message : "Could not save KYC";
+			// Name-mismatch block — reveal the override field instead of just erroring.
+			if (/does not match|override/i.test(msg) && !overrideReason.trim()) {
+				setShowOverride(true);
+				toast.warning("Name on ID does not match the reservation", { description: "A manager override reason is required to verify." });
+			} else {
+				toast.error("Could not verify KYC", { description: msg });
+			}
 		} finally {
 			setBusy(false);
 		}
@@ -290,6 +311,12 @@ function KycStep({
 				<Field label="ID number" required>
 					<Input value={form.id_number} onChange={(e) => setForm({ ...form, id_number: e.target.value })} data-testid="kyc-id-number" />
 				</Field>
+				<Field label="Name on ID" hint={`Must match the reservation: ${reservationName}`}>
+					<Input value={form.id_name} onChange={(e) => setForm({ ...form, id_name: e.target.value })} placeholder={reservationName} data-testid="kyc-id-name" />
+				</Field>
+				<div className="flex items-end">
+					<NameMatchChip hint={hint} hasInput={Boolean(form.id_name)} />
+				</div>
 				<Field label="ID expiry">
 					<Input type="date" value={form.id_expiry} onChange={(e) => setForm({ ...form, id_expiry: e.target.value })} />
 				</Field>
@@ -324,12 +351,57 @@ function KycStep({
 				</div>
 			</Field>
 
+			{showOverride ? (
+				<Field label="Manager override reason" required hint={`Name on ID does not match "${reservationName}". Document why this is being accepted.`}>
+					<Input
+						value={overrideReason}
+						onChange={(e) => setOverrideReason(e.target.value)}
+						placeholder="e.g. Spouse checking in; verified marriage certificate"
+						data-testid="kyc-override"
+					/>
+				</Field>
+			) : null}
+
 			<div className="flex justify-end">
 				<Button onClick={save} disabled={busy} data-testid="kyc-save">
-					{busy ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />} Save &amp; verify ID
+					{busy ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
+					{showOverride ? "Override & verify ID" : "Save & verify ID"}
 				</Button>
 			</div>
 		</StepCard>
+	);
+}
+
+// Lightweight client-side name-match hint (server enforces authoritatively).
+function nameMatchHint(idName: string, reservationName: string): { score: number; status: NameMatchStatus } {
+	const norm = (s: string) =>
+		s.toLowerCase().replace(/\b(mr|mrs|ms|dr|shri|smt|kum)\.?\b/g, " ").replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter(Boolean).sort();
+	const a = norm(idName);
+	const b = norm(reservationName);
+	if (!a.length || !b.length) return { score: 0, status: "review" };
+	const setA = new Set(a);
+	const setB = new Set(b);
+	const inter = [...setA].filter((t) => setB.has(t)).length;
+	const union = new Set([...setA, ...setB]).size;
+	const score = Math.round((inter / union) * 100);
+	const status: NameMatchStatus = score >= 80 ? "match" : score >= 60 ? "review" : "mismatch";
+	return { score, status };
+}
+
+function NameMatchChip({ hint, hasInput }: { hint: { score: number; status: NameMatchStatus }; hasInput: boolean }) {
+	if (!hasInput) return <span className="text-xs text-muted-foreground">Enter the name as printed on the ID</span>;
+	const tone =
+		hint.status === "match"
+			? "border-emerald-600/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+			: hint.status === "review"
+				? "border-amber-600/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+				: "border-destructive/40 bg-destructive/10 text-destructive";
+	const label = hint.status === "match" ? "Matches reservation" : hint.status === "review" ? "Partial match — check" : "Does not match";
+	return (
+		<span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs ${tone}`} data-testid="name-match-chip">
+			{hint.status === "match" ? <BadgeCheck className="size-3.5" /> : <ShieldAlert className="size-3.5" />}
+			{label} · {hint.score}%
+		</span>
 	);
 }
 

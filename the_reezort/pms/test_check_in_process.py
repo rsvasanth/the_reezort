@@ -102,6 +102,31 @@ class TestCheckInProcess(FrappeTestCase):
 		self.assertTrue(guest.kyc_verified_at)
 		self.assertEqual(get_check_in_context(res.name)["readiness"]["kyc"], True)
 
+	def test_kyc_name_match_passes_for_matching_id(self):
+		res = self._reservation()  # guest "Arrival Guest"
+		out = save_guest_kyc(res.name, {"id_type": "Passport", "id_number": "P1", "id_name": "Arrival Guest"}, verify=1)
+		self.assertEqual(out["name_match"]["status"], "match")
+		self.assertGreaterEqual(out["name_match"]["score"], 80)
+		self.assertTrue(frappe.db.get_value("Guest Profile", out["guest_profile"], "kyc_verified"))
+
+	def test_kyc_verify_blocked_on_name_mismatch(self):
+		res = self._reservation()  # guest "Arrival Guest"
+		with self.assertRaises(frappe.ValidationError):
+			save_guest_kyc(res.name, {"id_type": "Passport", "id_number": "P1", "id_name": "Rahul Kapoor"}, verify=1)
+
+	def test_kyc_mismatch_allowed_with_override(self):
+		res = self._reservation()
+		out = save_guest_kyc(
+			res.name,
+			{"id_type": "Passport", "id_number": "P1", "id_name": "Rahul Kapoor"},
+			verify=1,
+			override_reason="Spouse checking in on guest's behalf; verified marriage cert.",
+		)
+		self.assertEqual(out["name_match"]["status"], "mismatch")
+		guest = frappe.get_doc("Guest Profile", out["guest_profile"])
+		self.assertTrue(guest.kyc_verified)
+		self.assertTrue(guest.kyc_override_reason)
+
 	def test_save_kyc_creates_profile_when_missing(self):
 		res = self._reservation(with_profile=False)
 		self.assertFalse(frappe.db.get_value("Reservation", res.name, "staying_guest_profile"))

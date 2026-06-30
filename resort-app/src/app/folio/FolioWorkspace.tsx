@@ -51,7 +51,9 @@ export function FolioWorkspace({ folioName }: Props) {
 		getFolioDetail(folioName)
 			.then((envelope) => {
 				if (envelope.ok && envelope.data) {
-					setDetail(envelope.data);
+					// next_actions lives at the envelope level, not inside data — merge it
+					// in so action gating (Settle / Add line) sees it.
+					setDetail({ ...envelope.data, next_actions: envelope.next_actions ?? [] });
 					setSnapshotState("live");
 					return;
 				}

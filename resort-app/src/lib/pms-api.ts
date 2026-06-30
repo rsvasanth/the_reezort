@@ -154,9 +154,21 @@ export type CheckInGuest = {
 	id_number: string | null;
 	id_expiry: string | null;
 	id_document: string | null;
+	id_name: string | null;
 	kyc_verified: number;
 	kyc_verified_by: string | null;
 	kyc_verified_at: string | null;
+	name_match_score: number | null;
+	kyc_override_reason: string | null;
+};
+
+export type NameMatchStatus = "match" | "review" | "mismatch";
+
+export type NameMatch = {
+	id_name: string | null;
+	reservation_name: string;
+	score: number;
+	status: NameMatchStatus;
 };
 
 export type CheckInRoomOption = {
@@ -226,6 +238,7 @@ export type CheckInContext = {
 	deposit: CheckInDeposit | null;
 	condition_capture: { check_in_done: boolean; count: number };
 	stay: { name: string; current_room: string | null; stay_status: string } | null;
+	name_match: NameMatch;
 	readiness: CheckInReadiness;
 };
 
@@ -237,6 +250,7 @@ export type KycInput = {
 	id_number?: string;
 	id_expiry?: string;
 	id_document?: string;
+	id_name?: string;
 };
 
 export type RegistrationCardInput = {
@@ -263,12 +277,14 @@ export async function getCheckInContext(reservation: string): Promise<CheckInCon
 export async function saveGuestKyc(
 	reservation: string,
 	kyc: KycInput,
-	verify: boolean
-): Promise<{ guest_profile: string; guest: CheckInGuest }> {
+	verify: boolean,
+	overrideReason?: string
+): Promise<{ guest_profile: string; guest: CheckInGuest; name_match: NameMatch }> {
 	return pmsCall("the_reezort.pms.api.save_guest_kyc", "POST", {
 		reservation,
 		kyc,
 		verify: verify ? 1 : 0,
+		override_reason: overrideReason,
 	});
 }
 

@@ -4,7 +4,7 @@ from frappe.utils import add_days, today
 
 from frappe.utils import flt
 
-from the_reezort.billing.api import get_or_create_folio
+from the_reezort.billing.api import get_folio_detail, get_or_create_folio
 from the_reezort.billing.settlement import settle_folio
 from the_reezort.pms.api import check_in
 from the_reezort.setup.demo_seed import (
@@ -117,6 +117,15 @@ class TestFolioSettlement(FrappeTestCase):
 		self.assertEqual(first["data"]["sales_invoices"], second["data"]["sales_invoices"])
 		self.assertTrue(second["data"]["reused"])
 		self.assertEqual(frappe.db.count("Sales Invoice", {"remarks": ["like", f"%{folio}%"]}), 1)
+
+	def test_folio_with_charges_offers_settlement_then_drops_it(self):
+		folio, _stay, _net = self._folio_with_room_charge()
+		before = get_folio_detail(folio)["next_actions"]
+		self.assertIn("open_settlement", before)
+
+		settle_folio(folio)
+		after = get_folio_detail(folio)["next_actions"]
+		self.assertNotIn("open_settlement", after)  # posted → no longer offered
 
 	def test_settle_without_charges_is_blocked(self):
 		# Open a folio directly (no check-in) so it carries no charges.

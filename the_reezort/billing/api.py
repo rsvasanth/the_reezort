@@ -392,6 +392,9 @@ def get_folio_detail(guest_folio):
 	expose_links = _can_view_erpnext_links()
 	# TODO: Replace this basic role check with formal field-level masking in the permissions packet.
 	next_actions = ["add_line"] if folio.folio_status in OPEN_FOLIO_STATUSES else []
+	# Offer settlement once the folio carries unposted charges to invoice.
+	if folio.folio_status in OPEN_FOLIO_STATUSES and flt(folio.total_charges) > 0 and folio.posting_status != "Posted":
+		next_actions.append("open_settlement")
 	return _envelope(
 		{
 			"folio": _folio_header(folio),

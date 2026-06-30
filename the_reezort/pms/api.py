@@ -78,8 +78,56 @@ def _available_rooms(property_name, room_type):
 
 KYC_FIELDS = (
 	"date_of_birth", "nationality", "address",
-	"id_type", "id_number", "id_expiry", "id_document",
+	"id_type", "id_number", "id_expiry", "id_document", "id_name",
 )
+
+# Below this match score the name on the ID is treated as not matching the
+# reservation, and KYC verification requires a manager override reason.
+NAME_MATCH_THRESHOLD = 80
+
+
+def _normalize_name(value):
+	import re
+
+	value = (value or "").lower().strip()
+	value = re.sub(r"\b(mr|mrs|ms|dr|shri|smt|kum|m/s)\.?\b", " ", value)
+	value = re.sub(r"[^a-z0-9 ]", " ", value)
+	return " ".join(sorted(t for t in value.split() if t))
+
+
+def _name_match_score(a, b):
+	"""0-100 similarity between two names (token overlap vs sequence ratio, stronger wins)."""
+	import difflib
+
+	na, nb = _normalize_name(a), _normalize_name(b)
+	if not na or not nb:
+		return 0
+	ta, tb = set(na.split()), set(nb.split())
+	jaccard = len(ta & tb) / len(ta | tb) if (ta | tb) else 0
+	seq = difflib.SequenceMatcher(None, na, nb).ratio()
+	return round(max(jaccard, seq) * 100)
+
+
+def _reservation_guest_name(reservation_doc):
+	"""The booking name to match the ID against."""
+	if reservation_doc.staying_guest_profile:
+		name = frappe.db.get_value("Guest Profile", reservation_doc.staying_guest_profile, "guest_full_name")
+		if name:
+			return name
+	return _primary_guest_name(reservation_doc)
+
+
+def _name_match(reservation_doc, id_name):
+	"""Match status of the name on the ID against the reservation's booking name."""
+	booking_name = _reservation_guest_name(reservation_doc)
+	score = _name_match_score(id_name or booking_name, booking_name)
+	if score >= NAME_MATCH_THRESHOLD:
+		status = "match"
+	elif score >= 60:
+		status = "review"
+	else:
+		status = "mismatch"
+	return {"id_name": id_name, "reservation_name": booking_name, "score": score, "status": status}
 
 
 def _guest_context(guest_profile):
@@ -92,8 +140,9 @@ def _guest_context(guest_profile):
 		[
 			"name", "guest_full_name", "email", "phone", "image",
 			"date_of_birth", "nationality", "address",
-			"id_type", "id_number", "id_expiry", "id_document",
+			"id_type", "id_number", "id_expiry", "id_document", "id_name",
 			"kyc_verified", "kyc_verified_by", "kyc_verified_at",
+			"name_match_score", "kyc_override_reason",
 		],
 		as_dict=True,
 	)
@@ -418,16 +467,19 @@ def get_check_in_context(reservation):
 		"deposit": _deposit_context(folio),
 		"condition_capture": {"check_in_done": len(captures) > 0, "count": len(captures)},
 		"stay": stay,
+		"name_match": _name_match(res, guest.get("id_name") if guest else None),
 		"readiness": readiness,
 	}
 
 
 @frappe.whitelist()
-def save_guest_kyc(reservation, kyc, verify=0):
+def save_guest_kyc(reservation, kyc, verify=0, override_reason=None):
 	"""Persist ID/KYC + identity onto the reservation's guest profile.
 
 	Creates the guest profile from the reservation if it has none yet. `verify=1`
-	stamps the KYC as verified (the front-desk agent confirms the physical ID).
+	stamps the KYC as verified. The name on the ID is matched against the
+	reservation's booking name — on a mismatch, verification is refused unless a
+	manager `override_reason` is supplied (which is recorded for audit).
 	"""
 	_require_permission("Guest Profile", "write")
 	kyc = _as_dict(kyc)
@@ -442,13 +494,25 @@ def save_guest_kyc(reservation, kyc, verify=0):
 		if field in kyc and kyc.get(field) not in (None, ""):
 			guest.set(field, kyc.get(field))
 
+	match = _name_match(res, guest.id_name)
+	guest.name_match_score = match["score"]
+
 	if str(verify) in ("1", "true", "True"):
+		if match["status"] == "mismatch" and not (override_reason or "").strip():
+			frappe.throw(
+				_("Name on ID '{0}' does not match the reservation '{1}' ({2}% match). A manager override reason is required to verify.").format(
+					match["id_name"] or "—", match["reservation_name"], match["score"]
+				),
+				frappe.ValidationError,
+			)
+		if (override_reason or "").strip():
+			guest.kyc_override_reason = override_reason.strip()
 		guest.kyc_verified = 1
 		guest.kyc_verified_by = frappe.session.user
 		guest.kyc_verified_at = now()
 	guest.save(ignore_permissions=True)
 
-	return {"guest_profile": guest.name, "guest": _guest_context(guest.name)}
+	return {"guest_profile": guest.name, "guest": _guest_context(guest.name), "name_match": match}
 
 
 @frappe.whitelist()

@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { CalendarPlus, Loader2, LogIn, ReceiptText } from "lucide-react";
+import { CalendarPlus, Loader2, LogIn, LogOut, ReceiptText } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -29,7 +29,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { WorkspacePage, KpiStrip } from "@/components/workspace/workspace";
-import { FolioApiError, extendStay, getFrontDeskBoard, type FrontDeskBoard, type FrontDeskInHouse } from "@/lib/pms-api";
+import { FolioApiError, checkOut, extendStay, getFrontDeskBoard, type FrontDeskBoard, type FrontDeskInHouse } from "@/lib/pms-api";
 
 function reportError(error: unknown, fallback: string) {
 	const detail = error instanceof FolioApiError ? error.message : String(error);
@@ -40,6 +40,7 @@ export default function FrontDeskScreen() {
 	const [board, setBoard] = useState<FrontDeskBoard | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [extending, setExtending] = useState<FrontDeskInHouse | null>(null);
+	const [checkingOut, setCheckingOut] = useState<string | null>(null);
 
 	const reload = useCallback(async () => {
 		try {
@@ -57,6 +58,28 @@ export default function FrontDeskScreen() {
 
 	function openFolio(folio: string | null) {
 		if (folio) window.location.hash = `#/folio/${folio}`;
+	}
+
+	async function handleCheckout(s: FrontDeskInHouse) {
+		setCheckingOut(s.stay);
+		try {
+			const result = await checkOut(s.stay);
+			toast.success(`${s.guest} checked out`, {
+				description: result.room ? `Room ${result.room} → housekeeping` : undefined,
+			});
+			await reload();
+		} catch (error) {
+			const msg = error instanceof FolioApiError ? error.message : String(error);
+			// Checkout is blocked until the folio is settled — route the agent there.
+			if (/settle/i.test(msg)) {
+				toast.info("Settle the folio to check out", { description: "Opening the folio…" });
+				openFolio(s.folio);
+			} else {
+				reportError(error, "Checkout failed");
+			}
+		} finally {
+			setCheckingOut(null);
+		}
 	}
 
 	return (
@@ -158,6 +181,15 @@ export default function FrontDeskScreen() {
 														</Button>
 														<Button size="sm" variant="outline" disabled={!s.folio} onClick={() => openFolio(s.folio)}>
 															<ReceiptText className="size-4" /> Open folio
+														</Button>
+														<Button
+															size="sm"
+															variant={s.due_out ? "default" : "ghost"}
+															disabled={checkingOut === s.stay}
+															onClick={() => handleCheckout(s)}
+															data-testid={`checkout-${s.stay}`}
+														>
+															{checkingOut === s.stay ? <Loader2 className="size-4 animate-spin" /> : <LogOut className="size-4" />} Check out
 														</Button>
 													</div>
 												</TableCell>

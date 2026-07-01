@@ -451,3 +451,139 @@ def get_active_folios(limit=20):
 		)
 
 	return _envelope({"folios": result})
+
+
+@frappe.whitelist()
+def get_invoice_bundle(guest_folio):
+	"""Everything needed to render a proper guest Tax Invoice PDF.
+
+	Combines the folio, its Sales Invoice (net_total, CGST/SGST/IGST split,
+	place of supply, grand_total), the guest profile (address, ID, phone),
+	the stay, and the payment entries. Used only for display/PDF; no writes.
+	"""
+	_require_permission("Guest Folio", "read")
+	folio = frappe.get_doc("Guest Folio", guest_folio)
+
+	# Guest profile — via the reservation (if any), else the folio's customer.
+	guest_profile = None
+	if folio.reservation:
+		p = frappe.db.get_value("Reservation", folio.reservation, "staying_guest_profile")
+		if p:
+			guest_profile = frappe.db.get_value(
+				"Guest Profile", p,
+				["name", "guest_full_name", "email", "phone", "date_of_birth", "nationality",
+					"address", "id_type", "id_number"],
+				as_dict=True,
+			)
+
+	# Stay
+	stay = None
+	if folio.stay:
+		stay = frappe.db.get_value(
+			"Stay", folio.stay,
+			["name", "stay_status", "current_room", "arrival_date", "departure_date", "adult_count", "child_count"],
+			as_dict=True,
+		)
+
+	# Sales Invoice(s) posted from this folio's charge lines.
+	invoice_names = list({
+		row.erpnext_sales_invoice
+		for row in frappe.get_all(
+			"Folio Line",
+			filters={"guest_folio": guest_folio, "erpnext_sales_invoice": ["is", "set"]},
+			fields=["erpnext_sales_invoice"],
+		)
+		if row.erpnext_sales_invoice
+	})
+	# Some ERPNext installs don't have India GST enabled → no gst_hsn_code on Item.
+	item_has_hsn = frappe.db.has_column("Item", "gst_hsn_code")
+
+	invoices = []
+	for name in invoice_names:
+		si = frappe.get_doc("Sales Invoice", name)
+		invoices.append(
+			{
+				"name": si.name,
+				"posting_date": str(si.posting_date),
+				"due_date": str(si.due_date) if si.due_date else None,
+				"net_total": flt(si.net_total),
+				"total_taxes_and_charges": flt(si.total_taxes_and_charges),
+				"grand_total": flt(si.grand_total),
+				"rounded_total": flt(si.rounded_total or si.grand_total),
+				"total_advance": flt(si.total_advance),
+				"outstanding_amount": flt(si.outstanding_amount),
+				"place_of_supply": si.place_of_supply if hasattr(si, "place_of_supply") else None,
+				"currency": si.currency,
+				"customer": si.customer,
+				"customer_name": si.customer_name,
+				"items": [
+					{
+						"item_code": r.item_code,
+						"item_name": r.item_name,
+						"description": r.description,
+						"qty": flt(r.qty),
+						"rate": flt(r.rate),
+						"amount": flt(r.amount),
+						# GST fields — HSN is common on ERPNext items; not all installs have gst_hsn_code
+						"hsn_code": (
+							frappe.db.get_value("Item", r.item_code, "gst_hsn_code") if r.item_code and item_has_hsn else None
+						),
+					}
+					for r in si.items
+				],
+				"taxes": [
+					{"description": t.description, "rate": flt(t.rate), "tax_amount": flt(t.tax_amount)}
+					for t in si.taxes
+				],
+			}
+		)
+
+	# Payment Entries (advance deposits + settlement payments).
+	pe_names = list({
+		row.erpnext_payment_entry
+		for row in frappe.get_all(
+			"Folio Line",
+			filters={"guest_folio": guest_folio, "erpnext_payment_entry": ["is", "set"]},
+			fields=["erpnext_payment_entry"],
+		)
+		if row.erpnext_payment_entry
+	})
+	payments = []
+	for pe in pe_names:
+		row = frappe.db.get_value(
+			"Payment Entry", pe,
+			["name", "posting_date", "mode_of_payment", "paid_amount", "reference_no"],
+			as_dict=True,
+		)
+		if row:
+			row["posting_date"] = str(row.posting_date) if row.posting_date else None
+			payments.append(row)
+
+	# Company for GSTIN / address. Some installs don't have gst_category.
+	company_fields = ["name", "abbr", "country", "phone_no", "email"]
+	if frappe.db.has_column("Company", "gst_category"):
+		company_fields.append("gst_category")
+	company = frappe.db.get_value("Company", folio.company, company_fields, as_dict=True)
+	# GSTIN lives on Address linked to Company, or on Company itself. Guard both.
+	company_gstin = None
+	try:
+		if frappe.db.has_column("Address", "gstin"):
+			company_gstin = frappe.db.get_value(
+				"Address", {"is_your_company_address": 1, "gstin": ["is", "set"]}, "gstin"
+			)
+	except Exception:
+		company_gstin = None
+
+	return _envelope(
+		{
+			"folio": _folio_header(folio),
+			"totals": _folio_totals(folio),
+			"guest_profile": guest_profile,
+			"stay": stay,
+			"invoices": invoices,
+			"payments": payments,
+			"company": company,
+			"company_gstin": company_gstin,
+			"resort_property": folio.resort_property,
+		}
+	)

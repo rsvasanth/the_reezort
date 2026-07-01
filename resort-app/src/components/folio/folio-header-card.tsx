@@ -3,6 +3,7 @@ import {
 	Building2,
 	CalendarRange,
 	Copy,
+	FileDown,
 	IdCard,
 	MoreHorizontal,
 	Printer,
@@ -49,6 +50,7 @@ type Props = {
 	onDeposit: () => void;
 	onRefresh: () => void;
 	onCheckOut: () => void;
+	onDownloadInvoice: () => void;
 	onPrintLabel: () => void;
 	checkingOut?: boolean;
 };
@@ -61,6 +63,7 @@ export function FolioHeaderCard({
 	onDeposit,
 	onRefresh,
 	onCheckOut,
+	onDownloadInvoice,
 	onPrintLabel,
 	checkingOut,
 }: Props) {
@@ -81,6 +84,9 @@ export function FolioHeaderCard({
 		&& ["Ready for Settlement", "Settled", "Closed"].includes(folio.folio_status)
 		&& folio.stay_status !== "Checked Out"
 		&& folio.stay_status !== "Cancelled";
+	// Tax invoice is available once a Sales Invoice exists (posting_status posted or
+	// folio invoiced). Shown as the primary green CTA once the guest can pay.
+	const showInvoice = posting_status === "Posted" || ["Ready for Settlement", "Settled", "Closed"].includes(folio.folio_status);
 
 	function copyFolioName() {
 		navigator.clipboard
@@ -173,6 +179,11 @@ export function FolioHeaderCard({
 									Prepare Settlement
 								</Button>
 							)}
+							{showInvoice && (
+								<Button size="sm" variant="default" onClick={onDownloadInvoice} data-testid="folio-download-invoice">
+									<FileDown className="mr-1 size-4" /> Download tax invoice
+								</Button>
+							)}
 							{showCheckOut && (
 								<Button size="sm" onClick={onCheckOut} disabled={checkingOut} data-testid="folio-checkout">
 									{checkingOut ? "Checking out…" : "Check out"}
@@ -189,9 +200,13 @@ export function FolioHeaderCard({
 										<RefreshCw className="mr-2 size-4" />
 										Refresh
 									</DropdownMenuItem>
+									<DropdownMenuItem onClick={onDownloadInvoice}>
+										<FileDown className="mr-2 size-4" />
+										Download tax invoice (GST)
+									</DropdownMenuItem>
 									<DropdownMenuItem onClick={onPrintLabel}>
 										<Printer className="mr-2 size-4" />
-										Print stay label (PDF + QR)
+										Print stay label (QR)
 									</DropdownMenuItem>
 									<DropdownMenuSeparator />
 									{/* Forward-compat: unknown next_actions surface here as muted chips */}

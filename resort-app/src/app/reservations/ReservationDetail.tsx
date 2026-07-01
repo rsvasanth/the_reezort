@@ -3,7 +3,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, CalendarDays, BedDouble, BadgeCheck, CreditCard, LogIn, Printer, ShieldAlert } from "lucide-react";
+import { Loader2, CalendarDays, BedDouble, BadgeCheck, CreditCard, LogIn, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -101,57 +101,6 @@ export default function ReservationDetail({ reservation }: { reservation: string
 		}
 	}
 
-	async function printCheckInLabel() {
-		if (!detail) return;
-		try {
-			const { printStayLabel } = await import("@/lib/print-label");
-			const { getFolioDetail, getOrCreateFolio } = await import("@/lib/folio-api");
-			// Ensure a folio exists — non-fatal if the reservation hasn't been checked in yet.
-			const opened = await getOrCreateFolio({ reservation });
-			const folioName = opened.data?.folio?.name;
-			if (!folioName) {
-				toast.error("Could not open the folio for this reservation");
-				return;
-			}
-			const bundle = await getFolioDetail(folioName);
-			if (!bundle.data) throw new Error("Folio detail returned empty");
-			const f = bundle.data.folio;
-			const t = bundle.data.totals;
-			const primary = detail.guests?.[0];
-			await printStayLabel({
-				type: f.stay_status === "Checked Out" ? "CHECKOUT" : "CHECKIN",
-				folio: {
-					name: f.name,
-					total_charges: t.total_charges,
-					total_taxes_estimated: t.total_taxes_estimated,
-					total_paid: t.total_paid,
-					outstanding_amount: t.outstanding_amount,
-					currency: f.currency,
-					folio_status: f.folio_status,
-				},
-				stay: {
-					name: f.stay ?? null,
-					stay_status: f.stay_status ?? null,
-					current_room: f.current_room ?? null,
-					arrival_date: f.arrival_date ?? detail.arrival_date ?? null,
-					departure_date: f.departure_date ?? detail.departure_date ?? null,
-				},
-				reservation: { name: reservation, status: detail.status, booking_source: detail.booking_source ?? null },
-				guest: {
-					name: primary?.guest_name ?? detail.guest,
-					email: primary?.email ?? null,
-					phone: primary?.phone ?? null,
-				},
-				property: detail.resort_property,
-				company: f.company,
-				timestamp: new Date().toISOString(),
-			});
-			toast.success("Label PDF generated");
-		} catch (error) {
-			toast.error("Could not print label", { description: error instanceof Error ? error.message : undefined });
-		}
-	}
-
 	async function confirmBooking() {
 		if (!detail) return;
 		setBusy(true);
@@ -228,9 +177,6 @@ export default function ReservationDetail({ reservation }: { reservation: string
 								<LogIn className="size-4" /> Check in
 							</Button>
 						) : null}
-						<Button size="sm" variant="ghost" onClick={printCheckInLabel} data-testid="res-print-label">
-							<Printer className="size-4" /> Print label
-						</Button>
 						{canCancel ? (
 							<Button size="sm" variant="outline" onClick={cancel} disabled={busy}>Cancel reservation</Button>
 						) : null}

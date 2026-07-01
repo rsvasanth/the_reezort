@@ -8,6 +8,7 @@ import {
 	IdCard,
 	Loader2,
 	LogIn,
+	Printer,
 	ShieldAlert,
 	ShieldCheck,
 	Upload,
@@ -694,11 +695,52 @@ function FinalizeStep({
 		}
 	}
 
+	async function printWelcomeCard() {
+		try {
+			const { printStayLabel } = await import("@/lib/print-label");
+			await printStayLabel({
+				type: "CHECKIN",
+				folio: {
+					name: ctx.folio ?? "—",
+					total_charges: ctx.deposit?.total_charges ?? 0,
+					total_taxes_estimated: 0,
+					total_paid: ctx.deposit?.total_paid ?? 0,
+					outstanding_amount: ctx.deposit?.outstanding_amount ?? 0,
+					currency: "INR",
+					folio_status: "Active",
+				},
+				stay: {
+					name: ctx.stay?.name ?? null,
+					stay_status: ctx.stay?.stay_status ?? "In House",
+					current_room: ctx.stay?.current_room ?? null,
+					arrival_date: ctx.arrival_date ?? null,
+					departure_date: ctx.departure_date ?? null,
+				},
+				reservation: { name: ctx.reservation, status: ctx.status, booking_source: null },
+				guest: {
+					name: ctx.guest?.guest_full_name ?? "Guest",
+					email: ctx.guest?.email ?? null,
+					phone: ctx.guest?.phone ?? null,
+				},
+				property: ctx.resort_property,
+				company: "THE REEZORT Private Limited",
+				timestamp: new Date().toISOString(),
+			});
+			toast.success("Welcome card downloaded");
+		} catch (error) {
+			toast.error("Could not print card", { description: error instanceof Error ? error.message : undefined });
+		}
+	}
+
 	if (ctx.stay) {
 		return (
 			<StepCard>
 				<Badge className="w-fit gap-1"><BadgeCheck className="size-3.5" /> Checked in — {ctx.stay.current_room}</Badge>
-				<div className="flex justify-end gap-2">
+				<p className="text-sm text-muted-foreground">Print the welcome card for the guest — QR-encoded reference, room number, and folio ID for reception.</p>
+				<div className="flex flex-wrap justify-end gap-2">
+					<Button variant="outline" onClick={printWelcomeCard} data-testid="checkin-print-welcome">
+						<Printer className="size-4" /> Print welcome card
+					</Button>
 					<Button variant="outline" onClick={() => ctx.folio && go(`#/folio/${encodeURIComponent(ctx.folio)}`)}>Open folio</Button>
 					<Button onClick={onDone}>Capture condition photos</Button>
 				</div>

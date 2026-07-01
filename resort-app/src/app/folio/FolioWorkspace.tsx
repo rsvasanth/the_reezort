@@ -112,6 +112,18 @@ export function FolioWorkspace({ folioName }: Props) {
 		}
 	}
 
+	async function handleDownloadInvoice() {
+		if (!detail) return;
+		try {
+			const { printGuestTaxInvoice, fetchInvoiceBundle } = await import("@/lib/tax-invoice");
+			const bundle = await fetchInvoiceBundle(detail.folio.name);
+			await printGuestTaxInvoice(bundle);
+			toast.success("Tax Invoice PDF generated");
+		} catch (error) {
+			toast.error("Could not generate invoice", { description: error instanceof Error ? error.message : undefined });
+		}
+	}
+
 	async function handlePrintLabel() {
 		if (!detail) return;
 		try {
@@ -197,6 +209,7 @@ export function FolioWorkspace({ folioName }: Props) {
 						onSettle={() => setSettleOpen(true)}
 						onDeposit={() => setDepositOpen(true)}
 						onCheckOut={handleCheckOut}
+						onDownloadInvoice={handleDownloadInvoice}
 						onPrintLabel={handlePrintLabel}
 						checkingOut={checkingOut}
 					/>
@@ -244,6 +257,7 @@ function BodyContent({
 	onSettle,
 	onDeposit,
 	onCheckOut,
+	onDownloadInvoice,
 	onPrintLabel,
 	checkingOut,
 }: {
@@ -257,6 +271,7 @@ function BodyContent({
 	onSettle: () => void;
 	onDeposit: () => void;
 	onPrintLabel: () => void;
+	onDownloadInvoice: () => void;
 	onCheckOut: () => void;
 	checkingOut: boolean;
 }) {
@@ -303,6 +318,7 @@ function BodyContent({
 				onDeposit={onDeposit}
 				onRefresh={onRetry}
 				onCheckOut={onCheckOut}
+				onDownloadInvoice={onDownloadInvoice}
 				onPrintLabel={onPrintLabel}
 				checkingOut={checkingOut}
 			/>

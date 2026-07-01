@@ -32,6 +32,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { EngagementTimeline } from "@/components/property/engagement-timeline";
+import { RoomInsightsPanel } from "@/components/property/room-insights";
 import { getRoomTimeline, type TimelineEvent } from "@/lib/timeline-api";
 import {
 	EQUIPMENT_CONDITIONS,
@@ -237,7 +238,8 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 						<TabsTrigger value="timeline" data-testid="room-tab-timeline">Timeline</TabsTrigger>
 					</TabsList>
 
-					<TabsContent value="overview" className="mt-4">
+					<TabsContent value="overview" className="mt-4 flex flex-col gap-6">
+						<RoomInsightsPanel room={room.name} />
 						<Card>
 							<CardContent className="grid gap-4 py-4 sm:grid-cols-2">
 								<Labeled label="Room name">

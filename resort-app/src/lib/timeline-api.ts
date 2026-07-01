@@ -113,3 +113,48 @@ export async function getBuildingTimeline(resort_building: string, limit?: numbe
 export async function getFloorTimeline(resort_floor: string, limit?: number): Promise<TimelinePayload> {
 	return call("the_reezort.property.timeline_api.get_floor_timeline", { resort_floor, limit });
 }
+
+// ---------- Room insights ----------
+
+export type GalleryItem = {
+	image: string;
+	caption: string;
+	source: string;
+	source_name: string;
+};
+
+export type RoomInsights = {
+	room: string;
+	hero_image: string | null;
+	gallery: GalleryItem[];
+	current: {
+		stay: string;
+		guest_name: string | null;
+		guest_image: string | null;
+		arrival_date: string | null;
+		departure_date: string | null;
+		nights_remaining: number | null;
+	} | null;
+	upcoming: Array<{
+		name: string;
+		status: string;
+		arrival_date: string | null;
+		departure_date: string | null;
+		guest_name: string | null;
+	}>;
+	tasks: {
+		open_count: number;
+		high_priority_open: number;
+		last_cleaned_at: string | null;
+		last_clean_type: string | null;
+	};
+	equipment: { total: number; by_condition: Record<string, number> };
+	days_since_last_stay: number | null;
+	occupancy_pct_30d: number;
+	occupied_nights_30d: number;
+	revenue_30d: number;
+};
+
+export async function getRoomInsights(room: string): Promise<RoomInsights> {
+	return call("the_reezort.property.insights_api.get_room_insights", { room });
+}

@@ -29,6 +29,10 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import AdvancesTab from "./AdvancesTab";
+import LeavesTab from "./LeavesTab";
 import {
 	FolioApiError,
 	clockIn,
@@ -113,6 +117,13 @@ export default function AttendanceScreen() {
 				</div>
 			</header>
 
+			<Tabs defaultValue="roster" className="w-full">
+				<TabsList data-testid="attendance-tabs">
+					<TabsTrigger value="roster">Roster</TabsTrigger>
+					<TabsTrigger value="leaves">Leaves</TabsTrigger>
+					<TabsTrigger value="advances">Advances</TabsTrigger>
+				</TabsList>
+				<TabsContent value="roster" className="mt-4">
 			{loading ? (
 				<div className="flex items-center gap-2 text-sm text-muted-foreground">
 					<Loader2 className="size-4 animate-spin" /> Loading…
@@ -208,6 +219,14 @@ export default function AttendanceScreen() {
 					</Table>
 				</div>
 			)}
+				</TabsContent>
+				<TabsContent value="leaves" className="mt-4">
+					<LeavesTab />
+				</TabsContent>
+				<TabsContent value="advances" className="mt-4">
+					<AdvancesTab />
+				</TabsContent>
+			</Tabs>
 		</main>
 	);
 }

@@ -204,3 +204,153 @@ export async function markAttendance(
 		body: { employee, status, date },
 	});
 }
+
+// ---------- Leaves ----------
+
+export type LeaveRow = {
+	name: string;
+	leave_type: string;
+	from_date: string | null;
+	to_date: string | null;
+	total_leave_days: number;
+	description: string | null;
+	status: "Open" | "Approved" | "Rejected" | "Cancelled";
+	docstatus: number;
+};
+
+export type LeaveBalance = {
+	leave_type: string;
+	max_days: number;
+	used_days: number;
+	remaining_days: number;
+};
+
+export type PendingLeaveRow = LeaveRow & {
+	employee: string;
+	employee_name: string;
+	owner: string;
+};
+
+export type MyLeaves = {
+	employee: string | null;
+	leaves: LeaveRow[];
+	balances: LeaveBalance[];
+	is_manager: boolean;
+};
+
+export async function listMyLeaves(): Promise<MyLeaves> {
+	return callStaff("the_reezort.staff.leave_api.list_my_leaves", { method: "GET" });
+}
+
+export async function listPendingLeaves(): Promise<{ leaves: PendingLeaveRow[] }> {
+	return callStaff("the_reezort.staff.leave_api.list_pending_leaves", { method: "GET" });
+}
+
+export async function createLeaveRequest(payload: {
+	leave_type: string;
+	from_date: string;
+	to_date: string;
+	reason?: string;
+}): Promise<{ leave: LeaveRow }> {
+	return callStaff("the_reezort.staff.leave_api.create_leave_request", {
+		method: "POST",
+		body: payload,
+	});
+}
+
+export async function cancelLeaveRequest(name: string): Promise<{ leave: string; cancelled: boolean }> {
+	return callStaff("the_reezort.staff.leave_api.cancel_leave_request", {
+		method: "POST",
+		body: { name },
+	});
+}
+
+export async function decideLeave(
+	name: string,
+	action: "Approve" | "Reject",
+	notes?: string
+): Promise<{ leave: LeaveRow }> {
+	return callStaff("the_reezort.staff.leave_api.decide_leave", {
+		method: "POST",
+		body: { name, action, notes },
+	});
+}
+
+// ---------- Advances ----------
+
+export type AdvanceRow = {
+	name: string;
+	posting_date: string | null;
+	advance_amount: number;
+	paid_amount: number | null;
+	purpose: string;
+	status: "Draft" | "Paid" | "Unpaid" | "Claimed" | "Returned" | "Cancelled" | "Partly Claimed and Returned";
+	docstatus: number;
+};
+
+export type PendingAdvanceRow = {
+	name: string;
+	employee: string;
+	employee_name: string;
+	posting_date: string | null;
+	advance_amount: number;
+	purpose: string;
+	owner: string;
+};
+
+export type MyAdvances = {
+	employee: string | null;
+	advances: AdvanceRow[];
+	outstanding: number;
+	cap: number;
+	is_manager: boolean;
+};
+
+export async function listMyAdvances(): Promise<MyAdvances> {
+	return callStaff("the_reezort.staff.advance_api.list_my_advances", { method: "GET" });
+}
+
+export async function listPendingAdvances(): Promise<{ advances: PendingAdvanceRow[] }> {
+	return callStaff("the_reezort.staff.advance_api.list_pending_advances", { method: "GET" });
+}
+
+export async function createAdvanceRequest(payload: {
+	amount: number;
+	purpose: string;
+	posting_date?: string;
+}): Promise<{ advance: AdvanceRow }> {
+	return callStaff("the_reezort.staff.advance_api.create_advance_request", {
+		method: "POST",
+		body: payload,
+	});
+}
+
+export async function cancelAdvanceRequest(name: string): Promise<{ advance: string; cancelled: boolean }> {
+	return callStaff("the_reezort.staff.advance_api.cancel_advance_request", {
+		method: "POST",
+		body: { name },
+	});
+}
+
+export async function decideAdvance(
+	name: string,
+	action: "Approve" | "Reject",
+	notes?: string
+): Promise<{ action: "Approved" | "Rejected"; advance?: AdvanceRow }> {
+	return callStaff("the_reezort.staff.advance_api.decide_advance", {
+		method: "POST",
+		body: { name, action, notes },
+	});
+}
+
+export async function markAdvancePaid(
+	name: string,
+	mode_of_payment: string,
+	reference_no?: string,
+	reference_date?: string
+): Promise<{ advance: AdvanceRow; payment_entry: string }> {
+	return callStaff("the_reezort.staff.advance_api.mark_advance_paid", {
+		method: "POST",
+		body: { name, mode_of_payment, reference_no, reference_date },
+	});
+}

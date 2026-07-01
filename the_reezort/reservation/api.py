@@ -136,7 +136,11 @@ def _room_rate(room_type, nights):
 	return rate * nights
 
 
-def _availability_rows(property_name, arrival_date, departure_date):
+def _availability_rows(property_name, arrival_date, departure_date, plan_code=None):
+	"""Plan-aware availability. Falls back to the flat _room_rate when no
+	Rate Plan exists on the property (backward compat)."""
+	from the_reezort.reservation.pricing import packages_for, resolve_room_rate
+
 	inventory = _room_type_inventory(property_name)
 	reservation_usage = _reservation_room_usage(
 		_overlapping_reservations(property_name, arrival_date, departure_date)
@@ -155,7 +159,10 @@ def _availability_rows(property_name, arrival_date, departure_date):
 			["room_type_name", "room_type_code", "standard_adults", "standard_children", "max_occupancy"],
 			as_dict=True,
 		)
-		total_amount = _room_rate(room_type, nights)
+		pricing = resolve_room_rate(room_type, arrival_date, departure_date, plan_code=plan_code)
+		# When resolver returns applied_plan=None it means no Rate Plan is set —
+		# total_amount is already the legacy flat computation for that case.
+		total_amount = pricing["total_amount"] if pricing["total_amount"] else _room_rate(room_type, nights)
 		rows.append(
 			{
 				"room_type": room_type,
@@ -171,6 +178,11 @@ def _availability_rows(property_name, arrival_date, departure_date):
 				"standard_adults": room_type_doc.standard_adults,
 				"standard_children": room_type_doc.standard_children,
 				"max_occupancy": room_type_doc.max_occupancy,
+				# Plan-aware fields — null when no plan configured.
+				"applied_plan": pricing["applied_plan"],
+				"season_uplift_summary": pricing["season_uplift_summary"],
+				"nightly_breakdown": pricing["nightly_breakdown"],
+				"packages": packages_for(room_type, arrival_date, departure_date),
 			}
 		)
 

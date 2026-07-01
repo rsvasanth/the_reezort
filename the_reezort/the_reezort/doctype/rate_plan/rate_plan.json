@@ -1,0 +1,40 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 0,
+ "autoname": "format:{resort_property}-{code}",
+ "creation": "2026-06-30 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "engine": "InnoDB",
+ "field_order": ["resort_property", "code", "plan_name", "column_break_1", "is_active", "refundable", "cancellation_hours", "scope_section", "room_type", "currency", "pricing_section", "base_rate_override", "weekend_uplift_pct", "notes"],
+ "fields": [
+  {"fieldname": "resort_property", "fieldtype": "Link", "in_standard_filter": 1, "label": "Resort Property", "options": "Resort Property", "reqd": 1},
+  {"fieldname": "code", "fieldtype": "Data", "in_list_view": 1, "label": "Code", "reqd": 1, "description": "Short uppercase identifier — BAR, CORP, AAA, MICE"},
+  {"fieldname": "plan_name", "fieldtype": "Data", "in_list_view": 1, "label": "Plan Name", "reqd": 1},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"default": "1", "fieldname": "is_active", "fieldtype": "Check", "label": "Active"},
+  {"default": "1", "fieldname": "refundable", "fieldtype": "Check", "label": "Refundable"},
+  {"default": "24", "fieldname": "cancellation_hours", "fieldtype": "Int", "label": "Cancellation Hours"},
+  {"fieldname": "scope_section", "fieldtype": "Section Break", "label": "Scope"},
+  {"fieldname": "room_type", "fieldtype": "Link", "label": "Room Type", "options": "Room Type", "description": "Leave empty to apply to all room types on the property"},
+  {"fieldname": "currency", "fieldtype": "Link", "label": "Currency", "options": "Currency", "default": "INR"},
+  {"fieldname": "pricing_section", "fieldtype": "Section Break", "label": "Pricing"},
+  {"fieldname": "base_rate_override", "fieldtype": "Currency", "label": "Base Rate Override", "description": "If set, overrides the room type's Item Price for this plan"},
+  {"fieldname": "weekend_uplift_pct", "fieldtype": "Percent", "label": "Weekend Uplift %", "description": "% added to Fri/Sat nights"},
+  {"fieldname": "notes", "fieldtype": "Small Text", "label": "Notes"}
+ ],
+ "links": [],
+ "modified": "2026-06-30 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Rate Plan",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

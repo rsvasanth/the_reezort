@@ -382,6 +382,96 @@ export async function getRoomEquipment(
 	});
 }
 
+// ---------- Pricing (Rate Plans / Seasons / Packages) ----------
+
+export type RatePlanRow = {
+	name: string;
+	code: string;
+	plan_name: string;
+	room_type: string | null;
+	base_rate_override: number | null;
+	weekend_uplift_pct: number | null;
+	refundable: 0 | 1;
+	cancellation_hours: number;
+	is_active: 0 | 1;
+};
+
+export type SeasonRow = {
+	name: string;
+	code: string;
+	season_name: string;
+	start_date: string;
+	end_date: string;
+	modifier_pct: number | null;
+	absolute_rate: number | null;
+	priority: number;
+	is_active: 0 | 1;
+};
+
+export type PackageInclusionRow = { inclusion_name: string; quantity: number };
+
+export type PackageRow = {
+	name: string;
+	code: string;
+	package_name: string;
+	nights: number;
+	room_type: string | null;
+	package_price: number;
+	valid_from: string | null;
+	valid_to: string | null;
+	is_active: 0 | 1;
+	inclusions: PackageInclusionRow[];
+	inclusions_summary: string;
+};
+
+export type PricingBundle = {
+	rate_plans: RatePlanRow[];
+	seasons: SeasonRow[];
+	packages: PackageRow[];
+};
+
+export async function listPricing(resortProperty: string): Promise<PricingBundle> {
+	return callSetup<PricingBundle>("the_reezort.setup.rate_plans.list_pricing", {
+		method: "GET",
+		params: { resort_property: resortProperty },
+	});
+}
+
+export async function upsertRatePlan(payload: Partial<RatePlanRow> & { resort_property: string }): Promise<{ rate_plan: string; reused: boolean }> {
+	return callSetup("the_reezort.setup.rate_plans.upsert_rate_plan", {
+		method: "POST",
+		body: { payload },
+	});
+}
+
+export async function upsertSeason(payload: Partial<SeasonRow> & { resort_property: string }): Promise<{ season: string; reused: boolean }> {
+	return callSetup("the_reezort.setup.rate_plans.upsert_season", {
+		method: "POST",
+		body: { payload },
+	});
+}
+
+export async function upsertPackage(payload: Partial<PackageRow> & { resort_property: string; inclusions?: PackageInclusionRow[] }): Promise<{ package: string; reused: boolean }> {
+	return callSetup("the_reezort.setup.rate_plans.upsert_package", {
+		method: "POST",
+		body: { payload },
+	});
+}
+
+export async function setPricingActive(doctype: "Rate Plan" | "Season" | "Package", name: string, isActive: boolean): Promise<{ name: string; is_active: number }> {
+	return callSetup("the_reezort.setup.rate_plans.set_pricing_active", {
+		method: "POST",
+		body: { doctype, name, is_active: isActive ? 1 : 0 },
+	});
+}
+
+export async function deletePricing(doctype: "Rate Plan" | "Season" | "Package", name: string): Promise<{ deleted: string }> {
+	return callSetup("the_reezort.setup.rate_plans.delete_pricing", {
+		method: "POST",
+		body: { doctype, name },
+	});
+}
+
 export async function setRoomEquipment(
 	room: string,
 	items: RoomEquipmentItem[]

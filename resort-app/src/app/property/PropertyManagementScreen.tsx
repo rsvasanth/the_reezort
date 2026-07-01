@@ -10,6 +10,7 @@ import { Loader2, Plus, Pencil, Power, Trash2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 
 import PropertySetupScreen from "@/app/setup/PropertySetupScreen";
+import { PricingTab } from "@/app/property/PricingTab";
 import { RoomSheet } from "@/components/property/room-sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -204,6 +205,7 @@ export default function PropertyManagementScreen() {
 								<TabsTrigger value="structure">Structure</TabsTrigger>
 								<TabsTrigger value="types">Room types</TabsTrigger>
 								<TabsTrigger value="equipment">Equipment catalog</TabsTrigger>
+								<TabsTrigger value="pricing" data-testid="tab-pricing">Pricing</TabsTrigger>
 							</TabsList>
 
 							<TabsContent value="rooms" className="mt-4">
@@ -217,6 +219,9 @@ export default function PropertyManagementScreen() {
 							</TabsContent>
 							<TabsContent value="equipment" className="mt-4">
 								<EquipmentTab amenities={amenities} onMutate={mutate} />
+							</TabsContent>
+							<TabsContent value="pricing" className="mt-4">
+								<PricingTab resortProperty={tree.resort_property} />
 							</TabsContent>
 						</Tabs>
 					) : null}

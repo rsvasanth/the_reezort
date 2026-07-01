@@ -1,0 +1,39 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 0,
+ "autoname": "format:{resort_property}-{code}",
+ "creation": "2026-06-30 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "engine": "InnoDB",
+ "field_order": ["resort_property", "code", "season_name", "column_break_1", "priority", "is_active", "window_section", "start_date", "end_date", "modifier_section", "modifier_pct", "absolute_rate", "notes"],
+ "fields": [
+  {"fieldname": "resort_property", "fieldtype": "Link", "in_standard_filter": 1, "label": "Resort Property", "options": "Resort Property", "reqd": 1},
+  {"fieldname": "code", "fieldtype": "Data", "in_list_view": 1, "label": "Code", "reqd": 1, "description": "Short uppercase — PEAK, OFF, DIWALI"},
+  {"fieldname": "season_name", "fieldtype": "Data", "in_list_view": 1, "label": "Season Name", "reqd": 1},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"default": "10", "fieldname": "priority", "fieldtype": "Int", "label": "Priority", "description": "Higher priority wins when multiple seasons overlap"},
+  {"default": "1", "fieldname": "is_active", "fieldtype": "Check", "label": "Active"},
+  {"fieldname": "window_section", "fieldtype": "Section Break", "label": "Window"},
+  {"fieldname": "start_date", "fieldtype": "Date", "label": "Start Date", "reqd": 1},
+  {"fieldname": "end_date", "fieldtype": "Date", "label": "End Date", "reqd": 1},
+  {"fieldname": "modifier_section", "fieldtype": "Section Break", "label": "Rate Modifier"},
+  {"fieldname": "modifier_pct", "fieldtype": "Percent", "label": "Modifier %", "description": "Positive = uplift (Peak +50). Negative = discount (Off -20). Ignored if absolute rate set."},
+  {"fieldname": "absolute_rate", "fieldtype": "Currency", "label": "Absolute Rate", "description": "Fixed nightly rate override. Overrides modifier_pct."},
+  {"fieldname": "notes", "fieldtype": "Small Text", "label": "Notes"}
+ ],
+ "links": [],
+ "modified": "2026-06-30 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Season",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

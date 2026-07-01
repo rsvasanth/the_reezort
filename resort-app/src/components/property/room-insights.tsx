@@ -7,9 +7,9 @@
  */
 
 import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import {
-	BedDouble, Brush, Calendar, ChevronLeft, ChevronRight,
+	BedDouble, Brush, Calendar,
 	Clock, IndianRupee, ListChecks, Loader2, Percent, User,
 } from "lucide-react";
 
@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { staggerContainer, staggerItem } from "@/lib/motion";
 import { getRoomInsights, type RoomInsights } from "@/lib/timeline-api";
+import { RoomGallery } from "@/components/property/room-gallery";
 
 function formatINR(n: number): string {
 	return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
@@ -32,7 +33,6 @@ function formatDate(iso: string | null): string {
 export function RoomInsightsPanel({ room }: { room: string }) {
 	const [insights, setInsights] = useState<RoomInsights | null>(null);
 	const [loading, setLoading] = useState(true);
-	const [activeIndex, setActiveIndex] = useState(0);
 
 	useEffect(() => {
 		let alive = true;
@@ -61,7 +61,6 @@ export function RoomInsightsPanel({ room }: { room: string }) {
 	}
 
 	const gallery = insights.gallery;
-	const hero = gallery[activeIndex]?.image ?? insights.hero_image;
 
 	return (
 		<motion.div
@@ -71,81 +70,9 @@ export function RoomInsightsPanel({ room }: { room: string }) {
 			animate="show"
 			data-testid="room-insights"
 		>
-			{/* Hero + gallery */}
-			<motion.section variants={staggerItem} className="overflow-hidden rounded-lg border bg-card">
-				<div className="relative aspect-[16/9] w-full bg-muted">
-					<AnimatePresence mode="wait">
-						{hero ? (
-							<motion.img
-								key={hero}
-								src={hero}
-								alt={gallery[activeIndex]?.caption ?? "Villa"}
-								className="absolute inset-0 h-full w-full object-cover"
-								initial={{ opacity: 0, scale: 1.02 }}
-								animate={{ opacity: 1, scale: 1 }}
-								exit={{ opacity: 0 }}
-								transition={{ duration: 0.35 }}
-							/>
-						) : (
-							<div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-								No image yet — seed villa renders to populate.
-							</div>
-						)}
-					</AnimatePresence>
-					{gallery.length > 1 ? (
-						<>
-							<button
-								type="button"
-								className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white transition-colors hover:bg-black/60"
-								aria-label="Previous image"
-								onClick={() => setActiveIndex((i) => (i - 1 + gallery.length) % gallery.length)}
-								data-testid="gallery-prev"
-							>
-								<ChevronLeft className="size-4" />
-							</button>
-							<button
-								type="button"
-								className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white transition-colors hover:bg-black/60"
-								aria-label="Next image"
-								onClick={() => setActiveIndex((i) => (i + 1) % gallery.length)}
-								data-testid="gallery-next"
-							>
-								<ChevronRight className="size-4" />
-							</button>
-							<div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5">
-								{gallery.map((_, i) => (
-									<button
-										type="button"
-										key={i}
-										aria-label={`Image ${i + 1}`}
-										className={`size-1.5 rounded-full transition-all ${i === activeIndex ? "w-4 bg-white" : "bg-white/50"}`}
-										onClick={() => setActiveIndex(i)}
-									/>
-								))}
-							</div>
-						</>
-					) : null}
-					{gallery[activeIndex]?.caption ? (
-						<div className="absolute bottom-3 right-3 rounded-md bg-black/50 px-2 py-1 text-xs text-white">
-							{gallery[activeIndex].caption}
-						</div>
-					) : null}
-				</div>
-				{gallery.length > 1 ? (
-					<div className="flex gap-2 overflow-x-auto p-2">
-						{gallery.map((g, i) => (
-							<button
-								type="button"
-								key={g.image}
-								onClick={() => setActiveIndex(i)}
-								className={`relative shrink-0 overflow-hidden rounded-md border transition-all ${i === activeIndex ? "ring-2 ring-primary" : "opacity-70 hover:opacity-100"}`}
-								data-testid={`gallery-thumb-${i}`}
-							>
-								<img src={g.image} alt={g.caption} className="size-16 object-cover" />
-							</button>
-						))}
-					</div>
-				) : null}
+			{/* Bento gallery tiles + lightbox */}
+			<motion.section variants={staggerItem}>
+				<RoomGallery items={gallery} roomLabel={insights.room} />
 			</motion.section>
 
 			{/* KPI grid */}

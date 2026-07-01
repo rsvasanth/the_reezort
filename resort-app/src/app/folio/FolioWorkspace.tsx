@@ -9,6 +9,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AddLineSheet } from "@/components/folio/add-line-sheet";
 import { FolioHeaderCard } from "@/components/folio/folio-header-card";
 import { FolioLinesTable } from "@/components/folio/folio-lines-table";
+import { FolioRoomHero } from "@/components/folio/folio-room-hero";
 import { FolioTotalsStrip } from "@/components/folio/folio-totals-strip";
 import { SettleFolioSheet } from "@/components/folio/settle-folio-sheet";
 import { DepositSheet } from "@/components/folio/deposit-sheet";
@@ -379,6 +380,7 @@ function BodyContent({
 				onPrintFarewell={onPrintFarewell}
 				checkingOut={checkingOut}
 			/>
+			<FolioRoomHero folio={detail.folio} />
 			<FolioTotalsStrip
 				totals={detail.totals}
 				balanceStatus={detail.balance_status}

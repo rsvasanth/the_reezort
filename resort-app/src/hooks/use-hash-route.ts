@@ -40,6 +40,7 @@ export type ParsedRoute =
 	| { kind: "checkin"; reservation: string | null }
 	| { kind: "mytasks" }
 	| { kind: "tasks" }
+	| { kind: "myday" }
 	| { kind: "condition"; stay: string | null };
 
 export function parseHashRoute(hash: string): ParsedRoute {
@@ -74,6 +75,7 @@ export function parseHashRoute(hash: string): ParsedRoute {
 
 	if (path === "/my-tasks") return { kind: "mytasks" };
 	if (path === "/tasks") return { kind: "tasks" };
+	if (path === "/my-day") return { kind: "myday" };
 
 	const checkinMatch = path.match(/^\/check-in(?:\/(.*))?$/);
 	if (checkinMatch) {

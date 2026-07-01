@@ -5,7 +5,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Field } from "@/components/workspace/field";
-import { Loader2, Plus, Pencil, UserCheck, UserX } from "lucide-react";
+import { CreditCard, Loader2, Plus, Pencil, UserCheck, UserX } from "lucide-react";
+import { downloadStaffIdCard } from "@/lib/staff-id-card";
 import { toast } from "sonner";
 
 import { GuestAvatar } from "@/components/guest-avatar";
@@ -145,6 +146,30 @@ export default function StaffAccessScreen() {
 									<TableCell>{m.enabled ? <Badge variant="secondary">Active</Badge> : <Badge variant="outline">Disabled</Badge>}</TableCell>
 									<TableCell className="text-right">
 										<div className="flex justify-end gap-1">
+											<Button
+												variant="ghost"
+												size="icon"
+												aria-label={m.employee ? `Print staff ID card for ${m.full_name}` : "No linked employee"}
+												title={m.employee ? "Print ID card" : "No linked employee"}
+												disabled={!m.employee}
+												onClick={async () => {
+													if (!m.employee) return;
+													try {
+														await downloadStaffIdCard({
+															employee: m.employee,
+															employee_name: m.full_name,
+															designation: m.designation,
+															image: m.image,
+														});
+														toast.success("ID card saved");
+													} catch (error) {
+														reportError(error, "ID card failed");
+													}
+												}}
+												data-testid={`print-id-${m.user}`}
+											>
+												<CreditCard className="size-4" />
+											</Button>
 											<Button variant="ghost" size="icon" aria-label="Edit roles" onClick={() => setEditing(m)}>
 												<Pencil className="size-4" />
 											</Button>

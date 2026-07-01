@@ -32,11 +32,9 @@ export function isManager(profile: UserProfile | null): boolean {
 export function defaultLandingRoute(profile: UserProfile | null): string {
 	if (!profile) return "";
 	if (isManager(profile)) return "";
-	if (profile.roles.includes("Front Desk") || profile.roles.includes("Reservation Agent")) return "#/frontdesk";
-	if (profile.roles.includes("Housekeeping")) return "#/my-tasks";
-	if (profile.roles.includes("Accounts User") || profile.roles.includes("Accounts Manager")) return "#/billing";
-	if (profile.roles.includes("Maintenance")) return "#/my-tasks";
-	return "";
+	// Non-manager staff land on the personal "My Day" surface first — the
+	// clock, shift, open tasks, quick request links, latest payslip.
+	return "#/my-day";
 }
 
 /**

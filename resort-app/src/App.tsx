@@ -24,6 +24,7 @@ import AllTasksScreen from "@/app/tasks/AllTasksScreen";
 import PropertyManagementScreen from "@/app/property/PropertyManagementScreen";
 import StaffAccessScreen from "@/app/staff/StaffAccessScreen";
 import AttendanceScreen from "@/app/staff/AttendanceScreen";
+import MyDayScreen from "@/app/staff/MyDayScreen";
 import ServiceDeskScreen from "@/app/servicedesk/ServiceDeskScreen";
 import BillingOverviewScreen from "@/app/billing/BillingOverviewScreen";
 import FrontDeskScreen from "@/app/frontdesk/FrontDeskScreen";
@@ -280,6 +281,14 @@ function AuthGate() {
 		return (
 			<AppShell>
 				<MyTasksScreen />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "myday") {
+		return (
+			<AppShell>
+				<MyDayScreen />
 			</AppShell>
 		);
 	}

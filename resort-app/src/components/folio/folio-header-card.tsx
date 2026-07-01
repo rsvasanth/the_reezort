@@ -49,6 +49,7 @@ type Props = {
 	onDeposit: () => void;
 	onRefresh: () => void;
 	onCheckOut: () => void;
+	onPrintLabel: () => void;
 	checkingOut?: boolean;
 };
 
@@ -60,6 +61,7 @@ export function FolioHeaderCard({
 	onDeposit,
 	onRefresh,
 	onCheckOut,
+	onPrintLabel,
 	checkingOut,
 }: Props) {
 	const { folio, balance_status, posting_status, next_actions } = detail;
@@ -72,9 +74,13 @@ export function FolioHeaderCard({
 	const showAddLine = !mutationsDisabled && actions.includes("add_line");
 	const showSettle = !mutationsDisabled && actions.includes("open_settlement");
 	// Once the folio is invoiced (settled or on credit), the guest can check out:
-	// this frees the room and sends it to housekeeping.
+	// this frees the room and sends it to housekeeping. Hide the button after the
+	// stay is already Checked Out so it can't be clicked twice.
 	const showCheckOut =
-		!!folio.stay && ["Ready for Settlement", "Settled", "Closed"].includes(folio.folio_status);
+		!!folio.stay
+		&& ["Ready for Settlement", "Settled", "Closed"].includes(folio.folio_status)
+		&& folio.stay_status !== "Checked Out"
+		&& folio.stay_status !== "Cancelled";
 
 	function copyFolioName() {
 		navigator.clipboard
@@ -183,13 +189,9 @@ export function FolioHeaderCard({
 										<RefreshCw className="mr-2 size-4" />
 										Refresh
 									</DropdownMenuItem>
-									<DropdownMenuItem
-										disabled
-										onSelect={(event) => event.preventDefault()}
-									>
+									<DropdownMenuItem onClick={onPrintLabel}>
 										<Printer className="mr-2 size-4" />
-										Print folio
-										<span className="ml-2 text-xs text-muted-foreground">soon</span>
+										Print stay label (PDF + QR)
 									</DropdownMenuItem>
 									<DropdownMenuSeparator />
 									{/* Forward-compat: unknown next_actions surface here as muted chips */}

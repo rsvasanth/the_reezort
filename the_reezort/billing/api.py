@@ -62,11 +62,20 @@ def _guest_image_for_folio(doc):
 
 
 def _folio_header(doc):
+	stay_info = (
+		frappe.db.get_value("Stay", doc.stay, ["stay_status", "current_room", "arrival_date", "departure_date"], as_dict=True)
+		if doc.stay
+		else None
+	)
 	return {
 		"name": doc.name,
 		"resort_property": doc.resort_property,
 		"company": doc.company,
 		"stay": doc.stay,
+		"stay_status": stay_info.stay_status if stay_info else None,
+		"current_room": stay_info.current_room if stay_info else None,
+		"arrival_date": str(stay_info.arrival_date) if stay_info and stay_info.arrival_date else None,
+		"departure_date": str(stay_info.departure_date) if stay_info and stay_info.departure_date else None,
 		"reservation": doc.reservation,
 		"customer": doc.customer,
 		"guest_image": _guest_image_for_folio(doc),

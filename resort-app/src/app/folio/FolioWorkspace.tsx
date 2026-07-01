@@ -112,6 +112,54 @@ export function FolioWorkspace({ folioName }: Props) {
 		}
 	}
 
+	async function handlePrintLabel() {
+		if (!detail) return;
+		try {
+			const { printStayLabel } = await import("@/lib/print-label");
+			const { getReservation } = await import("@/lib/reservation-api");
+			// Grab reservation-side context for booking source. Non-fatal if it fails.
+			let reservation = { name: detail.folio.reservation ?? "—", status: "—", booking_source: null as string | null };
+			if (detail.folio.reservation) {
+				try {
+					const r = await getReservation(detail.folio.reservation);
+					reservation = { name: r.reservation, status: r.status, booking_source: r.booking_source };
+				} catch { /* non-fatal */ }
+			}
+			const isCheckedOut = detail.folio.stay_status === "Checked Out";
+			await printStayLabel({
+				type: isCheckedOut ? "CHECKOUT" : "CHECKIN",
+				folio: {
+					name: detail.folio.name,
+					total_charges: detail.totals.total_charges,
+					total_taxes_estimated: detail.totals.total_taxes_estimated,
+					total_paid: detail.totals.total_paid,
+					outstanding_amount: detail.totals.outstanding_amount,
+					currency: detail.folio.currency,
+					folio_status: detail.folio.folio_status,
+				},
+				stay: {
+					name: detail.folio.stay ?? null,
+					stay_status: detail.folio.stay_status ?? null,
+					current_room: detail.folio.current_room ?? null,
+					arrival_date: detail.folio.arrival_date ?? null,
+					departure_date: detail.folio.departure_date ?? null,
+				},
+				reservation,
+				guest: {
+					name: detail.folio.guest_name ?? detail.folio.customer_name ?? detail.folio.customer,
+					email: null,
+					phone: null,
+				},
+				property: detail.folio.resort_property,
+				company: detail.folio.company,
+				timestamp: new Date().toISOString(),
+			});
+			toast.success("Label PDF generated");
+		} catch (error) {
+			toast.error("Could not print label", { description: error instanceof Error ? error.message : undefined });
+		}
+	}
+
 	return (
 		<SidebarProvider
 			style={
@@ -149,6 +197,7 @@ export function FolioWorkspace({ folioName }: Props) {
 						onSettle={() => setSettleOpen(true)}
 						onDeposit={() => setDepositOpen(true)}
 						onCheckOut={handleCheckOut}
+						onPrintLabel={handlePrintLabel}
 						checkingOut={checkingOut}
 					/>
 				</main>
@@ -195,6 +244,7 @@ function BodyContent({
 	onSettle,
 	onDeposit,
 	onCheckOut,
+	onPrintLabel,
 	checkingOut,
 }: {
 	folioName: string | null;
@@ -206,6 +256,7 @@ function BodyContent({
 	onAddLine: () => void;
 	onSettle: () => void;
 	onDeposit: () => void;
+	onPrintLabel: () => void;
 	onCheckOut: () => void;
 	checkingOut: boolean;
 }) {
@@ -252,6 +303,7 @@ function BodyContent({
 				onDeposit={onDeposit}
 				onRefresh={onRetry}
 				onCheckOut={onCheckOut}
+				onPrintLabel={onPrintLabel}
 				checkingOut={checkingOut}
 			/>
 			<FolioTotalsStrip

@@ -129,6 +129,10 @@ export type GuestFolioHeader = {
 	resort_property: string;
 	company: string;
 	stay?: string | null;
+	stay_status?: string | null;
+	current_room?: string | null;
+	arrival_date?: string | null;
+	departure_date?: string | null;
 	reservation?: string | null;
 	customer: string;
 	customer_name?: string | null;

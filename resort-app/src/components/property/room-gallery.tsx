@@ -1,13 +1,7 @@
 /**
- * RoomGallery — bento-grid tiles with a framer-motion lightbox.
- *
- * Compact layout:
- *   · Desktop: 1 large tile (2/3 width, aspect 4/3) + 3 small tiles on the
- *     right in a 1×3 column. The last small tile shows a "+N more" pill if
- *     there are extra photos.
- *   · Mobile: single large tile + 2×2 grid below.
- *   · Tap any tile → lightbox with keyboard arrows, click backdrop or Esc
- *     to close, dot pagination + prev/next.
+ * RoomGallery — bento tiles with lightbox. Height-capped so a tall source
+ * image never explodes the layout — the container is a fixed aspect on
+ * desktop (16:9) and hero-with-strip on mobile.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -25,8 +19,6 @@ type Props = {
 export function RoomGallery({ items, roomLabel = "Villa" }: Props) {
 	const [lightboxAt, setLightboxAt] = useState<number | null>(null);
 
-	// Slice tiles: 1 hero + up to 3 side tiles. Everything else goes in the
-	// lightbox via the "+N more" overlay on the last tile.
 	const hero = items[0];
 	const side = items.slice(1, 4);
 	const extraCount = Math.max(0, items.length - 4);
@@ -41,20 +33,23 @@ export function RoomGallery({ items, roomLabel = "Villa" }: Props) {
 
 	function openAt(index: number) { setLightboxAt(index); }
 
+	// The whole gallery is a single 16:9 box on desktop (≈420px tall at
+	// 1440 wide) — never grows with the source image. On mobile it's a
+	// stacked hero-then-2×2.
 	return (
 		<>
 			<motion.div
-				className="grid grid-cols-1 gap-2 md:grid-cols-3 md:auto-rows-[minmax(0,1fr)]"
+				className="grid grid-cols-1 gap-2 md:grid-cols-3 md:aspect-[16/9]"
 				variants={staggerContainer}
 				initial="hidden"
 				animate="show"
 				data-testid="room-gallery"
 			>
-				{/* Hero tile — spans 2 cols on md+, single col on mobile */}
+				{/* Hero tile — 2 cols on md+, capped by parent aspect. */}
 				<motion.button
 					variants={staggerItem}
 					onClick={() => openAt(0)}
-					className="group relative col-span-1 aspect-[4/3] overflow-hidden rounded-lg border md:col-span-2 md:row-span-3 md:aspect-auto"
+					className="group relative col-span-1 aspect-[4/3] overflow-hidden rounded-lg border md:col-span-2 md:aspect-auto md:h-full"
 					aria-label={`Open ${hero.caption} in gallery`}
 					data-testid="hero-tile"
 				>
@@ -69,8 +64,8 @@ export function RoomGallery({ items, roomLabel = "Villa" }: Props) {
 					</div>
 				</motion.button>
 
-				{/* Side tiles — 3 tiles on md+, 2×2 grid on mobile after the hero */}
-				<div className="col-span-1 grid grid-cols-2 gap-2 md:col-span-1 md:grid-cols-1 md:grid-rows-3">
+				{/* Side tiles — 3 stacked on md+, 2×2 grid below hero on mobile. */}
+				<div className="col-span-1 grid grid-cols-2 gap-2 md:h-full md:grid-cols-1 md:grid-rows-3">
 					{side.map((g, i) => {
 						const isLast = i === side.length - 1 && extraCount > 0;
 						return (
@@ -78,7 +73,7 @@ export function RoomGallery({ items, roomLabel = "Villa" }: Props) {
 								key={g.image}
 								variants={staggerItem}
 								onClick={() => openAt(i + 1)}
-								className="group relative aspect-[4/3] overflow-hidden rounded-lg border md:aspect-auto"
+								className="group relative overflow-hidden rounded-lg border aspect-[4/3] md:aspect-auto md:h-full md:min-h-0"
 								aria-label={`Open ${g.caption}`}
 								data-testid={`tile-${i + 1}`}
 							>
@@ -100,7 +95,7 @@ export function RoomGallery({ items, roomLabel = "Villa" }: Props) {
 					{Array.from({ length: Math.max(0, 3 - side.length) }).map((_, i) => (
 						<div
 							key={`blank-${i}`}
-							className="hidden aspect-[4/3] rounded-lg border border-dashed bg-muted/40 md:block md:aspect-auto"
+							className="hidden aspect-[4/3] rounded-lg border border-dashed bg-muted/40 md:block md:aspect-auto md:h-full md:min-h-0"
 							aria-hidden
 						/>
 					))}

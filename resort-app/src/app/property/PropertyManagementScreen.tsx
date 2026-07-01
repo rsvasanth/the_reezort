@@ -11,6 +11,7 @@ import { toast } from "sonner";
 
 import PropertySetupScreen from "@/app/setup/PropertySetupScreen";
 import { PricingTab } from "@/app/property/PricingTab";
+import { RoomThumb } from "@/components/property/room-thumb";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -310,7 +311,15 @@ function RoomsTab({ tree, onMutate }: { tree: PropertyTree; onMutate: MutateFn }
 								className={`cursor-pointer hover:bg-accent/40 ${r.is_active ? "" : "opacity-50"}`}
 								onClick={() => { window.location.hash = `#/room/${encodeURIComponent(r.name)}`; }}
 							>
-								<TableCell className="font-medium">{r.room_number}{r.room_name ? <span className="block text-xs text-muted-foreground">{r.room_name}</span> : null}</TableCell>
+								<TableCell className="font-medium">
+									<div className="flex items-center gap-3">
+										<RoomThumb image={r.image} label={r.room_number} size={40} />
+										<div>
+											{r.room_number}
+											{r.room_name ? <span className="block text-xs text-muted-foreground">{r.room_name}</span> : null}
+										</div>
+									</div>
+								</TableCell>
 								<TableCell className="text-sm">{r.room_type}</TableCell>
 								<TableCell><StatusBadge value={r.occupancy_status} /></TableCell>
 								<TableCell><StatusBadge value={r.housekeeping_status} danger={r.housekeeping_status === "Dirty"} /></TableCell>

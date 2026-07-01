@@ -21,6 +21,7 @@ ROOM_FIELDS = [
 	"is_accessible",
 	"is_connecting_room",
 	"is_active",
+	"image",
 ]
 
 BLOCKING_MAINTENANCE_STATUSES = ("Under Maintenance", "Out of Order", "Out of Service")
@@ -96,6 +97,9 @@ def _decorate_room(row):
 	row["building_name"] = frappe.db.get_value("Resort Building", row.building, "building_name")
 	row["floor_label"] = frappe.db.get_value("Resort Floor", row.floor, "floor_label")
 	row["room_type_name"] = frappe.db.get_value("Room Type", row.room_type, "room_type_name")
+	# Fall back to Room Type image when the room hasn't been shot yet.
+	if not row.get("image") and row.get("room_type"):
+		row["image"] = frappe.db.get_value("Room Type", row.room_type, "image")
 	return row
 
 

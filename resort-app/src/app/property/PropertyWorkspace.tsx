@@ -214,24 +214,33 @@ export function ScopeWorkspace({ kind, code }: { kind: Scope; code: string | nul
 									<a
 										key={r.name}
 										href={`#/room/${encodeURIComponent(r.name)}`}
-										className="block rounded-md border bg-card p-3 transition-colors hover:bg-accent/40"
+										className="block overflow-hidden rounded-md border bg-card transition-colors hover:bg-accent/40"
 										data-testid={`room-tile-${r.name}`}
 									>
-										<div className="flex items-center justify-between">
-											<div className="text-base font-medium">{r.room_number}</div>
-											<Badge variant="outline" className="text-[10px]">{r.occupancy_status}</Badge>
-										</div>
-										{r.room_name ? (
-											<div className="mt-0.5 text-xs text-muted-foreground">{r.room_name}</div>
-										) : null}
-										<div className="mt-2 flex flex-wrap gap-1">
-											<Badge variant="secondary" className="text-[10px]">{r.housekeeping_status}</Badge>
-											<Badge
-												variant={r.maintenance_status === "Available" ? "secondary" : "destructive"}
-												className="text-[10px]"
-											>
-												{r.maintenance_status}
-											</Badge>
+										{r.image ? (
+											<img src={r.image} alt={r.room_number} className="aspect-[16/10] w-full object-cover" />
+										) : (
+											<div className="flex aspect-[16/10] w-full items-center justify-center bg-gradient-to-br from-stone-200 to-stone-100 text-sm font-medium text-stone-600 dark:from-stone-800 dark:to-stone-900 dark:text-stone-300">
+												{r.room_number}
+											</div>
+										)}
+										<div className="p-3">
+											<div className="flex items-center justify-between">
+												<div className="text-base font-medium">{r.room_number}</div>
+												<Badge variant="outline" className="text-[10px]">{r.occupancy_status}</Badge>
+											</div>
+											{r.room_name ? (
+												<div className="mt-0.5 text-xs text-muted-foreground">{r.room_name}</div>
+											) : null}
+											<div className="mt-2 flex flex-wrap gap-1">
+												<Badge variant="secondary" className="text-[10px]">{r.housekeeping_status}</Badge>
+												<Badge
+													variant={r.maintenance_status === "Available" ? "secondary" : "destructive"}
+													className="text-[10px]"
+												>
+													{r.maintenance_status}
+												</Badge>
+											</div>
 										</div>
 									</a>
 								))}

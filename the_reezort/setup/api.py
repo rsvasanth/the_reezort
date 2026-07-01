@@ -234,9 +234,16 @@ def get_property_tree(resort_property):
 			"name", "room_number", "room_name", "building", "floor", "room_type",
 			"occupancy_status", "housekeeping_status", "maintenance_status",
 			"sellable_status", "smoking_policy", "is_accessible", "is_active",
+			"image",
 		],
 		order_by="room_number asc",
 	)
+	# Fall back to Room Type.image so every row has a thumb even before per-room
+	# uploads land.
+	rt_image = {rt["name"]: frappe.db.get_value("Room Type", rt["name"], "image") for rt in room_types}
+	for r in rooms:
+		if not r.get("image") and r.get("room_type"):
+			r["image"] = rt_image.get(r["room_type"])
 	return _envelope(
 		{
 			"resort_property": resort_property,

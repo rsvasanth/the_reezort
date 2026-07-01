@@ -368,9 +368,18 @@ def get_housekeeping_board(resort_property=None):
 			"occupancy_status",
 			"maintenance_status",
 			"sellable_status",
+			"image",
 		],
 		order_by="building asc, floor asc, display_order asc, room_number asc",
 	)
+	# Room Type image is the safety net so every card has a thumb.
+	room_types_with_image = {
+		rt["name"]: rt["image"]
+		for rt in frappe.get_all("Room Type", filters={"is_active": 1}, fields=["name", "image"])
+	}
+	for r in rooms:
+		if not r.get("image") and r.get("room_type"):
+			r["image"] = room_types_with_image.get(r["room_type"])
 	tasks = frappe.get_all(
 		"Housekeeping Task",
 		filters={"resort_property": resort_property, "task_status": ["in", OPEN_TASK_STATUSES]},

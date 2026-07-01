@@ -28,6 +28,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { RoomThumb } from "@/components/property/room-thumb";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -177,13 +178,16 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 	return (
 		<Card className="flex flex-col gap-0 overflow-hidden" data-testid={`room-${room.room_number}`}>
 			<CardContent className="flex flex-col gap-3 p-4">
-				{/* Header: room number + housekeeping status */}
+				{/* Header: thumbnail + room number + housekeeping status */}
 				<div className="flex items-start justify-between gap-2">
-					<div>
-						<span className="text-lg font-semibold leading-none">{room.room_number}</span>
-						<p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-							{room.room_name}
-						</p>
+					<div className="flex items-center gap-2">
+						<RoomThumb image={room.image} label={room.room_number} size={40} />
+						<div>
+							<span className="text-lg font-semibold leading-none">{room.room_number}</span>
+							<p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+								{room.room_name}
+							</p>
+						</div>
 					</div>
 					<TooltipProvider>
 						<Tooltip>

@@ -114,6 +114,7 @@ export type HousekeepingRoom = {
 	maintenance_status: MaintenanceStatus;
 	sellable_status: SellableStatus;
 	open_task: OpenTask | null;
+	image: string | null;
 };
 
 export type HousekeepingBoard = {

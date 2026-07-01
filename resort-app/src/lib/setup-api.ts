@@ -92,6 +92,7 @@ export type TreeRoom = {
 	smoking_policy: string;
 	is_accessible: number;
 	is_active: number;
+	image: string | null;
 };
 
 export type PropertyTree = {

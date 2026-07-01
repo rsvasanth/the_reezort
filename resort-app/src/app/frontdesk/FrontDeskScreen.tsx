@@ -37,6 +37,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+import { OccupancyTimeline } from "@/components/occupancy-timeline";
 import { WorkspacePage, KpiStrip } from "@/components/workspace/workspace";
 import {
 	FolioApiError,
@@ -123,6 +124,8 @@ export default function FrontDeskScreen() {
 							{ label: "Due out", value: board.counts.due_out, accent: board.counts.due_out > 0 ? "danger" : undefined },
 						]}
 					/>
+
+					<OccupancyTimeline />
 
 					{/* Arrivals */}
 					<section className="flex flex-col gap-2">

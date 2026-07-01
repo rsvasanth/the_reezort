@@ -522,3 +522,85 @@ def record_inspection(inspection, outcome, notes=None, checklist_result=None):
 		{"inspection": _inspection_data(inspection_doc), "rework_task": _task_data(rework_task)},
 		next_actions=["assign_task"],
 	)
+
+
+# ---------- task lists (my tasks + all tasks) ----------
+
+OPEN_TASK_STATUSES = ("Queued", "Assigned", "In Progress", "Paused", "Inspection Required", "Rework Required")
+CLOSED_TASK_STATUSES = ("Completed", "Cancelled", "Skipped")
+
+
+def _task_row(row):
+	room_name = frappe.db.get_value("Room", row.room, "room_name") if row.room else None
+	return {
+		"name": row.name,
+		"room": row.room,
+		"room_number": frappe.db.get_value("Room", row.room, "room_number") if row.room else None,
+		"room_name": room_name,
+		"task_type": row.task_type,
+		"task_status": row.task_status,
+		"priority": row.priority,
+		"assigned_user": row.assigned_user,
+		"assigned_employee": row.assigned_employee,
+		"assignee_name": frappe.db.get_value("User", row.assigned_user, "full_name") if row.assigned_user else None,
+		"start_time": row.start_time,
+		"completed_at": row.completed_at,
+		"due_at": row.due_at,
+		"stay": row.stay,
+	}
+
+
+@frappe.whitelist()
+def list_my_tasks(scope="open", limit=200):
+	"""Tasks assigned to the current user (staff self-service).
+
+	scope='open'   → Queued / Assigned / In Progress / Paused / Inspection Required
+	scope='history' → Completed / Cancelled / Skipped (last {limit}, most recent first)
+	"""
+	_require_permission("Housekeeping Task", "read")
+	statuses = OPEN_TASK_STATUSES if scope == "open" else CLOSED_TASK_STATUSES
+	order = "creation desc" if scope == "history" else "priority desc, creation asc"
+	rows = frappe.get_all(
+		"Housekeeping Task",
+		filters={"assigned_user": frappe.session.user, "task_status": ["in", statuses]},
+		fields=[
+			"name", "room", "task_type", "task_status", "priority",
+			"assigned_user", "assigned_employee", "start_time", "completed_at",
+			"due_at", "stay",
+		],
+		order_by=order,
+		limit=int(limit),
+	)
+	return _envelope({"tasks": [_task_row(r) for r in rows], "scope": scope})
+
+
+@frappe.whitelist()
+def list_tasks(status=None, task_type=None, assigned_user=None, days=14, limit=500):
+	"""Manager view — all tasks across the property, filterable.
+
+	Defaults to the last {days} days by creation. Not gated to staff admin — any
+	user with Housekeeping Task read permission can browse (Front Desk needs it
+	to route calls); the doctype's own perms enforce write access downstream.
+	"""
+	from frappe.utils import add_days, today
+
+	_require_permission("Housekeeping Task", "read")
+	filters = {"creation": [">=", add_days(today(), -int(days))]}
+	if status:
+		filters["task_status"] = ["in", [s.strip() for s in str(status).split(",") if s.strip()]]
+	if task_type:
+		filters["task_type"] = task_type
+	if assigned_user:
+		filters["assigned_user"] = assigned_user
+	rows = frappe.get_all(
+		"Housekeeping Task",
+		filters=filters,
+		fields=[
+			"name", "room", "task_type", "task_status", "priority",
+			"assigned_user", "assigned_employee", "start_time", "completed_at",
+			"due_at", "stay", "creation",
+		],
+		order_by="creation desc",
+		limit=int(limit),
+	)
+	return _envelope({"tasks": [_task_row(r) for r in rows]})

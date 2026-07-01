@@ -33,9 +33,9 @@ export function defaultLandingRoute(profile: UserProfile | null): string {
 	if (!profile) return "";
 	if (isManager(profile)) return "";
 	if (profile.roles.includes("Front Desk") || profile.roles.includes("Reservation Agent")) return "#/frontdesk";
-	if (profile.roles.includes("Housekeeping")) return "#/housekeeping";
+	if (profile.roles.includes("Housekeeping")) return "#/my-tasks";
 	if (profile.roles.includes("Accounts User") || profile.roles.includes("Accounts Manager")) return "#/billing";
-	if (profile.roles.includes("Maintenance")) return "#/servicedesk";
+	if (profile.roles.includes("Maintenance")) return "#/my-tasks";
 	return "";
 }
 
@@ -44,10 +44,10 @@ export function defaultLandingRoute(profile: UserProfile | null): string {
  * Including extras beyond the must-haves keeps the shell discoverable.
  */
 const ROLE_SIDEBAR: Record<string, string[]> = {
-	"Front Desk": ["Executive cockpit", "Reservations", "Front desk", "Housekeeping", "Billing", "Service desk"],
+	"Front Desk": ["Executive cockpit", "Reservations", "Front desk", "Housekeeping", "All tasks", "Billing", "Service desk"],
 	"Reservation Agent": ["Executive cockpit", "Reservations", "Front desk", "Billing"],
-	Housekeeping: ["Executive cockpit", "Housekeeping", "Service desk"],
-	Maintenance: ["Executive cockpit", "Service desk", "Housekeeping"],
+	Housekeeping: ["Executive cockpit", "Housekeeping", "My tasks", "Service desk"],
+	Maintenance: ["Executive cockpit", "My tasks", "Service desk", "Housekeeping"],
 	"Accounts User": ["Executive cockpit", "Billing", "Reservations", "Front desk"],
 	"Accounts Manager": ["Executive cockpit", "Billing", "Reservations", "Front desk"],
 	Restaurant: ["Executive cockpit", "Restaurant & bar"],

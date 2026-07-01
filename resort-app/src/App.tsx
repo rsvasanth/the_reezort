@@ -19,6 +19,8 @@ import { FolioWorkspace } from "@/app/folio/FolioWorkspace";
 import HousekeepingBoard from "@/app/housekeeping/HousekeepingBoard";
 import ConditionCaptureScreen from "@/app/condition/ConditionCaptureScreen";
 import CheckInScreen from "@/app/checkin/CheckInScreen";
+import MyTasksScreen from "@/app/tasks/MyTasksScreen";
+import AllTasksScreen from "@/app/tasks/AllTasksScreen";
 import PropertyManagementScreen from "@/app/property/PropertyManagementScreen";
 import StaffAccessScreen from "@/app/staff/StaffAccessScreen";
 import AttendanceScreen from "@/app/staff/AttendanceScreen";
@@ -270,6 +272,22 @@ function AuthGate() {
 		return (
 			<AppShell>
 				<CheckInScreen reservation={route.reservation} />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "mytasks") {
+		return (
+			<AppShell>
+				<MyTasksScreen />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "tasks") {
+		return (
+			<AppShell>
+				<AllTasksScreen />
 			</AppShell>
 		);
 	}

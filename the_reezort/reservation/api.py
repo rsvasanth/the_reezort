@@ -620,3 +620,89 @@ def list_reservations(resort_property=None):
 			}
 		)
 	return {"reservations": out}
+
+
+# ---------- occupancy timeline (Gantt view for Front Desk) ----------
+
+@frappe.whitelist()
+def get_occupancy_timeline(start_date=None, days=14, resort_property=None):
+	"""Rooms × days grid with reservation blocks + open task chips for a Gantt view.
+
+	Returns:
+	  { start_date, end_date, days: [YYYY-MM-DD, …],
+	    rooms: [{name, room_number, room_name, room_type, statuses}],
+	    reservations: [{name, guest, room, room_type, arrival_date, departure_date, status, nights}],
+	    tasks: [{name, room, task_type, task_status, priority, start_time, completed_at, due_at}] }
+	"""
+	from frappe.utils import add_days, getdate, today
+
+	_require_permission("Reservation", "read")
+	start = getdate(start_date) if start_date else getdate(today())
+	days = int(days) or 14
+	end = add_days(start, days)
+
+	# Property default — first active if not passed.
+	if not resort_property:
+		resort_property = frappe.db.get_value("Resort Property", {"is_active": 1}, "name")
+
+	rooms = frappe.get_all(
+		"Room",
+		filters={"resort_property": resort_property, "is_active": 1},
+		fields=["name", "room_number", "room_name", "room_type", "occupancy_status", "housekeeping_status", "maintenance_status", "sellable_status"],
+		order_by="room_number asc",
+	)
+
+	# All reservations that overlap the window and are blocking (not Cancelled) —
+	# include Hold so the agent sees pipeline.
+	res_rows = frappe.get_all(
+		"Reservation",
+		filters={
+			"resort_property": resort_property,
+			"status": ["not in", ("Cancelled", "No Show")],
+			"arrival_date": ["<", end],
+			"departure_date": [">", start],
+		},
+		fields=["name", "status", "arrival_date", "departure_date", "staying_guest_profile", "booker_guest_profile"],
+	)
+	reservations = []
+	for r in res_rows:
+		guest = None
+		if r.staying_guest_profile:
+			guest = frappe.db.get_value("Guest Profile", r.staying_guest_profile, "guest_full_name")
+		room_row = frappe.db.get_value(
+			"Reservation Room", {"parent": r.name}, ["room", "room_type"], as_dict=True
+		)
+		nights = (getdate(r.departure_date) - getdate(r.arrival_date)).days
+		reservations.append(
+			{
+				"name": r.name,
+				"guest": guest or "Guest",
+				"status": r.status,
+				"room": room_row.room if room_row else None,
+				"room_type": room_row.room_type if room_row else None,
+				"arrival_date": str(r.arrival_date),
+				"departure_date": str(r.departure_date),
+				"nights": nights,
+			}
+		)
+
+	# Open housekeeping tasks in this window (dated by creation OR due_at).
+	tasks = frappe.get_all(
+		"Housekeeping Task",
+		filters={
+			"resort_property": resort_property,
+			"task_status": ["in", ("Queued", "Assigned", "In Progress", "Paused", "Inspection Required")],
+		},
+		fields=["name", "room", "task_type", "task_status", "priority", "start_time", "completed_at", "due_at", "creation"],
+		limit=500,
+	)
+
+	return {
+		"start_date": str(start),
+		"end_date": str(end),
+		"days": [str(add_days(start, i)) for i in range(days)],
+		"rooms": rooms,
+		"reservations": reservations,
+		"tasks": tasks,
+		"resort_property": resort_property,
+	}

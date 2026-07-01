@@ -277,6 +277,50 @@ export async function createTask(
 	);
 }
 
+export type TaskRow = {
+	name: string;
+	room: string | null;
+	room_number: string | null;
+	room_name: string | null;
+	task_type: string;
+	task_status: string;
+	priority: string;
+	assigned_user: string | null;
+	assigned_employee: string | null;
+	assignee_name: string | null;
+	start_time: string | null;
+	completed_at: string | null;
+	due_at: string | null;
+	stay: string | null;
+	creation?: string;
+};
+
+export async function listMyTasks(
+	scope: "open" | "history" = "open"
+): Promise<FolioApiEnvelope<{ tasks: TaskRow[]; scope: string }>> {
+	return callHousekeeping<{ tasks: TaskRow[]; scope: string }>(
+		"the_reezort.housekeeping.api.list_my_tasks",
+		{ method: "GET", params: { scope } }
+	);
+}
+
+export async function listTasks(input?: {
+	status?: string; // comma-separated
+	task_type?: string;
+	assigned_user?: string;
+	days?: number;
+}): Promise<FolioApiEnvelope<{ tasks: TaskRow[] }>> {
+	const params: Record<string, string> = {};
+	if (input?.status) params.status = input.status;
+	if (input?.task_type) params.task_type = input.task_type;
+	if (input?.assigned_user) params.assigned_user = input.assigned_user;
+	if (input?.days) params.days = String(input.days);
+	return callHousekeeping<{ tasks: TaskRow[] }>(
+		"the_reezort.housekeeping.api.list_tasks",
+		{ method: "GET", params }
+	);
+}
+
 export type HousekeeperOption = {
 	name: string; // user id (email)
 	full_name: string;

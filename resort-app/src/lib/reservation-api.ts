@@ -121,6 +121,62 @@ export async function getReservationDepositState(reservation: string): Promise<R
 	return call("the_reezort.reservation.api.get_reservation_deposit_state", "GET", { reservation });
 }
 
+// ---------- occupancy timeline (Gantt) ----------
+
+export type TimelineRoom = {
+	name: string;
+	room_number: string;
+	room_name: string | null;
+	room_type: string;
+	occupancy_status: string;
+	housekeeping_status: string;
+	maintenance_status: string;
+	sellable_status: string;
+};
+
+export type TimelineReservation = {
+	name: string;
+	guest: string;
+	status: string;
+	room: string | null;
+	room_type: string | null;
+	arrival_date: string;
+	departure_date: string;
+	nights: number;
+};
+
+export type TimelineTask = {
+	name: string;
+	room: string | null;
+	task_type: string;
+	task_status: string;
+	priority: string;
+	start_time: string | null;
+	completed_at: string | null;
+	due_at: string | null;
+	creation: string;
+};
+
+export type OccupancyTimeline = {
+	start_date: string;
+	end_date: string;
+	days: string[];
+	rooms: TimelineRoom[];
+	reservations: TimelineReservation[];
+	tasks: TimelineTask[];
+	resort_property: string;
+};
+
+export async function getOccupancyTimeline(input?: {
+	start_date?: string;
+	days?: number;
+}): Promise<OccupancyTimeline> {
+	const params: Record<string, string> = {};
+	if (input?.start_date) params.start_date = input.start_date;
+	if (input?.days) params.days = String(input.days);
+	return call("the_reezort.reservation.api.get_occupancy_timeline", "GET", params);
+}
+
 export async function ensureBookingFolio(input: {
 	reservation: string;
 	booker: { full_name: string; email?: string; phone?: string };

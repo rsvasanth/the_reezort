@@ -38,6 +38,8 @@ export type ParsedRoute =
 	| { kind: "frontdesk" }
 	| { kind: "reservations"; id: string | null }
 	| { kind: "checkin"; reservation: string | null }
+	| { kind: "mytasks" }
+	| { kind: "tasks" }
 	| { kind: "condition"; stay: string | null };
 
 export function parseHashRoute(hash: string): ParsedRoute {
@@ -69,6 +71,9 @@ export function parseHashRoute(hash: string): ParsedRoute {
 		const id = reservationsMatch[1];
 		return { kind: "reservations", id: id ? decodeURIComponent(id) : null };
 	}
+
+	if (path === "/my-tasks") return { kind: "mytasks" };
+	if (path === "/tasks") return { kind: "tasks" };
 
 	const checkinMatch = path.match(/^\/check-in(?:\/(.*))?$/);
 	if (checkinMatch) {

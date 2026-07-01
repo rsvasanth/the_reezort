@@ -13,6 +13,7 @@ import { FolioRoomHero } from "@/components/folio/folio-room-hero";
 import { FolioTotalsStrip } from "@/components/folio/folio-totals-strip";
 import { SettleFolioSheet } from "@/components/folio/settle-folio-sheet";
 import { DepositSheet } from "@/components/folio/deposit-sheet";
+import { MinibarSheet } from "@/components/folio/minibar-sheet";
 import {
 	FolioErrorState,
 	FolioLoadingState,
@@ -43,6 +44,7 @@ export function FolioWorkspace({ folioName }: Props) {
 	const [addLineOpen, setAddLineOpen] = useState(false);
 	const [settleOpen, setSettleOpen] = useState(false);
 	const [depositOpen, setDepositOpen] = useState(false);
+	const [minibarOpen, setMinibarOpen] = useState(false);
 	const [checkingOut, setCheckingOut] = useState(false);
 
 	const load = useCallback(() => {
@@ -262,6 +264,7 @@ export function FolioWorkspace({ folioName }: Props) {
 						onAddLine={() => setAddLineOpen(true)}
 						onSettle={() => setSettleOpen(true)}
 						onDeposit={() => setDepositOpen(true)}
+						onMinibar={() => setMinibarOpen(true)}
 						onCheckOut={handleCheckOut}
 						onDownloadInvoice={handleDownloadInvoice}
 						onPrintLabel={handlePrintLabel}
@@ -294,6 +297,17 @@ export function FolioWorkspace({ folioName }: Props) {
 							onClose={() => setDepositOpen(false)}
 							onRecorded={() => load()}
 						/>
+						{detail.folio.stay ? (
+							<MinibarSheet
+								open={minibarOpen}
+								onOpenChange={setMinibarOpen}
+								stay={detail.folio.stay}
+								roomLabel={detail.folio.room_number || detail.folio.current_room || undefined}
+								guestName={detail.folio.guest_name || detail.folio.customer_name || null}
+								resortProperty={detail.folio.resort_property}
+								onPosted={() => load()}
+							/>
+						) : null}
 					</>
 				)}
 			</SidebarInset>
@@ -311,6 +325,7 @@ function BodyContent({
 	onAddLine,
 	onSettle,
 	onDeposit,
+	onMinibar,
 	onCheckOut,
 	onDownloadInvoice,
 	onPrintLabel,
@@ -326,6 +341,7 @@ function BodyContent({
 	onAddLine: () => void;
 	onSettle: () => void;
 	onDeposit: () => void;
+	onMinibar: () => void;
 	onPrintLabel: () => void;
 	onPrintFarewell: () => void;
 	onDownloadInvoice: () => void;
@@ -373,6 +389,7 @@ function BodyContent({
 				onAddLine={onAddLine}
 				onSettle={onSettle}
 				onDeposit={onDeposit}
+				onMinibar={onMinibar}
 				onRefresh={onRetry}
 				onCheckOut={onCheckOut}
 				onDownloadInvoice={onDownloadInvoice}

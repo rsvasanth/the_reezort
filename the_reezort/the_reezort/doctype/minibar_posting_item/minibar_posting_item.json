@@ -1,0 +1,28 @@
+{
+ "actions": [],
+ "allow_import": 0,
+ "creation": "2026-07-01 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Other",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": ["minibar_item", "item_name", "quantity", "rate", "amount"],
+ "fields": [
+  {"fieldname": "minibar_item", "fieldtype": "Link", "in_list_view": 1, "label": "Minibar Item", "options": "Minibar Item", "reqd": 1},
+  {"fetch_from": "minibar_item.item_name", "fieldname": "item_name", "fieldtype": "Data", "in_list_view": 1, "label": "Item Name", "read_only": 1},
+  {"fieldname": "quantity", "fieldtype": "Int", "in_list_view": 1, "label": "Qty", "reqd": 1},
+  {"fieldname": "rate", "fieldtype": "Currency", "in_list_view": 1, "label": "Unit Rate", "reqd": 1},
+  {"fieldname": "amount", "fieldtype": "Currency", "in_list_view": 1, "label": "Amount", "read_only": 1}
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-07-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Minibar Posting Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "idx",
+ "sort_order": "ASC",
+ "states": []
+}

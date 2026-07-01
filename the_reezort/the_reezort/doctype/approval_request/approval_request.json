@@ -1,0 +1,43 @@
+{
+ "actions": [],
+ "allow_import": 0,
+ "allow_rename": 0,
+ "autoname": "APR-.YYYY.-.#####",
+ "creation": "2026-06-30 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": ["policy", "action", "state", "column_break_1", "requester", "requested_at", "source_section", "source_doctype", "source_name", "amount", "payload_section", "payload_json", "decision_section", "decided_by", "decided_at", "decision_notes", "reason"],
+ "fields": [
+  {"fieldname": "policy", "fieldtype": "Link", "in_list_view": 1, "in_standard_filter": 1, "label": "Policy", "options": "Approval Policy"},
+  {"fieldname": "action", "fieldtype": "Data", "in_list_view": 1, "in_standard_filter": 1, "label": "Action", "reqd": 1},
+  {"default": "Pending", "fieldname": "state", "fieldtype": "Select", "in_list_view": 1, "in_standard_filter": 1, "label": "State", "options": "Pending\nApproved\nRejected\nAuto-Approved\nExpired"},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "requester", "fieldtype": "Link", "in_list_view": 1, "in_standard_filter": 1, "label": "Requester", "options": "User", "reqd": 1},
+  {"fieldname": "requested_at", "fieldtype": "Datetime", "label": "Requested At", "reqd": 1},
+  {"fieldname": "source_section", "fieldtype": "Section Break", "label": "Source"},
+  {"fieldname": "source_doctype", "fieldtype": "Data", "label": "Source Doctype"},
+  {"fieldname": "source_name", "fieldtype": "Data", "in_list_view": 1, "label": "Source Name"},
+  {"fieldname": "amount", "fieldtype": "Currency", "in_list_view": 1, "label": "Amount"},
+  {"fieldname": "payload_section", "fieldtype": "Section Break", "label": "Payload"},
+  {"fieldname": "payload_json", "fieldtype": "Code", "label": "Payload JSON", "options": "JSON"},
+  {"fieldname": "reason", "fieldtype": "Small Text", "label": "Reason"},
+  {"fieldname": "decision_section", "fieldtype": "Section Break", "label": "Decision"},
+  {"fieldname": "decided_by", "fieldtype": "Link", "label": "Decided By", "options": "User", "read_only": 1},
+  {"fieldname": "decided_at", "fieldtype": "Datetime", "label": "Decided At", "read_only": 1},
+  {"fieldname": "decision_notes", "fieldtype": "Small Text", "label": "Decision Notes"}
+ ],
+ "links": [],
+ "modified": "2026-06-30 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Approval Request",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 0, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

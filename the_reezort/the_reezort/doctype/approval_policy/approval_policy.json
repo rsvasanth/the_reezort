@@ -1,0 +1,36 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 0,
+ "autoname": "format:{action}-{threshold_amount}",
+ "creation": "2026-06-30 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "engine": "InnoDB",
+ "field_order": ["policy_name", "action", "column_break_1", "is_active", "approver_role", "auto_approve_for_role", "threshold_section", "threshold_amount", "source_doctype", "notes"],
+ "fields": [
+  {"fieldname": "policy_name", "fieldtype": "Data", "in_list_view": 1, "label": "Policy Name", "reqd": 1},
+  {"fieldname": "action", "fieldtype": "Data", "in_list_view": 1, "in_standard_filter": 1, "label": "Action", "reqd": 1, "description": "Matches endpoint action names — void, refund, credit_note, kyc_override, room_move_ooo, rate_override"},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"default": "1", "fieldname": "is_active", "fieldtype": "Check", "label": "Active"},
+  {"fieldname": "approver_role", "fieldtype": "Link", "label": "Approver Role", "options": "Role", "reqd": 1, "description": "Role required to approve"},
+  {"fieldname": "auto_approve_for_role", "fieldtype": "Link", "label": "Auto-approve For Role", "options": "Role", "description": "If the requester holds this role, skip approval (still audited)"},
+  {"fieldname": "threshold_section", "fieldtype": "Section Break", "label": "Threshold"},
+  {"fieldname": "threshold_amount", "fieldtype": "Currency", "label": "Threshold Amount", "description": "Policy triggers when payload amount > this. Zero = always required."},
+  {"fieldname": "source_doctype", "fieldtype": "Data", "in_standard_filter": 1, "label": "Source Doctype", "description": "Optional — restrict policy to a specific source doctype"},
+  {"fieldname": "notes", "fieldtype": "Small Text", "label": "Notes"}
+ ],
+ "links": [],
+ "modified": "2026-06-30 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Approval Policy",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

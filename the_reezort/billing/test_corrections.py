@@ -38,6 +38,10 @@ class TestFolioCorrections(FrappeTestCase):
 	def setUp(self):
 		super().setUp()
 		frappe.db.set_value("Room", {"resort_property": self.resort_property}, "occupancy_status", "Vacant")
+		# Clear any Approval Policies (spec 015 wires an approval gate onto
+		# post_refund; correction tests here don't need policies in play).
+		for name in frappe.get_all("Approval Policy", pluck="name"):
+			frappe.delete_doc("Approval Policy", name, force=True, ignore_permissions=True)
 
 	def _fresh_folio_with_charge(self, extra_charge=False):
 		"""Set up a reservation → check-in → folio with the auto room charge."""

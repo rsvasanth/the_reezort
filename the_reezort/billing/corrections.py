@@ -30,26 +30,10 @@ REFUNDABLE_TYPES = {"Payment Reference", "Deposit Application"}
 
 
 def _audit(source_doctype, source_name, action, reason, details=None):
-	"""Best-effort audit hook — inserts an Audit Event row if the doctype exists."""
-	if not frappe.db.exists("DocType", "Audit Event"):
-		return
-	try:
-		frappe.get_doc(
-			{
-				"doctype": "Audit Event",
-				"source_doctype": source_doctype,
-				"source_name": source_name,
-				"action": action,
-				"actor": frappe.session.user,
-				"at": now(),
-				"reason": reason,
-				"details": frappe.as_json(details or {}),
-			}
-		).insert(ignore_permissions=True)
-	except Exception:
-		# Audit must never break a correction; a missing/misconfigured Audit
-		# Event doctype is logged but not raised.
-		frappe.log_error(title="Audit Event insert failed", message=frappe.get_traceback())
+	"""Real Audit Event write — same signature as before; log is now live."""
+	from the_reezort.audit.api import record_audit_event
+
+	record_audit_event(source_doctype, source_name, action, reason=reason, details=details)
 
 
 def _annotate_line(line_doc, action, reason):
@@ -261,7 +245,7 @@ def post_credit_note(line, reason=""):
 # ---------- REFUND -----------------------------------------------------------
 
 @frappe.whitelist()
-def post_refund(line, amount=None, mode_of_payment=None, reason=""):
+def post_refund(line, amount=None, mode_of_payment=None, reason="", approval_request=None):
 	"""Refund a Payment Reference / Deposit Application line — issues a real
 	ERPNext Payment Entry (Pay type) against the original receipt PE.
 
@@ -282,6 +266,17 @@ def post_refund(line, amount=None, mode_of_payment=None, reason=""):
 	amount = flt(amount) or flt(doc.amount)
 	if amount <= 0 or amount > flt(doc.amount):
 		frappe.throw(_("Refund amount must be between 0 and {0}.").format(flt(doc.amount)))
+
+	# Approval gate — refund over policy threshold requires manager sign-off.
+	from the_reezort.approvals.api import require_approval
+
+	require_approval(
+		action="refund",
+		source_doctype="Folio Line",
+		source_name=line,
+		payload={"amount": amount, "reason": reason, "mode_of_payment": mode_of_payment},
+		approval_request=approval_request,
+	)
 
 	folio = frappe.get_doc("Guest Folio", doc.guest_folio)
 	original_pe = frappe.get_doc("Payment Entry", doc.erpnext_payment_entry)

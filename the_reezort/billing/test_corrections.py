@@ -177,3 +177,84 @@ class TestFolioCorrections(FrappeTestCase):
 
 		with self.assertRaises(frappe.ValidationError):
 			post_refund(deposit_line, amount=99999, reason="Try to over-refund")
+
+	# ----- APPROVAL GATES on void / transfer / credit_note -----
+
+	def _policy(self, action, threshold=0, source_doctype=None):
+		return frappe.get_doc({
+			"doctype": "Approval Policy",
+			"policy_name": f"{action} > {threshold}",
+			"action": action,
+			"approver_role": "System Manager",
+			"threshold_amount": threshold,
+			"source_doctype": source_doctype,
+			"is_active": 1,
+		}).insert(ignore_permissions=True)
+
+	def test_void_over_threshold_requires_approval(self):
+		from the_reezort.approvals.api import ApprovalRequired
+
+		self._policy("void", threshold=1)
+		folio, _stay = self._fresh_folio_with_charge()
+		line_name = frappe.get_all(
+			"Folio Line", {"guest_folio": folio, "line_type": "Charge"}, pluck="name"
+		)[0]
+		with self.assertRaises(ApprovalRequired):
+			void_folio_line(line_name, reason="Guest goodwill — high amount")
+		# Line stays untouched.
+		self.assertNotEqual(
+			frappe.db.get_value("Folio Line", line_name, "line_status"), "Voided"
+		)
+		# An Approval Request has been recorded.
+		self.assertTrue(
+			frappe.db.exists("Approval Request", {"source_name": line_name, "action": "void"})
+		)
+
+	def test_credit_note_over_threshold_requires_approval(self):
+		from the_reezort.approvals.api import ApprovalRequired
+
+		self._policy("credit_note", threshold=1)
+		folio, _stay = self._fresh_folio_with_charge()
+		settle_folio(folio, payments=[])
+		posted_line = frappe.get_all(
+			"Folio Line",
+			filters={"guest_folio": folio, "line_type": "Charge", "line_status": "Posted"},
+			pluck="name",
+		)[0]
+		with self.assertRaises(ApprovalRequired):
+			post_credit_note(posted_line, reason="Test blocked by gate")
+		self.assertTrue(
+			frappe.db.exists("Approval Request", {"source_name": posted_line, "action": "credit_note"})
+		)
+
+	def test_transfer_over_threshold_requires_approval(self):
+		from the_reezort.approvals.api import ApprovalRequired
+
+		self._policy("transfer", threshold=1)
+		src_folio, _stay = self._fresh_folio_with_charge()
+		line_name = frappe.get_all(
+			"Folio Line", {"guest_folio": src_folio, "line_type": "Charge"}, pluck="name"
+		)[0]
+		# Any target folio works; the gate fires before the actual transfer.
+		other_res = frappe.copy_doc(
+			frappe.get_doc("Reservation", frappe.db.get_value("Guest Folio", src_folio, "reservation"))
+		)
+		other_res.name = None
+		other_res.status = "Confirmed"
+		other_res.staying_guest_profile = frappe.get_doc(
+			{"doctype": "Guest Profile", "guest_full_name": "Transfer Target", "email": frappe.generate_hash(length=8) + "@example.com"}
+		).insert(ignore_permissions=True).name
+		for row in other_res.rooms:
+			row.name = None
+		for row in other_res.guests:
+			row.name = None
+			row.guest_profile = other_res.staying_guest_profile
+			row.guest_name = "Transfer Target"
+		other_res.insert(ignore_permissions=True)
+		target_folio = get_or_create_folio(reservation=other_res.name)["data"]["folio"]["name"]
+
+		with self.assertRaises(ApprovalRequired):
+			transfer_folio_line(line_name, target_folio=target_folio, reason="Split billing")
+		self.assertTrue(
+			frappe.db.exists("Approval Request", {"source_name": line_name, "action": "transfer"})
+		)

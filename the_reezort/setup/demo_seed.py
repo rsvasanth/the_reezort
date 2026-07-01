@@ -553,6 +553,40 @@ def lock_desk_access():
 	return {"revoked": DESK_ACCESS_REVOKED, "retained": DESK_ACCESS_RETAINED}
 
 
+DEFAULT_APPROVAL_POLICIES = (
+	# (action,        threshold, approver_role,     source_doctype)
+	("void",           10000,    "Resort Manager",  "Folio Line"),
+	("transfer",       10000,    "Resort Manager",  "Folio Line"),
+	("credit_note",    5000,     "Resort Manager",  "Folio Line"),
+	("refund",         5000,     "Resort Manager",  "Folio Line"),
+	("large_discount", 5000,     "Resort Manager",  "Folio Line"),
+)
+
+
+@frappe.whitelist()
+def seed_approval_policies():
+	"""Idempotent seed of default approval gates for the 4 correction actions
+	plus a large-discount slot. Threshold amounts are conservative defaults;
+	an admin can raise/lower them per property via the Approval Policy doctype."""
+	created = []
+	for action, threshold, role, source_doctype in DEFAULT_APPROVAL_POLICIES:
+		name = f"{action} > {threshold}"
+		if frappe.db.exists("Approval Policy", {"policy_name": name}):
+			continue
+		doc = frappe.get_doc({
+			"doctype": "Approval Policy",
+			"policy_name": name,
+			"action": action,
+			"approver_role": role,
+			"threshold_amount": threshold,
+			"source_doctype": source_doctype,
+			"is_active": 1,
+		}).insert(ignore_permissions=True)
+		created.append(doc.name)
+	frappe.db.commit()
+	return {"created": created}
+
+
 @frappe.whitelist()
 def seed_full_demo(password=DEMO_PASSWORD):
 	"""Run the full idempotent THE REEZORT demo seed end to end."""
@@ -564,6 +598,7 @@ def seed_full_demo(password=DEMO_PASSWORD):
 	org = seed_org_and_users(password=password)
 	permissions = seed_doctype_permissions()
 	folios = seed_demo_folios()
+	policies = seed_approval_policies()
 	frappe.db.commit()
 
-	return {"company": company, "base": base, "gst": gst, "org": org, "permissions": permissions, "folios": folios}
+	return {"company": company, "base": base, "gst": gst, "org": org, "permissions": permissions, "folios": folios, "policies": policies}

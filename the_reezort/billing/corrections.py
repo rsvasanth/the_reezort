@@ -45,7 +45,7 @@ def _annotate_line(line_doc, action, reason):
 # ---------- VOID ---------------------------------------------------------------
 
 @frappe.whitelist()
-def void_folio_line(line, reason=""):
+def void_folio_line(line, reason="", approval_request=None):
 	"""Void a folio line that hasn't been invoiced yet.
 
 	Blocks if the line is already Posted (use a credit note instead) or has a
@@ -63,6 +63,17 @@ def void_folio_line(line, reason=""):
 			frappe.ValidationError,
 		)
 
+	# Approval gate — a void above policy threshold requires manager sign-off.
+	from the_reezort.approvals.api import require_approval
+
+	require_approval(
+		action="void",
+		source_doctype="Folio Line",
+		source_name=line,
+		payload={"amount": flt(doc.amount), "reason": reason, "guest_folio": doc.guest_folio},
+		approval_request=approval_request,
+	)
+
 	doc.line_status = "Voided"
 	doc.amount = 0
 	doc.rate = 0
@@ -78,7 +89,7 @@ def void_folio_line(line, reason=""):
 # ---------- TRANSFER ----------------------------------------------------------
 
 @frappe.whitelist()
-def transfer_folio_line(line, target_folio, reason=""):
+def transfer_folio_line(line, target_folio, reason="", approval_request=None):
 	"""Move an editable line from one folio to another (e.g. split billing).
 
 	Guard: line must be pre-posting. Source line goes to Transferred; a new
@@ -100,6 +111,22 @@ def transfer_folio_line(line, target_folio, reason=""):
 		frappe.throw(_("Target folio {0} is closed for edits.").format(target.name))
 	if source.guest_folio == target.name:
 		frappe.throw(_("Source and target folio must differ."))
+
+	# Approval gate — cross-folio transfers over policy threshold require sign-off.
+	from the_reezort.approvals.api import require_approval
+
+	require_approval(
+		action="transfer",
+		source_doctype="Folio Line",
+		source_name=line,
+		payload={
+			"amount": flt(source.amount),
+			"reason": reason,
+			"from_folio": source.guest_folio,
+			"to_folio": target.name,
+		},
+		approval_request=approval_request,
+	)
 
 	key = f"transfer:{source.name}"
 	new_line = frappe.get_doc(
@@ -147,7 +174,7 @@ def transfer_folio_line(line, target_folio, reason=""):
 # ---------- CREDIT NOTE -------------------------------------------------------
 
 @frappe.whitelist()
-def post_credit_note(line, reason=""):
+def post_credit_note(line, reason="", approval_request=None):
 	"""Credit an already-posted line via an ERPNext return Sales Invoice.
 
 	Uses the original SI as the return_against so ERPNext keeps the audit
@@ -165,6 +192,22 @@ def post_credit_note(line, reason=""):
 		)
 	if not doc.erpnext_sales_invoice:
 		frappe.throw(_("Line {0} has no linked Sales Invoice to credit against.").format(line))
+
+	# Approval gate — credit-note above policy threshold requires manager sign-off.
+	from the_reezort.approvals.api import require_approval
+
+	require_approval(
+		action="credit_note",
+		source_doctype="Folio Line",
+		source_name=line,
+		payload={
+			"amount": flt(doc.amount),
+			"reason": reason,
+			"guest_folio": doc.guest_folio,
+			"invoice": doc.erpnext_sales_invoice,
+		},
+		approval_request=approval_request,
+	)
 
 	folio = frappe.get_doc("Guest Folio", doc.guest_folio)
 	original = frappe.get_doc("Sales Invoice", doc.erpnext_sales_invoice)

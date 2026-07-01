@@ -61,9 +61,10 @@ const system: NavItem[] = [
 	{ title: "Property management", url: "/resort-app#/setup", icon: HotelIcon, status: "live" },
 	{ title: "Staff & access", url: "/resort-app#/staff", icon: UsersIcon, status: "live" },
 	{ title: "Attendance", url: "/resort-app#/attendance", icon: ClockIcon, status: "live" },
+	{ title: "Approvals", url: "/resort-app#/approvals", icon: ShieldCheckIcon, status: "live" },
+	{ title: "Audit trail", url: "/resort-app#/audit", icon: DatabaseIcon, status: "live" },
 	{ title: "ERPNext desk", url: "/app", icon: DatabaseIcon, status: "live" },
 	{ title: "Integrations", url: "#", icon: PlugIcon, status: "soon" },
-	{ title: "Security & audit", url: "#", icon: ShieldCheckIcon, status: "soon" },
 ];
 
 type ActiveFolio = { name: string; guest: string; room: string | null };

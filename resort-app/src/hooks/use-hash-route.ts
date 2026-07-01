@@ -45,6 +45,8 @@ export type ParsedRoute =
 	| { kind: "property"; code: string | null }
 	| { kind: "building"; code: string | null }
 	| { kind: "floor"; code: string | null }
+	| { kind: "approvals" }
+	| { kind: "audit" }
 	| { kind: "condition"; stay: string | null };
 
 export function parseHashRoute(hash: string): ParsedRoute {
@@ -80,6 +82,8 @@ export function parseHashRoute(hash: string): ParsedRoute {
 	if (path === "/my-tasks") return { kind: "mytasks" };
 	if (path === "/tasks") return { kind: "tasks" };
 	if (path === "/my-day") return { kind: "myday" };
+	if (path === "/approvals") return { kind: "approvals" };
+	if (path === "/audit") return { kind: "audit" };
 
 	const roomMatch = path.match(/^\/room(?:\/(.*))?$/);
 	if (roomMatch) return { kind: "room", code: roomMatch[1] ? decodeURIComponent(roomMatch[1]) : null };

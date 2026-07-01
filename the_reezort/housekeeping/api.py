@@ -144,9 +144,42 @@ def create_task(payload):
 
 
 @frappe.whitelist()
+def list_housekeepers():
+	"""Active staff who can be assigned a housekeeping task (Housekeeping role).
+
+	Any user with read permission on Housekeeping Task can call this — the
+	Front Desk sees the same picker options as the Housekeeping supervisor.
+	Also includes Maintenance staff since the auto-generated 'Maintenance
+	Follow-up' tasks from a room-move are best routed to them.
+	"""
+	_require_permission("Housekeeping Task", "read")
+	targets = ("Housekeeping", "Maintenance")
+	rows = frappe.db.sql(
+		"""
+		SELECT DISTINCT u.name, u.full_name, u.email, GROUP_CONCAT(hr.role) AS roles
+		FROM `tabUser` u
+		JOIN `tabHas Role` hr ON hr.parent = u.name
+		WHERE u.enabled = 1 AND hr.role IN %(roles)s
+		GROUP BY u.name, u.full_name, u.email
+		ORDER BY u.full_name
+		""",
+		{"roles": targets},
+		as_dict=True,
+	)
+	for r in rows:
+		r["roles"] = [x for x in (r.get("roles") or "").split(",") if x]
+		r["employee"] = frappe.db.get_value("Employee", {"user_id": r["name"]}, "name")
+	return _envelope({"staff": rows})
+
+
+@frappe.whitelist()
 def assign_task(task, assigned_user=None, assigned_employee=None):
 	_require_permission("Housekeeping Task", "write")
 	task_doc = _get_task(task)
+	# When the user picks a person, backfill the linked Employee (if any) so
+	# both the SPA view and any ERPNext HR report see the assignment.
+	if assigned_user and not assigned_employee:
+		assigned_employee = frappe.db.get_value("Employee", {"user_id": assigned_user}, "name")
 	task_doc.assigned_user = assigned_user
 	task_doc.assigned_employee = assigned_employee
 	task_doc.task_status = "Assigned"

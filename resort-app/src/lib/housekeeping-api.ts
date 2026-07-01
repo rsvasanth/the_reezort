@@ -277,6 +277,22 @@ export async function createTask(
 	);
 }
 
+export type HousekeeperOption = {
+	name: string; // user id (email)
+	full_name: string;
+	email: string | null;
+	employee: string | null;
+	roles: string[];
+};
+
+/** Staff who can pick up a housekeeping/maintenance task (Housekeeping + Maintenance roles). */
+export async function listHousekeepers(): Promise<FolioApiEnvelope<{ staff: HousekeeperOption[] }>> {
+	return callHousekeeping<{ staff: HousekeeperOption[] }>(
+		"the_reezort.housekeeping.api.list_housekeepers",
+		{ method: "GET", params: {} }
+	);
+}
+
 /**
  * Assigns a task to a user or employee.
  */

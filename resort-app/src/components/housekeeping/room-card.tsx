@@ -28,6 +28,14 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import {
@@ -35,12 +43,13 @@ import {
 	completeTask,
 	createInspection,
 	createTask,
+	listHousekeepers,
 	pauseTask,
 	recordInspection,
 	startTask,
 	FolioApiError,
 } from "@/lib/housekeeping-api";
-import type { HousekeepingRoom, InspectionOutcome } from "@/lib/housekeeping-api";
+import type { HousekeeperOption, HousekeepingRoom, InspectionOutcome } from "@/lib/housekeeping-api";
 
 import {
 	formatDueAt,
@@ -91,27 +100,19 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 		}
 	}
 
-	async function handleAssign() {
-		if (!task) {
-			// No task yet — open a Departure Cleaning task (the turnover default for a
-			// vacant dirty room). requires_inspection keeps it on the board through the
-			// inspection step. A fresh idempotency key per click; the busy-guard and the
-			// hidden-when-open button prevent duplicate creates.
-			await runMutation("Create task", () =>
-				createTask({
-					room: room.name,
-					task_type: "Departure Cleaning",
-					idempotency_key: crypto.randomUUID(),
-					requires_inspection: true,
-				}),
-				"Task created"
-			);
-			return;
-		}
-		// Assign the existing open task to a placeholder (null — supervisor picks later)
-		await runMutation("Assign task", () =>
-			assignTask(task.id, null, null),
-			"Task assigned"
+	async function handleCreateTask() {
+		// No task yet — open a Departure Cleaning task (the turnover default for a
+		// vacant dirty room). requires_inspection keeps it on the board through the
+		// inspection step. Fresh idempotency key per click; the busy-guard and the
+		// hidden-when-open button prevent duplicate creates.
+		await runMutation("Create task", () =>
+			createTask({
+				room: room.name,
+				task_type: "Departure Cleaning",
+				idempotency_key: crypto.randomUUID(),
+				requires_inspection: true,
+			}),
+			"Task created"
 		);
 	}
 
@@ -273,7 +274,7 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 								variant="outline"
 								className="h-7 text-xs"
 								disabled={busy}
-								onClick={handleAssign}
+								onClick={handleCreateTask}
 							>
 								{busy ? (
 									<RefreshCw className="mr-1 size-3 animate-spin" />
@@ -283,21 +284,14 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 								Create Task
 							</Button>
 						)}
-						{showAssign && (
-							<Button
-								size="sm"
-								variant="outline"
-								className="h-7 text-xs"
-								disabled={busy}
-								onClick={handleAssign}
-							>
-								{busy ? (
-									<RefreshCw className="mr-1 size-3 animate-spin" />
-								) : (
-									<UserPlus className="mr-1 size-3" />
-								)}
-								Assign
-							</Button>
+						{showAssign && task && (
+							<AssignMenu
+								taskId={task.id}
+								roomNumber={room.room_number}
+								busy={busy}
+								onAssigned={onMutated}
+								setBusy={setBusy}
+							/>
 						)}
 						{showStart && (
 							<Button
@@ -366,5 +360,97 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 				)}
 			</CardContent>
 		</Card>
+	);
+}
+
+// ---------- Assign-to picker ----------
+
+function AssignMenu({
+	taskId,
+	roomNumber,
+	busy,
+	setBusy,
+	onAssigned,
+}: {
+	taskId: string;
+	roomNumber: string;
+	busy: boolean;
+	setBusy: (b: boolean) => void;
+	onAssigned: () => void;
+}) {
+	const [staff, setStaff] = useState<HousekeeperOption[] | null>(null);
+	const [loadError, setLoadError] = useState<string | null>(null);
+
+	async function loadStaffOnce() {
+		if (staff !== null) return;
+		try {
+			const env = await listHousekeepers();
+			setStaff(env.data?.staff ?? []);
+			setLoadError(null);
+		} catch (err) {
+			setStaff([]);
+			setLoadError(err instanceof Error ? err.message : "Could not load staff");
+		}
+	}
+
+	async function assignTo(userId: string | null, displayName: string) {
+		setBusy(true);
+		try {
+			await assignTask(taskId, userId, null);
+			toast.success(userId ? `Assigned to ${displayName}` : "Assigned (unpicked)", {
+				description: `Room ${roomNumber}`,
+			});
+			onAssigned();
+		} catch (err) {
+			const msg = err instanceof FolioApiError && err.blockers.length > 0
+				? err.blockers.map((b) => b.message).join("; ")
+				: err instanceof Error
+					? err.message
+					: "Assign failed";
+			toast.error("Assign failed", { description: msg });
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	return (
+		<DropdownMenu onOpenChange={(open) => { if (open) void loadStaffOnce(); }}>
+			<DropdownMenuTrigger asChild>
+				<Button size="sm" variant="outline" className="h-7 text-xs" disabled={busy} data-testid={`assign-${taskId}`}>
+					{busy ? <RefreshCw className="mr-1 size-3 animate-spin" /> : <UserPlus className="mr-1 size-3" />}
+					Assign
+				</Button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="start" className="w-64">
+				<DropdownMenuLabel>Assign to</DropdownMenuLabel>
+				<DropdownMenuSeparator />
+				{staff === null ? (
+					<DropdownMenuItem disabled>Loading…</DropdownMenuItem>
+				) : loadError ? (
+					<DropdownMenuItem disabled>Could not load: {loadError}</DropdownMenuItem>
+				) : staff.length === 0 ? (
+					<DropdownMenuItem disabled>No housekeeping/maintenance staff</DropdownMenuItem>
+				) : (
+					staff.map((s) => (
+						<DropdownMenuItem
+							key={s.name}
+							onClick={() => void assignTo(s.name, s.full_name)}
+							data-testid={`assign-to-${s.name}`}
+						>
+							<div className="flex w-full items-center justify-between gap-2">
+								<span className="truncate">{s.full_name}</span>
+								<span className="ml-2 shrink-0 text-xs text-muted-foreground">
+									{s.roles[0] ?? ""}
+								</span>
+							</div>
+						</DropdownMenuItem>
+					))
+				)}
+				<DropdownMenuSeparator />
+				<DropdownMenuItem onClick={() => void assignTo(null, "unassigned")}>
+					<span className="text-muted-foreground">Assigned — pick later</span>
+				</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
 	);
 }

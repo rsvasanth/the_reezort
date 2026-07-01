@@ -7,26 +7,134 @@
  "doctype": "DocType",
  "document_type": "Setup",
  "engine": "InnoDB",
- "field_order": ["resort_property", "code", "package_name", "column_break_1", "nights", "is_active", "scope_section", "room_type", "linked_rate_plan", "pricing_section", "package_price", "currency", "window_section", "valid_from", "valid_to", "inclusions_section", "inclusions", "notes"],
+ "field_order": [
+  "resort_property",
+  "code",
+  "package_name",
+  "column_break_1",
+  "nights",
+  "is_active",
+  "scope_section",
+  "room_type",
+  "linked_rate_plan",
+  "pricing_section",
+  "package_price",
+  "currency",
+  "window_section",
+  "valid_from",
+  "valid_to",
+  "inclusions_section",
+  "inclusions",
+  "notes"
+ ],
  "fields": [
-  {"fieldname": "resort_property", "fieldtype": "Link", "in_standard_filter": 1, "label": "Resort Property", "options": "Resort Property", "reqd": 1},
-  {"fieldname": "code", "fieldtype": "Data", "in_list_view": 1, "label": "Code", "reqd": 1, "description": "Short uppercase — HNYMN, WKND, RETREAT"},
-  {"fieldname": "package_name", "fieldtype": "Data", "in_list_view": 1, "label": "Package Name", "reqd": 1},
-  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
-  {"default": "2", "fieldname": "nights", "fieldtype": "Int", "label": "Nights", "reqd": 1},
-  {"default": "1", "fieldname": "is_active", "fieldtype": "Check", "label": "Active"},
-  {"fieldname": "scope_section", "fieldtype": "Section Break", "label": "Scope"},
-  {"fieldname": "room_type", "fieldtype": "Link", "label": "Room Type", "options": "Room Type"},
-  {"fieldname": "linked_rate_plan", "fieldtype": "Link", "label": "Linked Rate Plan", "options": "Rate Plan"},
-  {"fieldname": "pricing_section", "fieldtype": "Section Break", "label": "Pricing"},
-  {"fieldname": "package_price", "fieldtype": "Currency", "label": "Package Price", "reqd": 1, "description": "Bundle price for the full stay (tax exclusive)"},
-  {"fieldname": "currency", "fieldtype": "Link", "label": "Currency", "options": "Currency", "default": "INR"},
-  {"fieldname": "window_section", "fieldtype": "Section Break", "label": "Booking Window"},
-  {"fieldname": "valid_from", "fieldtype": "Date", "label": "Valid From"},
-  {"fieldname": "valid_to", "fieldtype": "Date", "label": "Valid To"},
-  {"fieldname": "inclusions_section", "fieldtype": "Section Break", "label": "Inclusions"},
-  {"fieldname": "inclusions", "fieldtype": "Table", "label": "Inclusions", "options": "Package Inclusion"},
-  {"fieldname": "notes", "fieldtype": "Small Text", "label": "Notes"}
+  {
+   "fieldname": "resort_property",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Resort Property",
+   "options": "Resort Property",
+   "reqd": 1
+  },
+  {
+   "description": "Short uppercase \u2014 HNYMN, WKND, RETREAT",
+   "fieldname": "code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Code",
+   "reqd": 1
+  },
+  {
+   "fieldname": "package_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Package Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "2",
+   "fieldname": "nights",
+   "fieldtype": "Int",
+   "label": "Nights",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Active"
+  },
+  {
+   "fieldname": "scope_section",
+   "fieldtype": "Section Break",
+   "label": "Scope"
+  },
+  {
+   "fieldname": "room_type",
+   "fieldtype": "Link",
+   "label": "Room Type",
+   "options": "Room Type"
+  },
+  {
+   "fieldname": "linked_rate_plan",
+   "fieldtype": "Link",
+   "label": "Linked Rate Plan",
+   "options": "Rate Plan"
+  },
+  {
+   "fieldname": "pricing_section",
+   "fieldtype": "Section Break",
+   "label": "Pricing"
+  },
+  {
+   "description": "Bundle price for the full stay (tax exclusive)",
+   "fieldname": "package_price",
+   "fieldtype": "Currency",
+   "label": "Package Price",
+   "reqd": 1
+  },
+  {
+   "default": "INR",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "window_section",
+   "fieldtype": "Section Break",
+   "label": "Booking Window"
+  },
+  {
+   "fieldname": "valid_from",
+   "fieldtype": "Date",
+   "label": "Valid From"
+  },
+  {
+   "fieldname": "valid_to",
+   "fieldtype": "Date",
+   "label": "Valid To"
+  },
+  {
+   "fieldname": "inclusions_section",
+   "fieldtype": "Section Break",
+   "label": "Inclusions"
+  },
+  {
+   "fieldname": "inclusions",
+   "fieldtype": "Table",
+   "label": "Inclusions",
+   "options": "Package Inclusion"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  }
  ],
  "links": [],
  "modified": "2026-06-30 00:00:00.000000",
@@ -35,7 +143,30 @@
  "name": "Package",
  "owner": "Administrator",
  "permissions": [
-  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1}
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Resort Manager",
+   "share": 1,
+   "write": 1
+  }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",

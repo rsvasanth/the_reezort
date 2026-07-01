@@ -29,25 +29,116 @@
   "default_check_out_time"
  ],
  "fields": [
-  {"fieldname": "property_name", "fieldtype": "Data", "in_list_view": 1, "label": "Property Name", "reqd": 1},
-  {"fieldname": "property_code", "fieldtype": "Data", "in_list_view": 1, "label": "Property Code", "reqd": 1, "unique": 1},
-  {"fieldname": "image", "fieldtype": "Attach Image", "label": "Image"},
-  {"fieldname": "company", "fieldtype": "Link", "in_list_view": 1, "label": "Company", "options": "Company", "reqd": 1},
-  {"fieldname": "default_currency", "fieldtype": "Link", "label": "Default Currency", "options": "Currency"},
-  {"fieldname": "timezone", "fieldtype": "Data", "label": "Timezone", "reqd": 1},
-  {"default": "1", "fieldname": "is_active", "fieldtype": "Check", "in_list_view": 1, "label": "Active"},
-  {"fieldname": "contact_section", "fieldtype": "Section Break", "label": "Contact"},
-  {"fieldname": "address", "fieldtype": "Small Text", "label": "Address"},
-  {"fieldname": "phone", "fieldtype": "Data", "label": "Phone"},
-  {"fieldname": "email", "fieldtype": "Data", "label": "Email"},
-  {"fieldname": "tax_region", "fieldtype": "Data", "label": "Tax Region"},
-  {"fieldname": "erpnext_defaults_section", "fieldtype": "Section Break", "label": "ERPNext Defaults"},
-  {"fieldname": "default_cost_center", "fieldtype": "Link", "label": "Default Cost Center", "options": "Cost Center"},
-  {"fieldname": "default_warehouse", "fieldtype": "Link", "label": "Default Warehouse", "options": "Warehouse"},
-  {"fieldname": "policy_section", "fieldtype": "Section Break", "label": "Room Policy"},
-  {"default": "0", "fieldname": "allow_dirty_room_allocation", "fieldtype": "Check", "label": "Allow Dirty Room Allocation"},
-  {"fieldname": "default_check_in_time", "fieldtype": "Time", "label": "Default Check-in Time"},
-  {"fieldname": "default_check_out_time", "fieldtype": "Time", "label": "Default Check-out Time"}
+  {
+   "fieldname": "property_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Property Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "property_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Property Code",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "image",
+   "fieldtype": "Attach Image",
+   "label": "Image"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "default_currency",
+   "fieldtype": "Link",
+   "label": "Default Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "timezone",
+   "fieldtype": "Data",
+   "label": "Timezone",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  },
+  {
+   "fieldname": "contact_section",
+   "fieldtype": "Section Break",
+   "label": "Contact"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "label": "Address"
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Phone"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email"
+  },
+  {
+   "fieldname": "tax_region",
+   "fieldtype": "Data",
+   "label": "Tax Region"
+  },
+  {
+   "fieldname": "erpnext_defaults_section",
+   "fieldtype": "Section Break",
+   "label": "ERPNext Defaults"
+  },
+  {
+   "fieldname": "default_cost_center",
+   "fieldtype": "Link",
+   "label": "Default Cost Center",
+   "options": "Cost Center"
+  },
+  {
+   "fieldname": "default_warehouse",
+   "fieldtype": "Link",
+   "label": "Default Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "policy_section",
+   "fieldtype": "Section Break",
+   "label": "Room Policy"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_dirty_room_allocation",
+   "fieldtype": "Check",
+   "label": "Allow Dirty Room Allocation"
+  },
+  {
+   "fieldname": "default_check_in_time",
+   "fieldtype": "Time",
+   "label": "Default Check-in Time"
+  },
+  {
+   "fieldname": "default_check_out_time",
+   "fieldtype": "Time",
+   "label": "Default Check-out Time"
+  }
  ],
  "links": [],
  "modified": "2026-06-29 00:00:00.000000",
@@ -57,7 +148,30 @@
  "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
-  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1}
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Resort Manager",
+   "share": 1,
+   "write": 1
+  }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",

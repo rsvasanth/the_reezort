@@ -6,16 +6,69 @@
  "doctype": "DocType",
  "document_type": "Setup",
  "engine": "InnoDB",
- "field_order": ["resort_property", "building", "floor_label", "floor_code", "display_order", "housekeeping_zone", "maintenance_zone", "is_active"],
+ "field_order": [
+  "resort_property",
+  "building",
+  "floor_label",
+  "floor_code",
+  "display_order",
+  "housekeeping_zone",
+  "maintenance_zone",
+  "is_active"
+ ],
  "fields": [
-  {"fieldname": "resort_property", "fieldtype": "Link", "in_list_view": 1, "label": "Resort Property", "options": "Resort Property", "reqd": 1},
-  {"fieldname": "building", "fieldtype": "Link", "in_list_view": 1, "label": "Building", "options": "Resort Building", "reqd": 1},
-  {"fieldname": "floor_label", "fieldtype": "Data", "in_list_view": 1, "label": "Floor Label", "reqd": 1},
-  {"fieldname": "floor_code", "fieldtype": "Data", "in_list_view": 1, "label": "Floor Code", "reqd": 1},
-  {"fieldname": "display_order", "fieldtype": "Int", "label": "Display Order"},
-  {"fieldname": "housekeeping_zone", "fieldtype": "Data", "label": "Housekeeping Zone"},
-  {"fieldname": "maintenance_zone", "fieldtype": "Data", "label": "Maintenance Zone"},
-  {"default": "1", "fieldname": "is_active", "fieldtype": "Check", "in_list_view": 1, "label": "Active"}
+  {
+   "fieldname": "resort_property",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Resort Property",
+   "options": "Resort Property",
+   "reqd": 1
+  },
+  {
+   "fieldname": "building",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Building",
+   "options": "Resort Building",
+   "reqd": 1
+  },
+  {
+   "fieldname": "floor_label",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Floor Label",
+   "reqd": 1
+  },
+  {
+   "fieldname": "floor_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Floor Code",
+   "reqd": 1
+  },
+  {
+   "fieldname": "display_order",
+   "fieldtype": "Int",
+   "label": "Display Order"
+  },
+  {
+   "fieldname": "housekeeping_zone",
+   "fieldtype": "Data",
+   "label": "Housekeeping Zone"
+  },
+  {
+   "fieldname": "maintenance_zone",
+   "fieldtype": "Data",
+   "label": "Maintenance Zone"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  }
  ],
  "links": [],
  "modified": "2026-06-29 00:00:00.000000",
@@ -24,7 +77,30 @@
  "name": "Resort Floor",
  "owner": "Administrator",
  "permissions": [
-  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1}
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Resort Manager",
+   "share": 1,
+   "write": 1
+  }
  ],
  "sort_field": "display_order",
  "sort_order": "ASC",

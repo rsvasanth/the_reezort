@@ -151,6 +151,11 @@ required_apps = ["erpnext", "hrms"]
 scheduler_events = {
 	"hourly": [
 		"the_reezort.servicedesk.api.escalate_overdue_tickets",
+		"the_reezort.staff.notification_scheduler.send_task_followups",
+	],
+	"daily": [
+		"the_reezort.staff.notification_scheduler.send_approval_followups",
+		"the_reezort.staff.notification_scheduler.send_leave_advance_followups",
 	],
 }
 

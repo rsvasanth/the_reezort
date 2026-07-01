@@ -169,6 +169,22 @@ def create_leave_request(leave_type, from_date, to_date, reason=None):
 		}
 	)
 	doc.insert(ignore_permissions=True)
+
+	# Nudge every manager who can decide this — the SPA bell picks it up in realtime.
+	try:
+		from the_reezort.staff.notify_api import notify_role
+
+		notify_role(
+			role=["Resort Manager", "HR Manager", "HR User"],
+			subject=f"Leave requested: {doc.employee_name or emp} · {leave_type}",
+			body=f"{from_d} → {to_d} ({days} day{'s' if days != 1 else ''}). {reason or ''}",
+			source_doctype="Leave Application",
+			source_name=doc.name,
+			kind="Assignment",
+			exclude_users={frappe.session.user},
+		)
+	except Exception:
+		pass
 	return _envelope({"leave": _leave_row(doc.name)})
 
 
@@ -219,6 +235,21 @@ def decide_leave(name, action, notes=None):
 			action=f"leave_{action.lower()}d",
 			reason=notes or "",
 			details={"employee": row["employee"], "days": row["total_leave_days"]},
+		)
+	except Exception:
+		pass
+
+	# Notify the requester of the decision.
+	try:
+		from the_reezort.staff.notify_api import notify_user
+
+		notify_user(
+			user=row["owner"],
+			subject=f"Leave {doc.status.lower()}",
+			body=f"{row['leave_type']} · {row['from_date']} → {row['to_date']}" + (f"\nNotes: {notes}" if notes else ""),
+			source_doctype="Leave Application",
+			source_name=name,
+			kind="Alert",
 		)
 	except Exception:
 		pass

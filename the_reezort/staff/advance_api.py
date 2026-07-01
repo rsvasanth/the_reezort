@@ -159,6 +159,21 @@ def create_advance_request(amount, purpose, posting_date=None):
 		}
 	)
 	doc.insert(ignore_permissions=True)
+
+	try:
+		from the_reezort.staff.notify_api import notify_role
+
+		notify_role(
+			role=["Resort Manager", "HR Manager", "Accounts Manager"],
+			subject=f"Advance requested: {frappe.db.get_value('Employee', emp, 'employee_name') or emp} · ₹{amt:,.0f}",
+			body=f"Purpose: {purpose}",
+			source_doctype="Employee Advance",
+			source_name=doc.name,
+			kind="Assignment",
+			exclude_users={frappe.session.user},
+		)
+	except Exception:
+		pass
 	return _envelope({"advance": _advance_row(doc.name)})
 
 
@@ -208,6 +223,20 @@ def decide_advance(name, action, notes=None):
 			)
 		except Exception:
 			pass
+		# Notify requester of rejection before deleting.
+		try:
+			from the_reezort.staff.notify_api import notify_user
+
+			notify_user(
+				user=row["owner"],
+				subject=f"Advance rejected · ₹{row['advance_amount']:,.0f}",
+				body=(notes or "No notes provided."),
+				source_doctype="Employee Advance",
+				source_name=name,
+				kind="Alert",
+			)
+		except Exception:
+			pass
 		frappe.delete_doc("Employee Advance", name, ignore_permissions=True)
 		return _envelope({"advance": name, "action": "Rejected"})
 
@@ -224,6 +253,20 @@ def decide_advance(name, action, notes=None):
 			action="advance_approved",
 			reason=notes or "",
 			details={"employee": row["employee"], "amount": float(row["advance_amount"] or 0)},
+		)
+	except Exception:
+		pass
+
+	try:
+		from the_reezort.staff.notify_api import notify_user
+
+		notify_user(
+			user=row["owner"],
+			subject=f"Advance approved · ₹{row['advance_amount']:,.0f}",
+			body="Accounts will disburse via Payment Entry.",
+			source_doctype="Employee Advance",
+			source_name=name,
+			kind="Alert",
 		)
 	except Exception:
 		pass

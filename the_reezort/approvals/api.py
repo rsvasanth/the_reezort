@@ -147,6 +147,23 @@ def require_approval(
 		)
 		return True, req.name
 
+	# Fan-out to every user who holds the approver_role — no polling needed.
+	try:
+		from the_reezort.staff.notify_api import notify_role
+
+		notify_role(
+			role=policy.approver_role,
+			subject=f"Approval needed · {action} · {source_doctype} {source_name}",
+			body=f"Requested by {requester}"
+				+ (f" · amount ₹{amount:,.0f}" if amount else ""),
+			source_doctype="Approval Request",
+			source_name=req.name,
+			kind="Assignment",
+			exclude_users={requester},
+		)
+	except Exception:
+		pass
+
 	# Blocked — caller must stop.
 	frappe.throw(
 		_("Approval required (policy: {0}). Request {1} created for {2}.").format(

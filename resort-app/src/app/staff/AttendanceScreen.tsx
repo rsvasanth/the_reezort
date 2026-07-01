@@ -33,6 +33,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import AdvancesTab from "./AdvancesTab";
 import LeavesTab from "./LeavesTab";
+import PayrollTab from "./PayrollTab";
+import StructuresTab from "./StructuresTab";
 import {
 	FolioApiError,
 	clockIn,
@@ -122,6 +124,8 @@ export default function AttendanceScreen() {
 					<TabsTrigger value="roster">Roster</TabsTrigger>
 					<TabsTrigger value="leaves">Leaves</TabsTrigger>
 					<TabsTrigger value="advances">Advances</TabsTrigger>
+					<TabsTrigger value="structures">Structures</TabsTrigger>
+					<TabsTrigger value="payroll">Payroll</TabsTrigger>
 				</TabsList>
 				<TabsContent value="roster" className="mt-4">
 			{loading ? (
@@ -225,6 +229,12 @@ export default function AttendanceScreen() {
 				</TabsContent>
 				<TabsContent value="advances" className="mt-4">
 					<AdvancesTab />
+				</TabsContent>
+				<TabsContent value="structures" className="mt-4">
+					<StructuresTab />
+				</TabsContent>
+				<TabsContent value="payroll" className="mt-4">
+					<PayrollTab />
 				</TabsContent>
 			</Tabs>
 		</main>

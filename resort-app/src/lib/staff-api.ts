@@ -354,3 +354,163 @@ export async function markAdvancePaid(
 		body: { name, mode_of_payment, reference_no, reference_date },
 	});
 }
+
+// ---------- Payroll · Structures ----------
+
+export type SalaryStructure = {
+	name: string;
+	company: string;
+	currency: string;
+	payroll_frequency: string;
+};
+
+export type SalaryAssignmentRow = {
+	employee: string;
+	employee_name: string;
+	designation: string | null;
+	company: string;
+	date_of_joining: string | null;
+	assignment: {
+		name: string;
+		salary_structure: string;
+		base: number;
+		from_date: string;
+	} | null;
+};
+
+export async function listSalaryStructures(): Promise<{ structures: SalaryStructure[] }> {
+	return callStaff("the_reezort.staff.payroll_api.list_salary_structures", { method: "GET" });
+}
+
+export async function listSalaryStructureAssignments(company?: string): Promise<{
+	rows: SalaryAssignmentRow[];
+	unassigned_count: number;
+}> {
+	return callStaff("the_reezort.staff.payroll_api.list_salary_structure_assignments", {
+		method: "GET",
+		params: company ? { company } : {},
+	});
+}
+
+export async function assignSalaryStructure(payload: {
+	employee: string;
+	salary_structure: string;
+	base: number;
+	from_date?: string;
+}): Promise<{ assignment: string; employee: string; salary_structure: string; base: number; from_date: string }> {
+	return callStaff("the_reezort.staff.payroll_api.assign_salary_structure", { method: "POST", body: payload });
+}
+
+export async function deactivateSalaryStructureAssignment(name: string): Promise<{ assignment: string; cancelled: boolean }> {
+	return callStaff("the_reezort.staff.payroll_api.deactivate_salary_structure_assignment", {
+		method: "POST",
+		body: { name },
+	});
+}
+
+// ---------- Payroll · Payroll run + payslips ----------
+
+export type PayslipRow = {
+	name: string;
+	start_date: string | null;
+	end_date: string | null;
+	salary_structure: string | null;
+	gross_pay: number;
+	total_deduction: number;
+	net_pay: number;
+};
+
+export type MySlips = {
+	employee: string | null;
+	slips: PayslipRow[];
+	is_manager: boolean;
+};
+
+export async function listMySlips(): Promise<MySlips> {
+	return callStaff("the_reezort.staff.payroll_api.list_my_slips", { method: "GET" });
+}
+
+export type FullSlip = {
+	name: string;
+	employee: string;
+	employee_name: string;
+	designation: string | null;
+	department: string | null;
+	company: string;
+	start_date: string;
+	end_date: string;
+	posting_date: string;
+	salary_structure: string;
+	payment_days: number;
+	total_working_days: number;
+	gross_pay: number;
+	total_deduction: number;
+	net_pay: number;
+	currency: string;
+	earnings: Array<{ component: string; amount: number }>;
+	deductions: Array<{ component: string; amount: number }>;
+};
+
+export async function getSlip(name: string): Promise<{ slip: FullSlip }> {
+	return callStaff("the_reezort.staff.payroll_api.get_slip", {
+		method: "GET",
+		params: { name },
+	});
+}
+
+export type PayrollPreview = {
+	company: string;
+	period: string;
+	frequency: string;
+	start_date: string;
+	end_date: string;
+	included_count: number;
+	skipped_count: number;
+	slips_preview: Array<{
+		employee: string;
+		employee_name: string;
+		salary_structure: string;
+		base: number;
+		gross_estimate: number;
+	}>;
+};
+
+export async function previewPayroll(payload: {
+	company: string;
+	period: string;
+	frequency?: string;
+}): Promise<PayrollPreview> {
+	return callStaff("the_reezort.staff.payroll_api.preview_payroll", { method: "POST", body: payload });
+}
+
+export type PayrollRunResult = {
+	payroll_entry: string;
+	start_date: string;
+	end_date: string;
+	slip_count: number;
+	slips: Array<{
+		name: string;
+		employee: string;
+		employee_name: string;
+		gross_pay: number | null;
+		net_pay: number | null;
+		salary_structure: string | null;
+	}>;
+};
+
+export async function runPayroll(payload: {
+	company: string;
+	period: string;
+	frequency?: string;
+}): Promise<PayrollRunResult> {
+	return callStaff("the_reezort.staff.payroll_api.run_payroll", { method: "POST", body: payload });
+}
+
+export async function submitPayroll(payroll_entry: string): Promise<{
+	payroll_entry: string;
+	submitted_slip_count: number;
+	total_net_pay: number;
+	already_submitted?: boolean;
+}> {
+	return callStaff("the_reezort.staff.payroll_api.submit_payroll", { method: "POST", body: { payroll_entry } });
+}

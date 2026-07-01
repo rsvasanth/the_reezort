@@ -41,16 +41,18 @@ def get_front_desk_board(resort_property=None):
 		fields=["name", "arrival_date", "departure_date", "staying_guest_profile"],
 		order_by="arrival_date asc",
 	):
-		room_type = frappe.get_all(
+		room_type_row = frappe.get_all(
 			"Reservation Room", filters={"parent": r.name}, fields=["room_type"], limit=1
 		)
+		room_type = room_type_row[0].room_type if room_type_row else None
 		arrivals.append(
 			{
 				"reservation": r.name,
 				"guest": _reservation_guest(r.name, r.staying_guest_profile),
 				"arrival_date": str(r.arrival_date) if r.arrival_date else None,
 				"departure_date": str(r.departure_date) if r.departure_date else None,
-				"room_type": room_type[0].room_type if room_type else None,
+				"room_type": room_type,
+				"room_type_image": frappe.db.get_value("Room Type", room_type, "image") if room_type else None,
 				"nights": date_diff(r.departure_date, r.arrival_date) if (r.arrival_date and r.departure_date) else None,
 				"due_today": bool(r.arrival_date and getdate(r.arrival_date) <= today_d),
 			}
@@ -66,11 +68,19 @@ def get_front_desk_board(resort_property=None):
 		fields=["name", "primary_guest_name", "current_room", "arrival_date", "departure_date", "folio_status"],
 		order_by="departure_date asc",
 	):
+		room_image = None
+		if s.current_room:
+			room_image = frappe.db.get_value("Room", s.current_room, "image")
+			if not room_image:
+				rt = frappe.db.get_value("Room", s.current_room, "room_type")
+				if rt:
+					room_image = frappe.db.get_value("Room Type", rt, "image")
 		in_house.append(
 			{
 				"stay": s.name,
 				"guest": s.primary_guest_name,
 				"room": s.current_room,
+				"room_image": room_image,
 				"arrival_date": str(s.arrival_date) if s.arrival_date else None,
 				"departure_date": str(s.departure_date) if s.departure_date else None,
 				"folio": frappe.db.get_value("Guest Folio", {"stay": s.name}, "name"),

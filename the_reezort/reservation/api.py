@@ -619,6 +619,7 @@ def list_reservations(resort_property=None):
 			g = frappe.get_all("Reservation Guest", filters={"parent": r.name}, fields=["guest_name"], limit=1)
 			guest = (g[0].guest_name if g and g[0].guest_name else "—")
 		rt = frappe.get_all("Reservation Room", filters={"parent": r.name}, fields=["room_type"], limit=1)
+		room_type = rt[0].room_type if rt else None
 		out.append(
 			{
 				"reservation": r.name,
@@ -626,7 +627,8 @@ def list_reservations(resort_property=None):
 				"guest": guest,
 				"arrival_date": str(r.arrival_date) if r.arrival_date else None,
 				"departure_date": str(r.departure_date) if r.departure_date else None,
-				"room_type": rt[0].room_type if rt else None,
+				"room_type": room_type,
+				"room_type_image": frappe.db.get_value("Room Type", room_type, "image") if room_type else None,
 				"total_estimated_amount": r.total_estimated_amount,
 				"currency": r.currency,
 			}

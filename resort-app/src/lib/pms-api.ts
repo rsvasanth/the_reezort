@@ -30,6 +30,7 @@ export type FrontDeskArrival = {
 	arrival_date: string | null;
 	departure_date: string | null;
 	room_type: string | null;
+	room_type_image: string | null;
 	nights: number | null;
 	due_today: boolean;
 };
@@ -38,6 +39,7 @@ export type FrontDeskInHouse = {
 	stay: string;
 	guest: string;
 	room: string | null;
+	room_image: string | null;
 	arrival_date: string | null;
 	departure_date: string | null;
 	folio: string | null;

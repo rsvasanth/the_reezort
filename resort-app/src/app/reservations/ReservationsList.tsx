@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, Plus, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
+import { RoomThumb } from "@/components/property/room-thumb";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,7 +144,12 @@ export default function ReservationsList() {
 								>
 									<TableCell className="font-medium">{r.reservation}</TableCell>
 									<TableCell>{r.guest}</TableCell>
-									<TableCell className="text-sm">{r.room_type ?? "—"}</TableCell>
+									<TableCell className="text-sm">
+										<div className="flex items-center gap-2">
+											<RoomThumb image={r.room_type_image} label={r.room_type ?? "?"} size={32} />
+											<span>{r.room_type ?? "—"}</span>
+										</div>
+									</TableCell>
 									<TableCell className="text-sm">{r.arrival_date ?? "—"}</TableCell>
 									<TableCell className="text-sm">{r.departure_date ?? "—"}</TableCell>
 									<TableCell><Badge variant={STATUS_VARIANT[r.status] ?? "outline"}>{r.status}</Badge></TableCell>

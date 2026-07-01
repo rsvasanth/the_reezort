@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ArrowRightLeft, CalendarPlus, Loader2, LogIn, LogOut, ReceiptText } from "lucide-react";
 import { toast } from "sonner";
 
+import { RoomThumb } from "@/components/property/room-thumb";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -150,7 +151,12 @@ export default function FrontDeskScreen() {
 												<TableCell className="font-medium">{a.guest}
 													{a.due_today ? <Badge variant="secondary" className="ml-2">Today</Badge> : null}
 												</TableCell>
-												<TableCell className="text-sm">{a.room_type ?? "—"}</TableCell>
+												<TableCell className="text-sm">
+													<div className="flex items-center gap-2">
+														<RoomThumb image={a.room_type_image} label={a.room_type ?? "?"} size={32} />
+														<span>{a.room_type ?? "—"}</span>
+													</div>
+												</TableCell>
 												<TableCell className="text-sm">{a.arrival_date ?? "—"}</TableCell>
 												<TableCell className="text-sm">{a.nights ?? "—"}</TableCell>
 												<TableCell className="text-right">
@@ -192,7 +198,12 @@ export default function FrontDeskScreen() {
 										board.in_house.map((s) => (
 											<TableRow key={s.stay} data-testid={`inhouse-${s.stay}`}>
 												<TableCell className="font-medium">{s.guest}</TableCell>
-												<TableCell className="text-sm">{s.room ?? "—"}</TableCell>
+												<TableCell className="text-sm">
+													<div className="flex items-center gap-2">
+														<RoomThumb image={s.room_image} label={s.room ?? "?"} size={32} />
+														<span>{s.room ?? "—"}</span>
+													</div>
+												</TableCell>
 												<TableCell className="text-sm">
 													{s.departure_date ?? "—"}
 													{s.due_out ? <Badge variant="destructive" className="ml-2">Due out</Badge> : null}

@@ -27,6 +27,7 @@ export type ReservationRow = {
 	arrival_date: string | null;
 	departure_date: string | null;
 	room_type: string | null;
+	room_type_image: string | null;
 	total_estimated_amount: number | null;
 	currency: string | null;
 };

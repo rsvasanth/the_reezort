@@ -131,6 +131,7 @@ export type GuestFolioHeader = {
 	stay?: string | null;
 	stay_status?: string | null;
 	current_room?: string | null;
+	current_room_image?: string | null;
 	arrival_date?: string | null;
 	departure_date?: string | null;
 	reservation?: string | null;

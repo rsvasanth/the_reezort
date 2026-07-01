@@ -67,13 +67,22 @@ def _folio_header(doc):
 		if doc.stay
 		else None
 	)
+	current_room = stay_info.current_room if stay_info else None
+	room_image = None
+	if current_room:
+		room_image = frappe.db.get_value("Room", current_room, "image")
+		if not room_image:
+			rt = frappe.db.get_value("Room", current_room, "room_type")
+			if rt:
+				room_image = frappe.db.get_value("Room Type", rt, "image")
 	return {
 		"name": doc.name,
 		"resort_property": doc.resort_property,
 		"company": doc.company,
 		"stay": doc.stay,
 		"stay_status": stay_info.stay_status if stay_info else None,
-		"current_room": stay_info.current_room if stay_info else None,
+		"current_room": current_room,
+		"current_room_image": room_image,
 		"arrival_date": str(stay_info.arrival_date) if stay_info and stay_info.arrival_date else None,
 		"departure_date": str(stay_info.departure_date) if stay_info and stay_info.departure_date else None,
 		"reservation": doc.reservation,

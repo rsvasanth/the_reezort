@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 
 import { GuestAvatar } from "@/components/guest-avatar";
+import { RoomThumb } from "@/components/property/room-thumb";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -132,7 +133,8 @@ export function FolioHeaderCard({
 								</span>
 							)}
 							{folio.room_number && (
-								<span className="inline-flex items-center gap-1">
+								<span className="inline-flex items-center gap-1.5">
+									<RoomThumb image={folio.current_room_image} label={folio.room_number} size={24} />
 									<Building2 className="size-3.5" />
 									Room {folio.room_number}
 								</span>

@@ -20,6 +20,7 @@ import {
 
 import type { FolioLine } from "@/lib/folio-api";
 
+import { LineCorrectionsMenu } from "./line-corrections";
 import {
 	formatCurrency,
 	formatServiceDate,
@@ -33,6 +34,7 @@ type Props = {
 	showErpnextColumn: boolean;
 	emptyAddLineVisible: boolean;
 	onEmptyAddLine: () => void;
+	onLineCorrected: () => void;
 };
 
 export function FolioLinesTable({
@@ -41,6 +43,7 @@ export function FolioLinesTable({
 	showErpnextColumn,
 	emptyAddLineVisible,
 	onEmptyAddLine,
+	onLineCorrected,
 }: Props) {
 	if (lines.length === 0) {
 		return (
@@ -128,7 +131,7 @@ export function FolioLinesTable({
 													</TableCell>
 												</TableRow>
 												{deptGroup.lines.map((line) => (
-													<LineRow
+													<LineRow onLineCorrected={onLineCorrected}
 														key={line.name}
 														line={line}
 														currency={currency}
@@ -157,10 +160,12 @@ function LineRow({
 	line,
 	currency,
 	showErpnextColumn,
+	onLineCorrected,
 }: {
 	line: FolioLine;
 	currency: string;
 	showErpnextColumn: boolean;
+	onLineCorrected: () => void;
 }) {
 	const statusStyle = lineStatusBadge(line.line_status);
 	const voided = line.line_status === "Voided";
@@ -171,14 +176,19 @@ function LineRow({
 	return (
 		<TableRow className={voided ? "opacity-60" : undefined}>
 			<TableCell className="align-top">
-				<div className={voided ? "line-through" : undefined}>{line.description}</div>
-				<div className="mt-1 flex flex-wrap gap-1">
-					<Badge variant="outline" className="text-[10px] font-normal">
-						{line.line_type}
-					</Badge>
-					<Badge variant="outline" className="text-[10px] font-normal">
-						{line.tax_treatment}
-					</Badge>
+				<div className="flex items-start justify-between gap-2">
+					<div className="min-w-0 flex-1">
+						<div className={voided ? "line-through" : undefined}>{line.description}</div>
+						<div className="mt-1 flex flex-wrap gap-1">
+							<Badge variant="outline" className="text-[10px] font-normal">
+								{line.line_type}
+							</Badge>
+							<Badge variant="outline" className="text-[10px] font-normal">
+								{line.tax_treatment}
+							</Badge>
+						</div>
+					</div>
+					<LineCorrectionsMenu line={line} currency={currency} onCorrected={onLineCorrected} />
 				</div>
 			</TableCell>
 			<TableCell className="hidden align-top text-xs text-muted-foreground md:table-cell">

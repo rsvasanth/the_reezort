@@ -390,6 +390,7 @@ function BodyContent({
 				showErpnextColumn={hasFinanceLink}
 				emptyAddLineVisible={addLineVisible}
 				onEmptyAddLine={onAddLine}
+				onLineCorrected={onRetry}
 			/>
 		</>
 	);

@@ -427,6 +427,81 @@ export type DepositResult = {
 	reused: boolean;
 };
 
+// ---------- Active folios (for the transfer target picker) ----------
+
+export type ActiveFolioSummary = {
+	name: string;
+	guest: string;
+	room: string | null;
+	folio_status: string;
+	outstanding: number;
+	currency: string;
+};
+
+export async function getActiveFolios(limit = 50): Promise<FolioApiEnvelope<{ folios: ActiveFolioSummary[] }>> {
+	return callBilling<{ folios: ActiveFolioSummary[] }>(
+		"the_reezort.billing.api.get_active_folios",
+		{ method: "GET", params: { limit: String(limit) } }
+	);
+}
+
+// ---------- Folio Line corrections (void / transfer / credit note / refund) ----------
+
+export type CorrectionResult = {
+	line: string;
+	line_status: string;
+	folio: { name: string; total_charges: number; total_paid: number; outstanding_amount: number; folio_status: string };
+	reused?: boolean;
+};
+
+export async function voidFolioLine(input: {
+	line: string;
+	reason: string;
+}): Promise<FolioApiEnvelope<CorrectionResult>> {
+	return callBilling<CorrectionResult>("the_reezort.billing.corrections.void_folio_line", {
+		method: "POST",
+		body: { line: input.line, reason: input.reason },
+	});
+}
+
+export async function transferFolioLine(input: {
+	line: string;
+	target_folio: string;
+	reason: string;
+}): Promise<FolioApiEnvelope<CorrectionResult & { target_line: string; target_folio: string }>> {
+	return callBilling("the_reezort.billing.corrections.transfer_folio_line", {
+		method: "POST",
+		body: { line: input.line, target_folio: input.target_folio, reason: input.reason },
+	});
+}
+
+export async function postCreditNote(input: {
+	line: string;
+	reason: string;
+}): Promise<FolioApiEnvelope<CorrectionResult & { credit_note: string }>> {
+	return callBilling("the_reezort.billing.corrections.post_credit_note", {
+		method: "POST",
+		body: { line: input.line, reason: input.reason },
+	});
+}
+
+export async function postRefund(input: {
+	line: string;
+	amount: number;
+	mode_of_payment?: string;
+	reason: string;
+}): Promise<FolioApiEnvelope<CorrectionResult & { refund_payment_entry: string; amount: number }>> {
+	return callBilling("the_reezort.billing.corrections.post_refund", {
+		method: "POST",
+		body: {
+			line: input.line,
+			amount: input.amount,
+			mode_of_payment: input.mode_of_payment,
+			reason: input.reason,
+		},
+	});
+}
+
 export async function recordDeposit(input: {
 	guest_folio: string;
 	amount: number;

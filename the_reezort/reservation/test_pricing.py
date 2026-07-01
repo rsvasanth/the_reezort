@@ -164,3 +164,61 @@ class TestRateResolver(FrappeTestCase):
 		}).insert(ignore_permissions=True)
 		# Request 3 nights → 2-night package must not match.
 		self.assertEqual(packages_for(self.room_type, today(), add_days(today(), 3)), [])
+
+
+class TestSearchAvailabilityPlanAware(FrappeTestCase):
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		cls.company = frappe.db.get_single_value("Global Defaults", "default_company") or frappe.db.get_value(
+			"Company", {}, "name"
+		)
+		cls.currency = frappe.db.get_value("Company", cls.company, "default_currency") or "INR"
+		seed_erpnext_demo_masters(cls.company, currency=cls.currency)
+		seed = seed_demo_property(cls.company)
+		cls.property = seed["property"]
+
+	def setUp(self):
+		super().setUp()
+		for dt in ("Season", "Package", "Rate Plan"):
+			for name in frappe.get_all(dt, filters={"resort_property": self.property}, pluck="name"):
+				frappe.delete_doc(dt, name, force=True, ignore_permissions=True)
+
+	def test_offers_carry_full_plan_breakdown(self):
+		from the_reezort.reservation.api import search_availability
+
+		frappe.get_doc({
+			"doctype": "Rate Plan", "resort_property": self.property,
+			"code": "BAR", "plan_name": "Best Available Rate",
+			"base_rate_override": 12000,
+		}).insert(ignore_permissions=True)
+
+		arrival = today()
+		departure = add_days(arrival, 3)
+		out = search_availability(
+			property=self.property, arrival_date=arrival, departure_date=departure
+		)
+		self.assertGreaterEqual(len(out["offers"]), 1)
+		offer = out["offers"][0]
+		self.assertIn("nightly_breakdown", offer)
+		self.assertEqual(len(offer["nightly_breakdown"]), 3)
+		self.assertEqual(offer["applied_plan"]["code"], "BAR")
+		# Estimated total = base 12000 × 3 nights × 1 room.
+		self.assertEqual(offer["per_room_estimated_amount"], 36000)
+
+	def test_list_rate_plans_returns_active_plans_for_property(self):
+		from the_reezort.reservation.api import list_rate_plans
+
+		frappe.get_doc({
+			"doctype": "Rate Plan", "resort_property": self.property,
+			"code": "REFUND", "plan_name": "Fully Refundable",
+			"base_rate_override": 15000, "refundable": 1, "cancellation_hours": 48,
+		}).insert(ignore_permissions=True)
+		frappe.get_doc({
+			"doctype": "Rate Plan", "resort_property": self.property,
+			"code": "NRF", "plan_name": "Non-Refundable Saver",
+			"base_rate_override": 10000, "refundable": 0,
+		}).insert(ignore_permissions=True)
+		out = list_rate_plans(property=self.property)
+		codes = {p["code"] for p in out["plans"]}
+		self.assertTrue({"REFUND", "NRF"}.issubset(codes))

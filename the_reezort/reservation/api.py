@@ -201,18 +201,77 @@ def search_availability(property=None, arrival_date=None, departure_date=None, r
 	requested_rooms = _as_list(rooms) or [{"adults": 2, "children": 0}]
 	offers = []
 
+	# Plan-aware rate resolution — every offer carries the full breakdown so
+	# the frontend can show a rate breakdown popover + package suggestions.
+	from the_reezort.reservation.pricing import packages_for, resolve_room_rate
+
 	for row in _availability_rows(property, arrival_date, departure_date):
-		if row["available_count"] >= len(requested_rooms):
-			offers.append(
-				{
-					**row,
-					"rate_plan": "BAR",
-					"package": None,
-					"cancellation_policy_summary": "Flexible policy placeholder for the first reservation slice.",
-				}
-			)
+		if row["available_count"] < len(requested_rooms):
+			continue
+		room_type = row["room_type"]
+		breakdown = resolve_room_rate(
+			room_type=room_type,
+			arrival_date=arrival_date,
+			departure_date=departure_date,
+			plan_code=promo_code,
+		)
+		# The breakdown covers ONE room; multiply for the number of requested rooms.
+		room_count = len(requested_rooms)
+		total_for_all_rooms = round(float(breakdown.get("total_amount") or 0) * room_count, 2)
+		pkgs = packages_for(
+			room_type=room_type, arrival_date=arrival_date, departure_date=departure_date
+		) or []
+		offers.append(
+			{
+				**row,
+				# Legacy fields kept for backward compat with older UIs.
+				"rate_plan": (breakdown.get("applied_plan") or {}).get("code") or "BAR",
+				"package": None,
+				"cancellation_policy_summary": _cancellation_summary(breakdown.get("applied_plan")),
+				# New plan-aware fields.
+				"estimated_amount": total_for_all_rooms,
+				"per_room_estimated_amount": float(breakdown.get("total_amount") or 0),
+				"applied_plan": breakdown.get("applied_plan"),
+				"base_rate": float(breakdown.get("base_rate") or 0),
+				"nightly_breakdown": breakdown.get("nightly_breakdown") or [],
+				"season_uplift_summary": breakdown.get("season_uplift_summary"),
+				"packages": pkgs,
+			}
+		)
 
 	return {"property": property, "offers": offers, "source": source, "promo_code": promo_code}
+
+
+def _cancellation_summary(applied_plan):
+	if not applied_plan:
+		return "Best available rate — standard cancellation."
+	if applied_plan.get("refundable"):
+		hrs = applied_plan.get("cancellation_hours") or 24
+		return f"Refundable · cancel free up to {int(hrs)}h before arrival."
+	return "Non-refundable — best price."
+
+
+@frappe.whitelist(allow_guest=True)
+def list_rate_plans(property=None):
+	"""Rate plans a guest can choose during search. Property-scoped
+	when a plan is pinned to a property; otherwise treated as global."""
+	if not property:
+		property = frappe.db.get_value("Resort Property", {"is_active": 1}, "name")
+	if not property:
+		return {"plans": []}
+	plans = frappe.get_all(
+		"Rate Plan",
+		filters={"is_active": 1},
+		fields=[
+			"name", "code", "plan_name", "resort_property",
+			"room_type", "refundable", "cancellation_hours",
+			"base_rate_override", "weekend_uplift_pct",
+		],
+		order_by="plan_name asc",
+	)
+	# Property-scoped or global.
+	plans = [p for p in plans if not p.resort_property or p.resort_property == property]
+	return {"property": property, "plans": plans}
 
 
 @frappe.whitelist()

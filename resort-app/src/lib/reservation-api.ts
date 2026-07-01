@@ -7,17 +7,65 @@ import { FolioApiError } from "@/lib/folio-api";
 
 export { FolioApiError } from "@/lib/folio-api";
 
+export type AppliedPlan = {
+	code: string;
+	name: string;
+	refundable: boolean;
+	cancellation_hours: number | null;
+};
+
+export type NightlyBreakdown = {
+	date: string;
+	rate: number;
+	season_code: string | null;
+	season_pct: number | null;
+	weekend: boolean;
+};
+
+export type PackageOffer = {
+	name: string;
+	code: string;
+	package_name: string;
+	nights: number | null;
+	room_type: string | null;
+	package_price: number;
+	currency: string;
+	valid_from: string | null;
+	valid_to: string | null;
+	inclusions_summary?: string;
+};
+
 export type AvailabilityOffer = {
 	room_type: string;
 	available_count: number;
 	rate_plan?: string;
 	estimated_amount?: number;
+	per_room_estimated_amount?: number;
+	applied_plan: AppliedPlan | null;
+	base_rate: number;
+	nightly_breakdown: NightlyBreakdown[];
+	season_uplift_summary: string | null;
+	packages: PackageOffer[];
+	cancellation_policy_summary?: string;
 	[key: string]: unknown;
 };
 
 export type AvailabilityResult = {
 	property: string;
 	offers: AvailabilityOffer[];
+	promo_code?: string | null;
+};
+
+export type RatePlan = {
+	name: string;
+	code: string;
+	plan_name: string;
+	resort_property: string | null;
+	room_type: string | null;
+	refundable: 0 | 1;
+	cancellation_hours: number | null;
+	base_rate_override: number | null;
+	weekend_uplift_pct: number | null;
 };
 
 export type ReservationRow = {
@@ -205,13 +253,19 @@ export async function recordBookingDeposit(input: {
 export async function searchAvailability(
 	arrivalDate: string,
 	departureDate: string,
-	adults: number
+	adults: number,
+	promoCode?: string
 ): Promise<AvailabilityResult> {
 	return call("the_reezort.reservation.api.search_availability", "POST", {
 		arrival_date: arrivalDate,
 		departure_date: departureDate,
 		rooms: [{ adults, children: 0 }],
+		promo_code: promoCode || null,
 	});
+}
+
+export async function listRatePlans(property?: string): Promise<{ property: string; plans: RatePlan[] }> {
+	return call("the_reezort.reservation.api.list_rate_plans", "GET", property ? { property } : {});
 }
 
 export async function createHold(

@@ -25,6 +25,8 @@ import PropertyManagementScreen from "@/app/property/PropertyManagementScreen";
 import StaffAccessScreen from "@/app/staff/StaffAccessScreen";
 import AttendanceScreen from "@/app/staff/AttendanceScreen";
 import MyDayScreen from "@/app/staff/MyDayScreen";
+import RoomWorkspace from "@/app/property/RoomWorkspace";
+import PropertyWorkspace, { BuildingWorkspace, FloorWorkspace } from "@/app/property/PropertyWorkspace";
 import ServiceDeskScreen from "@/app/servicedesk/ServiceDeskScreen";
 import BillingOverviewScreen from "@/app/billing/BillingOverviewScreen";
 import FrontDeskScreen from "@/app/frontdesk/FrontDeskScreen";
@@ -291,6 +293,22 @@ function AuthGate() {
 				<MyDayScreen />
 			</AppShell>
 		);
+	}
+
+	if (route.kind === "room") {
+		return <RoomWorkspace roomName={route.code} />;
+	}
+
+	if (route.kind === "property") {
+		return <PropertyWorkspace code={route.code} />;
+	}
+
+	if (route.kind === "building") {
+		return <BuildingWorkspace code={route.code} />;
+	}
+
+	if (route.kind === "floor") {
+		return <FloorWorkspace code={route.code} />;
 	}
 
 	if (route.kind === "tasks") {

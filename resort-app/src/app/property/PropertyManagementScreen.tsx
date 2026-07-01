@@ -11,7 +11,6 @@ import { toast } from "sonner";
 
 import PropertySetupScreen from "@/app/setup/PropertySetupScreen";
 import { PricingTab } from "@/app/property/PricingTab";
-import { RoomSheet } from "@/components/property/room-sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,7 +49,6 @@ import {
 	type ManagedDoctype,
 	type PropertyOption,
 	type PropertyTree,
-	type TreeRoom,
 	type TreeRoomType,
 } from "@/lib/setup-api";
 
@@ -78,7 +76,6 @@ export default function PropertyManagementScreen() {
 	const [tree, setTree] = useState<PropertyTree | null>(null);
 	const [amenities, setAmenities] = useState<Amenity[]>([]);
 	const [loading, setLoading] = useState(true);
-	const [editingRoom, setEditingRoom] = useState<TreeRoom | null>(null);
 
 	const loadProperties = useCallback(async () => {
 		try {
@@ -209,7 +206,7 @@ export default function PropertyManagementScreen() {
 							</TabsList>
 
 							<TabsContent value="rooms" className="mt-4">
-								<RoomsTab tree={tree} onEdit={setEditingRoom} onMutate={mutate} />
+								<RoomsTab tree={tree} onMutate={mutate} />
 							</TabsContent>
 							<TabsContent value="structure" className="mt-4">
 								<StructureTab tree={tree} onMutate={mutate} />
@@ -228,15 +225,6 @@ export default function PropertyManagementScreen() {
 				</>
 			)}
 
-			{editingRoom ? (
-				<RoomSheet
-					room={editingRoom}
-					roomTypes={tree?.room_types ?? []}
-					amenities={amenities}
-					onClose={() => setEditingRoom(null)}
-					onSaved={reloadTree}
-				/>
-			) : null}
 		</main>
 	);
 }
@@ -247,7 +235,7 @@ function StatusBadge({ value, danger }: { value: string; danger?: boolean }) {
 	return <Badge variant={danger ? "destructive" : "secondary"}>{value}</Badge>;
 }
 
-function RoomsTab({ tree, onEdit, onMutate }: { tree: PropertyTree; onEdit: (r: TreeRoom) => void; onMutate: MutateFn }) {
+function RoomsTab({ tree, onMutate }: { tree: PropertyTree; onMutate: MutateFn }) {
 	const [buildingFilter, setBuildingFilter] = useState("all");
 	const [add, setAdd] = useState({ building: "", floor: "", room_type: "", start: "101", count: "10" });
 
@@ -316,17 +304,24 @@ function RoomsTab({ tree, onEdit, onMutate }: { tree: PropertyTree; onEdit: (r: 
 					</TableHeader>
 					<TableBody>
 						{rooms.map((r) => (
-							<TableRow key={r.name} data-testid={`mgmt-room-${r.room_number}`} className={r.is_active ? "" : "opacity-50"}>
+							<TableRow
+								key={r.name}
+								data-testid={`mgmt-room-${r.room_number}`}
+								className={`cursor-pointer hover:bg-accent/40 ${r.is_active ? "" : "opacity-50"}`}
+								onClick={() => { window.location.hash = `#/room/${encodeURIComponent(r.name)}`; }}
+							>
 								<TableCell className="font-medium">{r.room_number}{r.room_name ? <span className="block text-xs text-muted-foreground">{r.room_name}</span> : null}</TableCell>
 								<TableCell className="text-sm">{r.room_type}</TableCell>
 								<TableCell><StatusBadge value={r.occupancy_status} /></TableCell>
 								<TableCell><StatusBadge value={r.housekeeping_status} danger={r.housekeeping_status === "Dirty"} /></TableCell>
 								<TableCell><StatusBadge value={r.maintenance_status} danger={r.maintenance_status === "Out of Order"} /></TableCell>
 								<TableCell>{r.is_active ? <Badge variant="secondary">Active</Badge> : <Badge variant="outline">Inactive</Badge>}</TableCell>
-								<TableCell className="text-right">
+								<TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
 									<div className="flex justify-end gap-1">
-										<Button variant="ghost" size="icon" onClick={() => onEdit(r)} aria-label="Edit room" data-testid={`edit-${r.room_number}`}>
-											<Pencil className="size-4" />
+										<Button variant="ghost" size="icon" asChild aria-label="Open room" data-testid={`edit-${r.room_number}`}>
+											<a href={`#/room/${encodeURIComponent(r.name)}`}>
+												<Pencil className="size-4" />
+											</a>
 										</Button>
 										<Button
 											variant="ghost"

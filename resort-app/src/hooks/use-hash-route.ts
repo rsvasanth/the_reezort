@@ -41,6 +41,10 @@ export type ParsedRoute =
 	| { kind: "mytasks" }
 	| { kind: "tasks" }
 	| { kind: "myday" }
+	| { kind: "room"; code: string | null }
+	| { kind: "property"; code: string | null }
+	| { kind: "building"; code: string | null }
+	| { kind: "floor"; code: string | null }
 	| { kind: "condition"; stay: string | null };
 
 export function parseHashRoute(hash: string): ParsedRoute {
@@ -76,6 +80,15 @@ export function parseHashRoute(hash: string): ParsedRoute {
 	if (path === "/my-tasks") return { kind: "mytasks" };
 	if (path === "/tasks") return { kind: "tasks" };
 	if (path === "/my-day") return { kind: "myday" };
+
+	const roomMatch = path.match(/^\/room(?:\/(.*))?$/);
+	if (roomMatch) return { kind: "room", code: roomMatch[1] ? decodeURIComponent(roomMatch[1]) : null };
+	const propMatch = path.match(/^\/property(?:\/(.*))?$/);
+	if (propMatch) return { kind: "property", code: propMatch[1] ? decodeURIComponent(propMatch[1]) : null };
+	const bldMatch = path.match(/^\/building(?:\/(.*))?$/);
+	if (bldMatch) return { kind: "building", code: bldMatch[1] ? decodeURIComponent(bldMatch[1]) : null };
+	const floorMatch = path.match(/^\/floor(?:\/(.*))?$/);
+	if (floorMatch) return { kind: "floor", code: floorMatch[1] ? decodeURIComponent(floorMatch[1]) : null };
 
 	const checkinMatch = path.match(/^\/check-in(?:\/(.*))?$/);
 	if (checkinMatch) {

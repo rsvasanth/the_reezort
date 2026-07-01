@@ -102,6 +102,11 @@ export function FolioWorkspace({ folioName }: Props) {
 				description: result.housekeeping_task
 					? `Room ${result.room} freed and sent to housekeeping`
 					: `Stay ${stay} checked out`,
+				action: {
+					label: "Print farewell slip",
+					onClick: () => { void handlePrintFarewell(); },
+				},
+				duration: 10000,
 			});
 			load();
 		} catch (error) {
@@ -109,6 +114,54 @@ export function FolioWorkspace({ folioName }: Props) {
 			toast.error("Checkout failed", { description: message });
 		} finally {
 			setCheckingOut(false);
+		}
+	}
+
+	async function handlePrintFarewell() {
+		if (!detail) return;
+		try {
+			const { printFarewellSlip } = await import("@/lib/farewell-slip");
+			const { fetchInvoiceBundle } = await import("@/lib/tax-invoice");
+			const bundle = await fetchInvoiceBundle(detail.folio.name);
+			const inv = bundle.invoices[0];
+			const nights =
+				bundle.stay?.arrival_date && bundle.stay?.departure_date
+					? Math.max(
+							1,
+							Math.round(
+								(new Date(bundle.stay.departure_date).getTime() - new Date(bundle.stay.arrival_date).getTime()) /
+									(1000 * 60 * 60 * 24),
+							),
+						)
+					: null;
+			await printFarewellSlip({
+				folio: {
+					name: detail.folio.name,
+					currency: detail.folio.currency,
+					total_charges: detail.totals.total_charges,
+					total_paid: detail.totals.total_paid,
+				},
+				invoice: inv
+					? { name: inv.name, grand_total: inv.rounded_total || inv.grand_total, posting_date: inv.posting_date }
+					: null,
+				guest: {
+					name: bundle.guest_profile?.guest_full_name ?? detail.folio.customer_name ?? detail.folio.customer,
+					email: bundle.guest_profile?.email ?? null,
+					phone: bundle.guest_profile?.phone ?? null,
+				},
+				stay: {
+					current_room: bundle.stay?.current_room ?? detail.folio.current_room ?? null,
+					arrival_date: bundle.stay?.arrival_date ?? detail.folio.arrival_date ?? null,
+					departure_date: bundle.stay?.departure_date ?? detail.folio.departure_date ?? null,
+					nights,
+				},
+				property: detail.folio.resort_property,
+				company: detail.folio.company,
+				timestamp: new Date().toISOString(),
+			});
+			toast.success("Farewell slip generated");
+		} catch (error) {
+			toast.error("Could not print farewell slip", { description: error instanceof Error ? error.message : undefined });
 		}
 	}
 
@@ -211,6 +264,7 @@ export function FolioWorkspace({ folioName }: Props) {
 						onCheckOut={handleCheckOut}
 						onDownloadInvoice={handleDownloadInvoice}
 						onPrintLabel={handlePrintLabel}
+						onPrintFarewell={handlePrintFarewell}
 						checkingOut={checkingOut}
 					/>
 				</main>
@@ -259,6 +313,7 @@ function BodyContent({
 	onCheckOut,
 	onDownloadInvoice,
 	onPrintLabel,
+	onPrintFarewell,
 	checkingOut,
 }: {
 	folioName: string | null;
@@ -271,6 +326,7 @@ function BodyContent({
 	onSettle: () => void;
 	onDeposit: () => void;
 	onPrintLabel: () => void;
+	onPrintFarewell: () => void;
 	onDownloadInvoice: () => void;
 	onCheckOut: () => void;
 	checkingOut: boolean;
@@ -320,6 +376,7 @@ function BodyContent({
 				onCheckOut={onCheckOut}
 				onDownloadInvoice={onDownloadInvoice}
 				onPrintLabel={onPrintLabel}
+				onPrintFarewell={onPrintFarewell}
 				checkingOut={checkingOut}
 			/>
 			<FolioTotalsStrip

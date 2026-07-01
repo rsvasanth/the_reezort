@@ -52,6 +52,7 @@ type Props = {
 	onCheckOut: () => void;
 	onDownloadInvoice: () => void;
 	onPrintLabel: () => void;
+	onPrintFarewell: () => void;
 	checkingOut?: boolean;
 };
 
@@ -65,6 +66,7 @@ export function FolioHeaderCard({
 	onCheckOut,
 	onDownloadInvoice,
 	onPrintLabel,
+	onPrintFarewell,
 	checkingOut,
 }: Props) {
 	const { folio, balance_status, posting_status, next_actions } = detail;
@@ -203,6 +205,10 @@ export function FolioHeaderCard({
 									<DropdownMenuItem onClick={onDownloadInvoice}>
 										<FileDown className="mr-2 size-4" />
 										Download tax invoice (GST)
+									</DropdownMenuItem>
+									<DropdownMenuItem onClick={onPrintFarewell}>
+										<Printer className="mr-2 size-4" />
+										Print farewell slip (A6)
 									</DropdownMenuItem>
 									<DropdownMenuItem onClick={onPrintLabel}>
 										<Printer className="mr-2 size-4" />

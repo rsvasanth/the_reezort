@@ -128,6 +128,9 @@ def post_minibar_consumption(
 	folio = _folio_of(stay)
 	if not folio:
 		frappe.throw(_("Stay {0} has no open folio.").format(stay))
+	folio_status = frappe.db.get_value("Guest Folio", folio, "folio_status")
+	if folio_status in {"Settled", "Closed", "Cancelled", "Transferred"}:
+		frappe.throw(_("Cannot post minibar — folio {0} is {1}.").format(folio, folio_status))
 
 	# Fetch canonical item metadata (price, name).
 	catalog = {i["name"]: i for i in frappe.get_all(

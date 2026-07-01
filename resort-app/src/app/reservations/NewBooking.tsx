@@ -17,8 +17,8 @@ import { WorkspacePage } from "@/components/workspace/workspace";
 import { formatCurrency } from "@/components/folio/folio-format";
 import {
 	FolioApiError,
-	confirmReservation,
 	createHold,
+	ensureBookingFolio,
 	searchAvailability,
 	type AvailabilityOffer,
 } from "@/lib/reservation-api";
@@ -73,17 +73,23 @@ export default function NewBooking() {
 		if (!roomType || !guest.full_name) return;
 		setConfirming(true);
 		try {
+			// Step 1: create the Hold (no deposit needed yet — status = Hold).
 			const hold = await createHold(property, arrival, departure, roomType, parseInt(adults, 10) || 2);
-			const result = await confirmReservation(hold.reservation, {
-				full_name: guest.full_name,
-				email: guest.email || undefined,
-				phone: guest.phone || undefined,
-			});
-			toast.success("Booking confirmed", { description: result.reservation });
-			go(`#/reservations/${encodeURIComponent(result.reservation)}`);
+			// Step 2: bootstrap the customer + folio on the Hold so the Reservation
+			// Detail screen opens with the deposit sheet ready to go (booker prefilled).
+			await ensureBookingFolio({
+				reservation: hold.reservation,
+				booker: {
+					full_name: guest.full_name,
+					email: guest.email || undefined,
+					phone: guest.phone || undefined,
+				},
+			}).catch(() => {}); // non-fatal — the detail screen can bootstrap itself
+			toast.success("Held — take the deposit to confirm", { description: hold.reservation });
+			go(`#/reservations/${encodeURIComponent(hold.reservation)}`);
 		} catch (error) {
 			const detail = error instanceof FolioApiError ? error.message : String(error);
-			toast.error("Could not confirm booking", { description: detail });
+			toast.error("Could not create the booking", { description: detail });
 		} finally {
 			setConfirming(false);
 		}
@@ -157,11 +163,12 @@ export default function NewBooking() {
 							<Field label="Email"><Input value={guest.email} onChange={(e) => setGuest({ ...guest, email: e.target.value })} /></Field>
 							<Field label="Phone"><Input value={guest.phone} onChange={(e) => setGuest({ ...guest, phone: e.target.value })} /></Field>
 						</div>
-						<div className="flex items-center gap-3">
+						<div className="flex flex-wrap items-center gap-3">
 							<Button onClick={confirm} disabled={confirming || !guest.full_name} data-testid="b-confirm">
-								{confirming ? <Loader2 className="size-4 animate-spin" /> : null} Confirm booking
+								{confirming ? <Loader2 className="size-4 animate-spin" /> : null} Reserve &amp; take deposit
 							</Button>
 							<Badge variant="secondary">{roomType}</Badge>
+							<span className="text-xs text-muted-foreground">Next: deposit → confirm on the reservation screen</span>
 						</div>
 					</CardContent>
 				</Card>

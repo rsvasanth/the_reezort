@@ -39,6 +39,7 @@ import { formatCurrency } from "@/components/folio/folio-format";
 import {
 	FolioApiError,
 	cancelReservation,
+	confirmReservation,
 	ensureBookingFolio,
 	getReservation,
 	getReservationDepositState,
@@ -100,6 +101,27 @@ export default function ReservationDetail({ reservation }: { reservation: string
 		}
 	}
 
+	async function confirmBooking() {
+		if (!detail) return;
+		setBusy(true);
+		try {
+			const primary = detail.guests?.[0];
+			const booker = {
+				full_name: primary?.guest_name ?? detail.guest,
+				email: primary?.email ?? undefined,
+				phone: primary?.phone ?? undefined,
+			};
+			await confirmReservation(reservation, booker);
+			toast.success("Booking confirmed", { description: reservation });
+			await reload();
+		} catch (error) {
+			const msg = error instanceof FolioApiError ? error.message : String(error);
+			toast.error("Could not confirm booking", { description: msg });
+		} finally {
+			setBusy(false);
+		}
+	}
+
 	if (loading) {
 		return (
 			<WorkspacePage badge="Reservation" title="Reservation" onBack={() => go("#/reservations")}>
@@ -118,6 +140,8 @@ export default function ReservationDetail({ reservation }: { reservation: string
 	const cur = detail.currency ?? "INR";
 	const canCheckIn = detail.check_in_ready;
 	const canCancel = detail.status !== "Cancelled" && detail.status !== "Checked In";
+	const isUnconfirmed = ["Hold", "Draft", "Deposit Pending", "Quoted"].includes(detail.status);
+	const canConfirm = isUnconfirmed && (!depositState || depositState.met);
 
 	return (
 		<WorkspacePage badge="Reservation" tag="Booking" title={detail.guest} onBack={() => go("#/reservations")}>
@@ -141,6 +165,11 @@ export default function ReservationDetail({ reservation }: { reservation: string
 						{depositState && depositState.required_amount > 0 && depositState.outstanding_amount > 0 ? (
 							<Button size="sm" variant="default" onClick={() => setDepositOpen(true)} data-testid="res-take-deposit">
 								<CreditCard className="size-4" /> Take deposit
+							</Button>
+						) : null}
+						{canConfirm ? (
+							<Button size="sm" onClick={confirmBooking} disabled={busy} data-testid="res-confirm">
+								{busy ? <Loader2 className="size-4 animate-spin" /> : <BadgeCheck className="size-4" />} Confirm booking
 							</Button>
 						) : null}
 						{canCheckIn ? (

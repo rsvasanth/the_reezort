@@ -146,6 +146,37 @@ class TestFolioSettlement(FrappeTestCase):
 		self.assertEqual(fol.outstanding_amount, 0)
 		self.assertAlmostEqual(fol.total_paid, grand_total, delta=1)
 
+	def test_settle_bakes_tax_into_total_taxes_estimated_so_balance_equation_closes(self):
+		"""After settlement the folio's balance equation must close visually:
+		total_charges + total_taxes_estimated − total_discounts − total_paid = outstanding_amount.
+		Regression guard for the redesigned Folio Workspace's settlement rail —
+		before this fix, total_taxes_estimated stayed at 0 while outstanding baked
+		in GST, making the visible sum read as inconsistent at the front desk."""
+		folio, _stay, net = self._folio_with_room_charge()
+		# Partial payment so outstanding is non-zero and the equation is testable.
+		grand_total = net * 1.18
+		record_deposit(folio, amount=10000, mode_of_payment="Cash")
+		settle_folio(folio)  # posts SI, applies the 10k deposit as advance, no other payment
+
+		fol = frappe.db.get_value(
+			"Guest Folio",
+			folio,
+			["total_charges", "total_discounts", "total_taxes_estimated", "total_paid", "outstanding_amount"],
+			as_dict=True,
+		)
+		# Tax preview is now populated to the invoice's tax total (18% of net).
+		self.assertAlmostEqual(fol.total_taxes_estimated, net * 0.18, delta=1)
+		# The visible sum closes exactly.
+		equation = (
+			flt(fol.total_charges)
+			+ flt(fol.total_taxes_estimated)
+			- flt(fol.total_discounts)
+			- flt(fol.total_paid)
+		)
+		self.assertAlmostEqual(equation, flt(fol.outstanding_amount), delta=1)
+		# Sanity — outstanding equals grand_total minus the 10k deposit.
+		self.assertAlmostEqual(fol.outstanding_amount, grand_total - 10000, delta=1)
+
 	def test_settle_without_charges_is_blocked(self):
 		# Open a folio directly (no check-in) so it carries no charges.
 		reservation = self._make_confirmed_reservation()

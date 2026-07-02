@@ -106,10 +106,15 @@ def _mark_lines_posted(charge_lines, sales_invoice):
 		)
 
 
-def _finalize_folio(folio, sales_invoice, payments_total, grand_total, deposit_total=0):
+def _finalize_folio(folio, sales_invoice, payments_total, grand_total, deposit_total=0, total_taxes=0):
 	# Effective paid = settlement payments + the deposit advance already collected.
 	effective_paid = flt(payments_total) + flt(deposit_total)
 	fully_paid = effective_paid >= grand_total and grand_total > 0
+	# Bake the invoice's tax into total_taxes_estimated so the folio's balance
+	# equation closes at the front desk:
+	#   total_charges + total_taxes_estimated − total_discounts − total_paid = outstanding_amount
+	# Without this, the settlement rail shows Taxes = 0 while outstanding already
+	# includes GST, and the visible sum reads as inconsistent to guests.
 	frappe.db.set_value(
 		"Guest Folio",
 		folio.name,
@@ -118,6 +123,7 @@ def _finalize_folio(folio, sales_invoice, payments_total, grand_total, deposit_t
 			"folio_status": "Settled" if fully_paid else "Ready for Settlement",
 			"balance_status": "Settled" if fully_paid else "Outstanding",
 			"total_paid": effective_paid,
+			"total_taxes_estimated": flt(total_taxes),
 			"outstanding_amount": max(grand_total - effective_paid, 0),
 		},
 		update_modified=False,
@@ -169,7 +175,14 @@ def settle_folio(guest_folio, payments=None, idempotency_key=None):
 		payment_entries = [_create_payment_entry(folio, sales_invoice.name, p) for p in payments]
 		payments_total = sum(flt(p.get("amount")) for p in payments)
 		_mark_lines_posted(charge_lines, sales_invoice.name)
-		_finalize_folio(folio, sales_invoice.name, payments_total, flt(sales_invoice.grand_total), deposit_total)
+		_finalize_folio(
+			folio,
+			sales_invoice.name,
+			payments_total,
+			flt(sales_invoice.grand_total),
+			deposit_total,
+			total_taxes=flt(sales_invoice.total_taxes_and_charges),
+		)
 		return {
 			"sales_invoices": [sales_invoice.name],
 			"payment_entries": payment_entries,

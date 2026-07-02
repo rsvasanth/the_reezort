@@ -36,6 +36,7 @@ import frappe
 from frappe import _
 from frappe.utils import flt, get_datetime, now_datetime, today
 
+from the_reezort.audit.api import record_audit_event
 from the_reezort.fnb.warehouse_seed import PER_OUTLET_WAREHOUSES, warehouse_for_outlet
 from the_reezort.staff.api import _envelope
 
@@ -353,6 +354,13 @@ def receive_stock(warehouse: str, items: list[dict] | str, supplier: str | None 
 		se.flags.ignore_permissions = True
 		se.insert()
 		se.submit()
+	record_audit_event(
+		"Stock Entry",
+		se.name,
+		"inventory.receive_stock",
+		reason=supplier or "",
+		details={"warehouse": warehouse, "items": [{"item_code": r["item_code"], "qty": r["qty"]} for r in se_items]},
+	)
 	return _envelope({"stock_entry": se.name, "warehouse": warehouse, "items": len(se_items)})
 
 
@@ -403,6 +411,12 @@ def transfer_stock(from_warehouse: str, to_warehouse: str, items: list[dict] | s
 		se.flags.ignore_permissions = True
 		se.insert()
 		se.submit()
+	record_audit_event(
+		"Stock Entry",
+		se.name,
+		"inventory.transfer_stock",
+		details={"from": src, "to": dst, "items": [{"item_code": r["item_code"], "qty": r["qty"]} for r in se_items]},
+	)
 	return _envelope({"stock_entry": se.name, "from_warehouse": src, "to_warehouse": dst, "items": len(se_items)})
 
 
@@ -451,4 +465,11 @@ def wastage_entry(warehouse: str, items: list[dict] | str, reason: str) -> dict:
 		se.flags.ignore_permissions = True
 		se.insert()
 		se.submit()
+	record_audit_event(
+		"Stock Entry",
+		se.name,
+		"inventory.wastage_entry",
+		reason=reason,
+		details={"warehouse": warehouse, "items": [{"item_code": r["item_code"], "qty": r["qty"]} for r in se_items]},
+	)
 	return _envelope({"stock_entry": se.name, "warehouse": warehouse, "reason": reason, "items": len(se_items)})

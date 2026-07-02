@@ -37,6 +37,7 @@ import frappe
 from frappe import _
 from frappe.utils import flt, get_datetime, now_datetime, today
 
+from the_reezort.audit.api import record_audit_event
 from the_reezort.staff.api import _envelope
 
 BACKDATE_HOURS = 24
@@ -411,6 +412,12 @@ def open_walk_in_order(
 	)
 	doc.flags.ignore_permissions = True
 	doc.insert()
+	record_audit_event(
+		"Restaurant Order",
+		doc.name,
+		"restaurant.open_walk_in",
+		details={"outlet": outlet, "table": table, "party_size": party_size},
+	)
 	return _envelope({"order": _order_dict(doc), "reused": False})
 
 
@@ -423,6 +430,7 @@ def add_items(order: str, items: list[dict] | str) -> dict:
 	if doc.state != "Draft":
 		frappe.throw(_("Cannot add items to order {0} in state {1}.").format(order, doc.state))
 
+	raw_items = items
 	items = json.loads(items) if isinstance(items, str) else items
 	if not items:
 		frappe.throw(_("No items supplied."))
@@ -462,6 +470,12 @@ def add_items(order: str, items: list[dict] | str) -> dict:
 
 	doc.flags.ignore_permissions = True
 	doc.save()
+	record_audit_event(
+		"Restaurant Order",
+		doc.name,
+		"restaurant.add_items",
+		details={"count": len(items), "items": [{"menu_item": i.get("menu_item"), "quantity": int(i.get("quantity") or 1)} for i in items]},
+	)
 	return _envelope({"order": _order_dict(doc)})
 
 
@@ -489,6 +503,12 @@ def send_to_kitchen(order: str) -> dict:
 
 	doc.flags.ignore_permissions = True
 	doc.save()
+	record_audit_event(
+		"Restaurant Order",
+		doc.name,
+		"restaurant.send_to_kitchen",
+		details={"kot": doc.kot_number, "section": doc.kitchen_section, "item_count": len(doc.items)},
+	)
 
 	# Fire notification to Restaurant role — Kitchen sub-role can be added later.
 	try:
@@ -554,6 +574,12 @@ def mark_kot_status(order: str, status: str) -> dict:
 
 	doc.flags.ignore_permissions = True
 	doc.save()
+	record_audit_event(
+		"Restaurant Order",
+		doc.name,
+		f"restaurant.kot_{status.lower().replace(' ', '_')}",
+		details={"kot": doc.kot_number, "state": status},
+	)
 	return _envelope({"order": _order_dict(doc)})
 
 
@@ -667,6 +693,17 @@ def close_walk_in(order: str, payments: list[dict] | str | None = None) -> dict:
 	doc.settled_at = now_datetime()
 	doc.flags.ignore_permissions = True
 	doc.save()
+	record_audit_event(
+		"Restaurant Order",
+		doc.name,
+		"restaurant.close_walk_in",
+		details={
+			"sales_invoice": sales_invoice.name,
+			"payment_entry": payment_entry_name,
+			"grand_total": flt(doc.grand_total),
+			"stock_entry": consumption_result.get("stock_entry"),
+		},
+	)
 
 	return _envelope(
 		{
@@ -684,6 +721,7 @@ def cancel_order(order: str, reason: str | None = None) -> dict:
 	"""Cancel an open order. Kitchen-side cancellations before Settled."""
 	_require_login()
 	doc = _order_or_throw(order)
+	prior_state = doc.state
 	_assert_transition(doc, "Cancelled")
 	doc.state = "Cancelled"
 	doc.cancelled_at = now_datetime()
@@ -691,6 +729,13 @@ def cancel_order(order: str, reason: str | None = None) -> dict:
 		doc.chef_notes = (doc.chef_notes or "") + f"\n[Cancelled] {reason}"
 	doc.flags.ignore_permissions = True
 	doc.save()
+	record_audit_event(
+		"Restaurant Order",
+		doc.name,
+		"restaurant.cancel_order",
+		reason=reason or "",
+		details={"from_state": prior_state},
+	)
 	return _envelope({"order": _order_dict(doc)})
 
 

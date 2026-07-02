@@ -287,12 +287,35 @@ def post_room_charge_order(
 	except Exception:
 		pass
 
+	# Raw-material consumption via BOM — Slice 2. Uses the outlet's dedicated
+	# raw-material warehouse. Failures are logged and dropped_items surfaced so
+	# kitchen ops can reconcile without blocking the folio charge.
+	consumption_result: dict = {"stock_entry": None}
+	try:
+		from the_reezort.fnb.consumption import consume_for_order
+		from the_reezort.fnb.warehouse_seed import warehouse_for_outlet
+
+		warehouse = warehouse_for_outlet(outlet)
+		if warehouse:
+			consumption_result = consume_for_order(
+				warehouse=warehouse,
+				order_items=[
+					{"menu_item": i["menu_item"], "quantity": int(i.get("quantity") or 1), "item_name": i.get("item_name")}
+					for i in items
+				],
+				remarks=f"F&B IRD {order.name} · Stay {stay}",
+			)
+	except Exception as exc:
+		frappe.log_error(f"IRD consumption failed: {exc}", "F&B IRD consumption")
+
 	frappe.db.commit()
 	return _envelope({
 		"folio_line": line.name,
 		"fnb_order": order.name,
 		"total_amount": total,
 		"reused": False,
+		"stock_entry": consumption_result.get("stock_entry"),
+		"consumption_dropped": consumption_result.get("dropped_items", []),
 	})
 
 

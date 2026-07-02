@@ -639,6 +639,27 @@ def close_walk_in(order: str, payments: list[dict] | str | None = None) -> dict:
 				reference_no=sales_invoice.name,
 			)
 
+	# Raw-material consumption via BOM — Slice 2. Runs inside the same _as_admin
+	# block so it has Stock Entry / GL Entry rights. Failures don't block invoice
+	# submission (log_error + dropped_items list); a kitchen ops manager can
+	# reconcile stock separately when consumption fails on shortage etc.
+	consumption_result: dict = {"stock_entry": None}
+	with _as_admin():
+		from the_reezort.fnb.consumption import consume_for_order
+		from the_reezort.fnb.warehouse_seed import warehouse_for_outlet
+
+		warehouse = warehouse_for_outlet(doc.outlet, company=company)
+		if warehouse:
+			consumption_result = consume_for_order(
+				warehouse=warehouse,
+				order_items=[
+					{"menu_item": item.menu_item, "quantity": item.quantity, "item_name": item.item_name}
+					for item in doc.items
+				],
+				remarks=f"F&B walk-in {doc.name} · SI {sales_invoice.name}",
+				company=company,
+			)
+
 	doc.erpnext_sales_invoice = sales_invoice.name
 	if payment_entry_name:
 		doc.erpnext_payment_entry = payment_entry_name
@@ -652,6 +673,8 @@ def close_walk_in(order: str, payments: list[dict] | str | None = None) -> dict:
 			"order": _order_dict(doc),
 			"sales_invoice": sales_invoice.name,
 			"payment_entry": payment_entry_name,
+			"stock_entry": consumption_result.get("stock_entry"),
+			"consumption_dropped": consumption_result.get("dropped_items", []),
 		}
 	)
 

@@ -236,6 +236,25 @@ export function transitionTicket(
 	return callData("transition_ticket", { method: "POST", body: { name, next_state, notes } });
 }
 
+/**
+ * The primary Resort Property name — needed as create_ticket's resort_property
+ * when the inbox is empty (no ticket to derive it from). Env-agnostic: reads
+ * the actual Resort Property doctype (REEZORT on prod, RZ-DEMO on local) rather
+ * than assuming a hardcoded default. Returns null if unreadable.
+ */
+export async function getPrimaryResortProperty(): Promise<string | null> {
+	try {
+		const res = await fetch(
+			`${BASE}/frappe.client.get_list?doctype=Resort%20Property&fields=%5B%22name%22%5D&limit_page_length=1`,
+			{ credentials: "include", headers: { Accept: "application/json" } },
+		);
+		const parsed = (await res.json()) as { message?: Array<{ name: string }> };
+		return parsed.message?.[0]?.name ?? null;
+	} catch {
+		return null;
+	}
+}
+
 // ---------- dev mock fixtures (network failure fallback) ----------
 
 function mockTicket(over: Partial<MaintenanceTicket> & { name: string; subject: string }): MaintenanceTicket {

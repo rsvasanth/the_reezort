@@ -25,11 +25,11 @@ import {
 } from "@/components/ui/select";
 import { staggerContainer, staggerItem } from "@/lib/motion";
 import { FolioApiError } from "@/lib/folio-api";
-import { getManagementDashboardSnapshot } from "@/lib/resort-api";
 import { ReportIssueSheet } from "@/components/maintenance/report-issue-sheet";
 import {
 	MOCK_LIST,
 	assignTicket,
+	getPrimaryResortProperty,
 	listTickets,
 	transitionTicket,
 	type MaintenanceTicket,
@@ -55,11 +55,11 @@ export default function MaintenanceInbox() {
 	const [propertyName, setPropertyName] = useState<string | null>(null);
 
 	// Property for new tickets — the inbox may be empty (no ticket to derive
-	// from), so resolve it from the dashboard snapshot once on mount.
+	// from), so resolve the real Resort Property once on mount (env-agnostic).
 	useEffect(() => {
-		getManagementDashboardSnapshot()
-			.then((snap) => setPropertyName(snap.property ?? null))
-			.catch(() => {});
+		getPrimaryResortProperty().then((p) => {
+			if (p) setPropertyName(p);
+		});
 	}, []);
 
 	const load = useCallback((quiet = false) => {

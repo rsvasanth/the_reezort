@@ -4,9 +4,10 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRightLeft, CalendarPlus, Loader2, LogIn, LogOut, ReceiptText, Shirt, Wine } from "lucide-react";
+import { ArrowRightLeft, CalendarPlus, Loader2, LogIn, LogOut, ReceiptText, Shirt, UtensilsCrossed, Wine } from "lucide-react";
 import { toast } from "sonner";
 
+import { IrdOrderSheet } from "@/components/folio/ird-order-sheet";
 import { MinibarSheet } from "@/components/folio/minibar-sheet";
 import { LinenSheet } from "@/components/housekeeping/linen-sheet";
 import { RoomThumb } from "@/components/property/room-thumb";
@@ -67,6 +68,7 @@ export default function FrontDeskScreen() {
 	const [moving, setMoving] = useState<FrontDeskInHouse | null>(null);
 	const [minibar, setMinibar] = useState<FrontDeskInHouse | null>(null);
 	const [linen, setLinen] = useState<FrontDeskInHouse | null>(null);
+	const [ird, setIrd] = useState<FrontDeskInHouse | null>(null);
 	const [checkingOut, setCheckingOut] = useState<string | null>(null);
 
 	const reload = useCallback(async () => {
@@ -221,6 +223,9 @@ export default function FrontDeskScreen() {
 														<Button size="sm" variant="ghost" onClick={() => setMoving(s)} data-testid={`move-${s.stay}`}>
 															<ArrowRightLeft className="size-4" /> Move
 														</Button>
+														<Button size="sm" variant="ghost" onClick={() => setIrd(s)} data-testid={`ird-${s.stay}`}>
+															<UtensilsCrossed className="size-4" /> Order
+														</Button>
 														<Button size="sm" variant="ghost" onClick={() => setMinibar(s)} data-testid={`minibar-${s.stay}`}>
 															<Wine className="size-4" /> Minibar
 														</Button>
@@ -280,6 +285,17 @@ export default function FrontDeskScreen() {
 					roomLabel={linen.room}
 					stay={linen.stay}
 					defaultPhase={linen.due_out ? "Departure" : "Mid-stay"}
+					onPosted={reload}
+				/>
+			) : null}
+
+			{ird ? (
+				<IrdOrderSheet
+					open={!!ird}
+					onOpenChange={(v) => { if (!v) setIrd(null); }}
+					stay={ird.stay}
+					roomLabel={ird.room || undefined}
+					guestName={ird.guest}
 					onPosted={reload}
 				/>
 			) : null}

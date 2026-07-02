@@ -13,6 +13,7 @@ import { FolioRoomHero } from "@/components/folio/folio-room-hero";
 import { FolioTotalsStrip } from "@/components/folio/folio-totals-strip";
 import { SettleFolioSheet } from "@/components/folio/settle-folio-sheet";
 import { DepositSheet } from "@/components/folio/deposit-sheet";
+import { IrdOrderSheet } from "@/components/folio/ird-order-sheet";
 import { MinibarSheet } from "@/components/folio/minibar-sheet";
 import {
 	FolioErrorState,
@@ -45,6 +46,7 @@ export function FolioWorkspace({ folioName }: Props) {
 	const [settleOpen, setSettleOpen] = useState(false);
 	const [depositOpen, setDepositOpen] = useState(false);
 	const [minibarOpen, setMinibarOpen] = useState(false);
+	const [irdOpen, setIrdOpen] = useState(false);
 	const [checkingOut, setCheckingOut] = useState(false);
 
 	const load = useCallback(() => {
@@ -265,6 +267,7 @@ export function FolioWorkspace({ folioName }: Props) {
 						onSettle={() => setSettleOpen(true)}
 						onDeposit={() => setDepositOpen(true)}
 						onMinibar={() => setMinibarOpen(true)}
+						onIrd={() => setIrdOpen(true)}
 						onCheckOut={handleCheckOut}
 						onDownloadInvoice={handleDownloadInvoice}
 						onPrintLabel={handlePrintLabel}
@@ -298,15 +301,26 @@ export function FolioWorkspace({ folioName }: Props) {
 							onRecorded={() => load()}
 						/>
 						{detail.folio.stay ? (
-							<MinibarSheet
-								open={minibarOpen}
-								onOpenChange={setMinibarOpen}
-								stay={detail.folio.stay}
-								roomLabel={detail.folio.room_number || detail.folio.current_room || undefined}
-								guestName={detail.folio.guest_name || detail.folio.customer_name || null}
-								resortProperty={detail.folio.resort_property}
-								onPosted={() => load()}
-							/>
+							<>
+								<MinibarSheet
+									open={minibarOpen}
+									onOpenChange={setMinibarOpen}
+									stay={detail.folio.stay}
+									roomLabel={detail.folio.room_number || detail.folio.current_room || undefined}
+									guestName={detail.folio.guest_name || detail.folio.customer_name || null}
+									resortProperty={detail.folio.resort_property}
+									onPosted={() => load()}
+								/>
+								<IrdOrderSheet
+									open={irdOpen}
+									onOpenChange={setIrdOpen}
+									stay={detail.folio.stay}
+									roomLabel={detail.folio.room_number || detail.folio.current_room || undefined}
+									guestName={detail.folio.guest_name || detail.folio.customer_name || null}
+									resortProperty={detail.folio.resort_property}
+									onPosted={() => load()}
+								/>
+							</>
 						) : null}
 					</>
 				)}
@@ -326,6 +340,7 @@ function BodyContent({
 	onSettle,
 	onDeposit,
 	onMinibar,
+	onIrd,
 	onCheckOut,
 	onDownloadInvoice,
 	onPrintLabel,
@@ -342,6 +357,7 @@ function BodyContent({
 	onSettle: () => void;
 	onDeposit: () => void;
 	onMinibar: () => void;
+	onIrd: () => void;
 	onPrintLabel: () => void;
 	onPrintFarewell: () => void;
 	onDownloadInvoice: () => void;
@@ -390,6 +406,7 @@ function BodyContent({
 				onSettle={onSettle}
 				onDeposit={onDeposit}
 				onMinibar={onMinibar}
+				onIrd={onIrd}
 				onRefresh={onRetry}
 				onCheckOut={onCheckOut}
 				onDownloadInvoice={onDownloadInvoice}

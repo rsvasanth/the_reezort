@@ -49,6 +49,7 @@ type Props = {
 	onSettle: () => void;
 	onDeposit: () => void;
 	onMinibar?: () => void;
+	onIrd?: () => void;
 	onRefresh: () => void;
 	onCheckOut: () => void;
 	onDownloadInvoice: () => void;
@@ -64,6 +65,7 @@ export function FolioHeaderCard({
 	onSettle,
 	onDeposit,
 	onMinibar,
+	onIrd,
 	onRefresh,
 	onCheckOut,
 	onDownloadInvoice,
@@ -178,6 +180,11 @@ export function FolioHeaderCard({
 									Deposit
 								</Button>
 							)}
+							{!mutationsDisabled && onIrd && folio.stay ? (
+								<Button size="sm" variant="outline" onClick={onIrd} data-testid="folio-ird">
+									Order
+								</Button>
+							) : null}
 							{!mutationsDisabled && onMinibar && folio.stay ? (
 								<Button size="sm" variant="outline" onClick={onMinibar} data-testid="folio-minibar">
 									Minibar

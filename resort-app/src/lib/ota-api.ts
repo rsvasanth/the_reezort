@@ -20,7 +20,7 @@ export type OtaMessage = {
 	source: OtaSource;
 	external_id: string;
 	state: OtaMessageState;
-	received_at: string;
+	received_at: string | null;
 	processed_at: string | null;
 	batch: string | null;
 	parsed_guest_name: string | null;

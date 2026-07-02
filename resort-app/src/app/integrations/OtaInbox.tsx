@@ -22,7 +22,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { staggerContainer, staggerItem } from "@/lib/motion";
+import { EASE_OUT } from "@/lib/motion";
 import { FolioApiError } from "@/lib/folio-api";
 import { OtaReviewSheet } from "@/components/integrations/ota-review-sheet";
 import { OtaUploadSheet } from "@/components/integrations/ota-upload-sheet";
@@ -164,13 +164,18 @@ export default function OtaInbox() {
 					</p>
 				</div>
 			) : (
-				<motion.div className="flex flex-col gap-3" variants={staggerContainer} initial="hidden" animate="show">
-					{messages.map((msg) => (
-						<motion.div key={msg.name} variants={staggerItem}>
+				<div className="flex flex-col gap-3">
+					{messages.map((msg, i) => (
+						<motion.div
+							key={msg.name}
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.3, ease: EASE_OUT, delay: Math.min(i * 0.04, 0.4) }}
+						>
 							<MessageRow msg={msg} onReview={() => setReviewName(msg.name)} />
 						</motion.div>
 					))}
-				</motion.div>
+				</div>
 			)}
 
 			<OtaUploadSheet open={uploadOpen} onOpenChange={setUploadOpen} sources={data?.sources} onIngested={() => load(true)} />

@@ -32,6 +32,33 @@ import {
 
 import { formatDateShort, nights, stateTone } from "@/app/integrations/ota-format";
 
+/**
+ * Best human message from an API error. The backend often uses frappe.throw
+ * (HTTP 417) whose reason lands in `exception`/`_server_messages`, not the
+ * envelope `blockers[]` — so a bare error.message reads "… failed with 417".
+ * Prefer blockers, then the thrown exception (stripped of its class prefix),
+ * then _server_messages, then the raw message.
+ */
+function bestError(error: unknown): string {
+	if (!(error instanceof FolioApiError)) return String(error);
+	if (error.blockers[0]?.message) return error.blockers[0].message;
+	const raw = error.rawEnvelope as { exception?: string; _server_messages?: string } | undefined;
+	const exc = raw?.exception;
+	if (typeof exc === "string" && exc.includes(":")) {
+		return exc.slice(exc.indexOf(":") + 1).trim();
+	}
+	if (typeof raw?._server_messages === "string") {
+		try {
+			const arr = JSON.parse(raw._server_messages) as string[];
+			const first = JSON.parse(arr[0]) as { message?: string };
+			if (first.message) return first.message.replace(/<[^>]+>/g, "");
+		} catch {
+			// fall through
+		}
+	}
+	return error.message;
+}
+
 function formatMoney(n: number | null, currency: string | null): string {
 	if (n === null) return "—";
 	try {
@@ -68,7 +95,7 @@ export function OtaReviewSheet({ name, open, onOpenChange, onActioned }: Props) 
 		getMessage(name)
 			.then(setDetail)
 			.catch((error: unknown) => {
-				const msg = error instanceof FolioApiError ? error.blockers[0]?.message ?? error.message : String(error);
+				const msg = bestError(error);
 				toast.error("Could not load message", { description: msg });
 			})
 			.finally(() => setLoading(false));
@@ -92,7 +119,7 @@ export function OtaReviewSheet({ name, open, onOpenChange, onActioned }: Props) 
 			onOpenChange(false);
 			onActioned?.();
 		} catch (error) {
-			const msg = error instanceof FolioApiError ? error.blockers[0]?.message ?? error.message : String(error);
+			const msg = bestError(error);
 			setBlocker(msg);
 		} finally {
 			setBusy(false);
@@ -112,7 +139,7 @@ export function OtaReviewSheet({ name, open, onOpenChange, onActioned }: Props) 
 			onOpenChange(false);
 			onActioned?.();
 		} catch (error) {
-			const msg = error instanceof FolioApiError ? error.blockers[0]?.message ?? error.message : String(error);
+			const msg = bestError(error);
 			toast.error("Could not reject", { description: msg });
 		} finally {
 			setBusy(false);
@@ -121,7 +148,8 @@ export function OtaReviewSheet({ name, open, onOpenChange, onActioned }: Props) 
 
 	const tone = m ? stateTone(m.state) : null;
 	const stayNights = m ? nights(m.parsed_arrival, m.parsed_departure) : null;
-	const hardDupe = detail?.similar_reservations.some((s) => s.match === "external_id");
+	const similar = detail?.similar_reservations ?? [];
+	const hardDupe = similar.some((s) => s.match === "external_id");
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
@@ -143,7 +171,7 @@ export function OtaReviewSheet({ name, open, onOpenChange, onActioned }: Props) 
 						</div>
 					) : (
 						<>
-							{detail?.similar_reservations.length ? (
+							{similar.length ? (
 								<div className={`flex flex-col gap-1.5 rounded-lg border p-3 text-sm ${hardDupe ? "border-destructive/40 bg-destructive/10" : "border-amber-500/40 bg-amber-500/10"}`}>
 									<div className={`flex items-start gap-2 ${hardDupe ? "text-destructive" : "text-amber-700 dark:text-amber-300"}`}>
 										<AlertTriangle className="mt-0.5 size-4 shrink-0" />
@@ -153,7 +181,7 @@ export function OtaReviewSheet({ name, open, onOpenChange, onActioned }: Props) 
 												: "A similar reservation exists (same guest and dates). Review before converting."}
 										</span>
 									</div>
-									{detail.similar_reservations.map((s) => (
+									{similar.map((s) => (
 										<a key={s.reservation} href={`#/reservations/${s.reservation}`} className="ml-6 font-mono text-xs hover:underline">
 											{s.reservation} · {s.status} · {formatDateShort(s.arrival_date)}–{formatDateShort(s.departure_date)}
 										</a>
@@ -183,7 +211,7 @@ export function OtaReviewSheet({ name, open, onOpenChange, onActioned }: Props) 
 								<Field label="Guests" value={`${m.parsed_adults ?? 0} adult${m.parsed_adults === 1 ? "" : "s"}${m.parsed_children ? ` · ${m.parsed_children} child` : ""}`} />
 								<Field label="Room / rate" value={[m.parsed_room_type_code, m.parsed_rate_code].filter(Boolean).join(" · ") || "—"} />
 								<Field label="Total" value={formatMoney(m.parsed_total, m.parsed_currency)} />
-								<Field label="Received" value={formatDateShort(m.received_at.slice(0, 10))} />
+								<Field label="Received" value={formatDateShort(m.received_at ? m.received_at.slice(0, 10) : null)} />
 							</dl>
 
 							{detail?.raw_payload ? (

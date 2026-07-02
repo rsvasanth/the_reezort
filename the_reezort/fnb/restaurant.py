@@ -177,6 +177,37 @@ def _next_kot_number(outlet: str) -> str:
 	return f"{base}{count + 1:03d}"
 
 
+def _order_item_dict(row) -> dict:
+	"""Every menu-item-bearing row across the module carries the same
+	imagery packet — Menu Item image URL + veg + spice + category — so the UI
+	can render the branded tile with fallback-to-gradient without a second
+	round-trip to `list_menu_items`.
+	"""
+	menu_meta = frappe.db.get_value(
+		"Menu Item",
+		row.menu_item,
+		["image", "veg_flag", "spice_level", "category"],
+		as_dict=True,
+	) or {}
+	return {
+		"name": row.name,
+		"menu_item": row.menu_item,
+		"item_name": row.item_name,
+		"quantity": row.quantity,
+		"rate": flt(row.rate),
+		"amount": flt(row.amount),
+		"line_status": row.line_status,
+		"chef_note": row.chef_note,
+		"sent_at": str(row.sent_at) if row.sent_at else None,
+		"ready_at": str(row.ready_at) if row.ready_at else None,
+		"served_at": str(row.served_at) if row.served_at else None,
+		"image": menu_meta.get("image"),
+		"veg_flag": menu_meta.get("veg_flag"),
+		"spice_level": menu_meta.get("spice_level"),
+		"category": menu_meta.get("category"),
+	}
+
+
 def _order_dict(doc) -> dict:
 	return {
 		"name": doc.name,
@@ -204,22 +235,7 @@ def _order_dict(doc) -> dict:
 		"guest_note": doc.guest_note,
 		"erpnext_sales_invoice": doc.erpnext_sales_invoice,
 		"erpnext_payment_entry": doc.erpnext_payment_entry,
-		"items": [
-			{
-				"name": row.name,
-				"menu_item": row.menu_item,
-				"item_name": row.item_name,
-				"quantity": row.quantity,
-				"rate": flt(row.rate),
-				"amount": flt(row.amount),
-				"line_status": row.line_status,
-				"chef_note": row.chef_note,
-				"sent_at": str(row.sent_at) if row.sent_at else None,
-				"ready_at": str(row.ready_at) if row.ready_at else None,
-				"served_at": str(row.served_at) if row.served_at else None,
-			}
-			for row in (doc.items or [])
-		],
+		"items": [_order_item_dict(row) for row in (doc.items or [])],
 	}
 
 

@@ -21,6 +21,7 @@ import {
 	Pause,
 	Play,
 	RefreshCw,
+	Shirt,
 	UserPlus,
 } from "lucide-react";
 
@@ -28,6 +29,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { LinenSheet } from "@/components/housekeeping/linen-sheet";
 import { RoomThumb } from "@/components/property/room-thumb";
 import {
 	DropdownMenu,
@@ -72,6 +74,7 @@ type Props = {
 
 export function RoomCard({ room, isMock, onMutated }: Props) {
 	const [busy, setBusy] = useState(false);
+	const [linenOpen, setLinenOpen] = useState(false);
 
 	const hkStyle = housekeepingStatusBadge(room.housekeeping_status);
 	const occStyle = occupancyStatusBadge(room.occupancy_status);
@@ -288,6 +291,18 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 								Create Task
 							</Button>
 						)}
+						{!isMock && (
+							<Button
+								size="sm"
+								variant="outline"
+								className="h-7 text-xs"
+								onClick={() => setLinenOpen(true)}
+								data-testid={`linen-${room.room_number}`}
+							>
+								<Shirt className="mr-1 size-3" />
+								Linen
+							</Button>
+						)}
 						{showAssign && task && (
 							<AssignMenu
 								taskId={task.id}
@@ -363,6 +378,14 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 					</div>
 				)}
 			</CardContent>
+			<LinenSheet
+				open={linenOpen}
+				onOpenChange={setLinenOpen}
+				room={room.name}
+				roomLabel={room.room_number}
+				defaultPhase="Departure"
+				onPosted={onMutated}
+			/>
 		</Card>
 	);
 }

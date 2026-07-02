@@ -64,6 +64,7 @@ export type TaskType =
 	| "Amenity Replenishment"
 	| "Minibar Check"
 	| "Linen Change"
+	| "Linen Restock"
 	| "Room Inspection"
 	| "Public Area Cleaning"
 	| "Guest Request Support"

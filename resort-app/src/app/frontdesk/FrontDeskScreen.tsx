@@ -4,10 +4,11 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRightLeft, CalendarPlus, Loader2, LogIn, LogOut, ReceiptText, Wine } from "lucide-react";
+import { ArrowRightLeft, CalendarPlus, Loader2, LogIn, LogOut, ReceiptText, Shirt, Wine } from "lucide-react";
 import { toast } from "sonner";
 
 import { MinibarSheet } from "@/components/folio/minibar-sheet";
+import { LinenSheet } from "@/components/housekeeping/linen-sheet";
 import { RoomThumb } from "@/components/property/room-thumb";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,7 @@ export default function FrontDeskScreen() {
 	const [extending, setExtending] = useState<FrontDeskInHouse | null>(null);
 	const [moving, setMoving] = useState<FrontDeskInHouse | null>(null);
 	const [minibar, setMinibar] = useState<FrontDeskInHouse | null>(null);
+	const [linen, setLinen] = useState<FrontDeskInHouse | null>(null);
 	const [checkingOut, setCheckingOut] = useState<string | null>(null);
 
 	const reload = useCallback(async () => {
@@ -222,6 +224,9 @@ export default function FrontDeskScreen() {
 														<Button size="sm" variant="ghost" onClick={() => setMinibar(s)} data-testid={`minibar-${s.stay}`}>
 															<Wine className="size-4" /> Minibar
 														</Button>
+														<Button size="sm" variant="ghost" onClick={() => setLinen(s)} data-testid={`linen-${s.stay}`} disabled={!s.room}>
+															<Shirt className="size-4" /> Linen
+														</Button>
 														<Button size="sm" variant="outline" disabled={!s.folio} onClick={() => openFolio(s.folio)}>
 															<ReceiptText className="size-4" /> Open folio
 														</Button>
@@ -263,6 +268,18 @@ export default function FrontDeskScreen() {
 					stay={minibar.stay}
 					roomLabel={minibar.room || undefined}
 					guestName={minibar.guest}
+					onPosted={reload}
+				/>
+			) : null}
+
+			{linen && linen.room ? (
+				<LinenSheet
+					open={!!linen}
+					onOpenChange={(v) => { if (!v) setLinen(null); }}
+					room={linen.room}
+					roomLabel={linen.room}
+					stay={linen.stay}
+					defaultPhase={linen.due_out ? "Departure" : "Mid-stay"}
 					onPosted={reload}
 				/>
 			) : null}

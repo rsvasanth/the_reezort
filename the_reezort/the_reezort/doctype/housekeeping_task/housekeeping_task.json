@@ -42,7 +42,7 @@
   {"fieldname": "building", "fieldtype": "Link", "label": "Building", "options": "Resort Building"},
   {"fieldname": "floor", "fieldtype": "Link", "label": "Floor", "options": "Resort Floor"},
   {"fieldname": "task_section", "fieldtype": "Section Break", "label": "Task"},
-  {"fieldname": "task_type", "fieldtype": "Select", "in_list_view": 1, "label": "Task Type", "options": "Departure Cleaning\nStayover Cleaning\nArrival Touch-up\nTurndown\nDeep Cleaning\nAmenity Replenishment\nMinibar Check\nLinen Change\nRoom Inspection\nPublic Area Cleaning\nGuest Request Support\nMaintenance Follow-up", "reqd": 1},
+  {"fieldname": "task_type", "fieldtype": "Select", "in_list_view": 1, "label": "Task Type", "options": "Departure Cleaning\nStayover Cleaning\nArrival Touch-up\nTurndown\nDeep Cleaning\nAmenity Replenishment\nMinibar Check\nLinen Change\nLinen Restock\nRoom Inspection\nPublic Area Cleaning\nGuest Request Support\nMaintenance Follow-up", "reqd": 1},
   {"default": "Queued", "fieldname": "task_status", "fieldtype": "Select", "in_list_view": 1, "label": "Task Status", "options": "Draft\nQueued\nAssigned\nIn Progress\nPaused\nCompleted\nInspection Required\nRework Required\nSkipped\nCancelled", "reqd": 1},
   {"default": "Normal", "fieldname": "priority", "fieldtype": "Select", "in_list_view": 1, "label": "Priority", "options": "Low\nNormal\nHigh\nUrgent\nVIP", "reqd": 1},
   {"fieldname": "due_at", "fieldtype": "Datetime", "in_list_view": 1, "label": "Due At"},

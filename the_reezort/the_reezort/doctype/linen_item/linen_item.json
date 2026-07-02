@@ -1,0 +1,49 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 0,
+ "autoname": "format:{resort_property}-LIN-{item_code_short}",
+ "creation": "2026-07-01 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "engine": "InnoDB",
+ "field_order": [
+  "resort_property",
+  "item_name",
+  "item_code_short",
+  "erpnext_item",
+  "column_break_1",
+  "category",
+  "unit_cost",
+  "currency",
+  "is_active"
+ ],
+ "fields": [
+  {"fieldname": "resort_property", "fieldtype": "Link", "in_standard_filter": 1, "label": "Resort Property", "options": "Resort Property", "reqd": 1},
+  {"fieldname": "item_name", "fieldtype": "Data", "in_list_view": 1, "label": "Item Name", "reqd": 1},
+  {"description": "Short unique code inside the property (BATH-TOWEL, BED-SHEET-Q)", "fieldname": "item_code_short", "fieldtype": "Data", "in_list_view": 1, "label": "Code", "reqd": 1},
+  {"fieldname": "erpnext_item", "fieldtype": "Link", "label": "ERPNext Item", "options": "Item"},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"default": "Towel", "fieldname": "category", "fieldtype": "Select", "in_list_view": 1, "label": "Category", "options": "Towel\nSheet\nBath\nRobe\nOther", "reqd": 1},
+  {"description": "Replacement cost for damage/loss accounting", "fieldname": "unit_cost", "fieldtype": "Currency", "in_list_view": 1, "label": "Unit Cost"},
+  {"fieldname": "currency", "fieldtype": "Link", "label": "Currency", "options": "Currency"},
+  {"default": "1", "fieldname": "is_active", "fieldtype": "Check", "label": "Active"}
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Linen Item",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Resort Manager", "share": 1, "write": 1},
+  {"read": 1, "report": 1, "role": "Housekeeping"},
+  {"read": 1, "report": 1, "role": "Front Desk"}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

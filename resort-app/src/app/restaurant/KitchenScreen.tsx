@@ -21,6 +21,7 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { EASE_OUT } from "@/lib/motion";
+import { MenuItemThumb } from "@/components/fnb/menu-visuals";
 import { FolioApiError } from "@/lib/folio-api";
 import { listOutlets, type FnbOutlet } from "@/lib/fnb-api";
 import {
@@ -175,10 +176,17 @@ function KotTicket({
 
 			<div className="flex-1 divide-y px-4">
 				{order.items.map((it) => (
-					<div key={it.name} className="flex items-start gap-2 py-2 text-sm">
-						<span className="font-mono tabular-nums text-muted-foreground">{it.quantity}×</span>
+					<div key={it.name} className="flex items-start gap-2.5 py-2 text-sm">
+						<MenuItemThumb
+							src={it.image}
+							category={it.category ?? "Other"}
+							name={it.item_name}
+							vegFlag={it.veg_flag ?? undefined}
+							size="sm"
+						/>
+						<span className="mt-1 font-mono tabular-nums text-muted-foreground">{it.quantity}×</span>
 						<div className="min-w-0 flex-1">
-							<div className={lineStatusTone(it.line_status)}>{it.item_name}</div>
+							<div className={`mt-0.5 ${lineStatusTone(it.line_status)}`}>{it.item_name}</div>
 							{it.chef_note ? <div className="text-[11px] text-amber-600 dark:text-amber-400">· {it.chef_note}</div> : null}
 						</div>
 					</div>

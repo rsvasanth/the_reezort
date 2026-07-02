@@ -72,6 +72,12 @@ export type RestaurantOrderItem = {
 	sent_at: string | null;
 	ready_at: string | null;
 	served_at: string | null;
+	// Imagery packet (backend _order_item_dict) — lets every surface render the
+	// shared MenuItemThumb without a second round-trip to list_menu_items.
+	image: string | null;
+	veg_flag: string | null;
+	spice_level: number | null;
+	category: string | null;
 };
 
 export type RestaurantOrder = {
@@ -292,6 +298,10 @@ function mockItem(over: Partial<RestaurantOrderItem> & { item_name: string }): R
 		sent_at: "2026-07-02 14:22:00",
 		ready_at: null,
 		served_at: null,
+		image: null,
+		veg_flag: "Non-veg",
+		spice_level: null,
+		category: "Mains",
 		...over,
 	};
 }

@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MenuItemCard } from "@/components/fnb/menu-item-card";
 import { ItemCartRail, type CartBasket } from "@/components/fnb/item-cart-rail";
-import { formatINR, parseTags } from "@/components/fnb/menu-visuals";
+import { MenuItemThumb, formatINR, parseTags } from "@/components/fnb/menu-visuals";
 import { staggerContainer, staggerItem } from "@/lib/motion";
 import { FolioApiError } from "@/lib/folio-api";
 import { listMenuItems, type MenuItem } from "@/lib/fnb-api";
@@ -58,14 +58,16 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 				setOrder(res.order);
 				setState("live");
 			})
-			.catch((error: unknown) => {
-				const mock = MOCK_KOTS.find((o) => o.name === orderName) ?? MOCK_KOTS[0];
-				if (error instanceof FolioApiError && error.status >= 400 && error.status < 500) {
-					setState("error");
+			.catch(() => {
+				// Dev/mock fallback: if the name matches a fixture (the mock floor
+				// links to mock orders), render it; otherwise it's a genuine miss.
+				const mock = MOCK_KOTS.find((o) => o.name === orderName);
+				if (mock) {
+					setOrder(mock);
+					setState("mock");
 					return;
 				}
-				setOrder(mock ?? null);
-				setState(mock ? "mock" : "error");
+				setState("error");
 			});
 	}, [orderName]);
 
@@ -232,7 +234,14 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 							</div>
 							<div className="divide-y">
 								{order.items.map((it) => (
-									<div key={it.name} className="flex items-center gap-2 px-4 py-2 text-sm">
+									<div key={it.name} className="flex items-center gap-2.5 px-4 py-2 text-sm">
+										<MenuItemThumb
+											src={it.image}
+											category={it.category ?? "Other"}
+											name={it.item_name}
+											vegFlag={it.veg_flag ?? undefined}
+											size="sm"
+										/>
 										<span className="font-mono tabular-nums text-muted-foreground">{it.quantity}×</span>
 										<span className={`min-w-0 flex-1 truncate ${lineStatusTone(it.line_status)}`}>{it.item_name}</span>
 										<span className="font-mono text-xs tabular-nums">{formatINR(it.amount)}</span>

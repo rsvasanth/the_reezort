@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 import { AddLineSheet } from "@/components/folio/add-line-sheet";
-import { FolioHeaderCard } from "@/components/folio/folio-header-card";
+import { FolioIdentityBand } from "@/components/folio/folio-identity-band";
 import { FolioLinesTable } from "@/components/folio/folio-lines-table";
-import { FolioRoomHero } from "@/components/folio/folio-room-hero";
-import { FolioTotalsStrip } from "@/components/folio/folio-totals-strip";
+import { FolioPostBar } from "@/components/folio/folio-post-bar";
+import { FolioSettlementRail } from "@/components/folio/folio-settlement-rail";
+import { FolioStayCard } from "@/components/folio/folio-stay-card";
 import { SettleFolioSheet } from "@/components/folio/settle-folio-sheet";
 import { DepositSheet } from "@/components/folio/deposit-sheet";
 import { IrdOrderSheet } from "@/components/folio/ird-order-sheet";
@@ -393,20 +394,20 @@ function BodyContent({
 			line.erpnext_journal_entry
 	);
 
-	const addLineVisible =
-		!mutationsDisabled && (detail.next_actions ?? []).includes("add_line");
+	const actions = detail.next_actions ?? [];
+	const addLineVisible = !mutationsDisabled && actions.includes("add_line");
+	const settleVisible = !mutationsDisabled && actions.includes("open_settlement");
+	// Tax invoice is available once a Sales Invoice exists (posting_status posted
+	// or folio invoiced).
+	const invoiceVisible =
+		detail.posting_status === "Posted" ||
+		["Ready for Settlement", "Settled", "Closed"].includes(detail.folio.folio_status);
 
 	return (
 		<>
 			{isReadOnly && <ReadOnlyBanner status={detail.folio.folio_status} />}
-			<FolioHeaderCard
+			<FolioIdentityBand
 				detail={detail}
-				mutationsDisabled={mutationsDisabled}
-				onAddLine={onAddLine}
-				onSettle={onSettle}
-				onDeposit={onDeposit}
-				onMinibar={onMinibar}
-				onIrd={onIrd}
 				onRefresh={onRetry}
 				onCheckOut={onCheckOut}
 				onDownloadInvoice={onDownloadInvoice}
@@ -414,20 +415,42 @@ function BodyContent({
 				onPrintFarewell={onPrintFarewell}
 				checkingOut={checkingOut}
 			/>
-			<FolioRoomHero folio={detail.folio} />
-			<FolioTotalsStrip
-				totals={detail.totals}
-				balanceStatus={detail.balance_status}
-				currency={detail.folio.currency}
-			/>
-			<FolioLinesTable
-				lines={detail.lines}
-				currency={detail.folio.currency}
-				showErpnextColumn={hasFinanceLink}
-				emptyAddLineVisible={addLineVisible}
-				onEmptyAddLine={onAddLine}
-				onLineCorrected={onRetry}
-			/>
+			<div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_22.5rem]">
+				<div className="flex min-w-0 flex-col gap-4">
+					<FolioPostBar
+						canAddLine={addLineVisible}
+						canDeposit={!mutationsDisabled}
+						canOrder={!mutationsDisabled && !!detail.folio.stay}
+						canMinibar={!mutationsDisabled && !!detail.folio.stay}
+						onAddLine={onAddLine}
+						onDeposit={onDeposit}
+						onOrder={onIrd}
+						onMinibar={onMinibar}
+					/>
+					<FolioLinesTable
+						lines={detail.lines}
+						currency={detail.folio.currency}
+						showErpnextColumn={hasFinanceLink}
+						emptyAddLineVisible={addLineVisible}
+						onEmptyAddLine={onAddLine}
+						onLineCorrected={onRetry}
+					/>
+				</div>
+				<div className="flex flex-col gap-4">
+					<FolioSettlementRail
+						totals={detail.totals}
+						balanceStatus={detail.balance_status}
+						postingStatus={detail.posting_status}
+						currency={detail.folio.currency}
+						lines={detail.lines}
+						showSettle={settleVisible}
+						showInvoice={invoiceVisible}
+						onSettle={onSettle}
+						onDownloadInvoice={onDownloadInvoice}
+					/>
+					<FolioStayCard folio={detail.folio} />
+				</div>
+			</div>
 		</>
 	);
 }

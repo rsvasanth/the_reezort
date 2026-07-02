@@ -170,6 +170,38 @@ export function groupLines<L extends { service_date: string; department?: string
 	}));
 }
 
+export type JourneyStep = {
+	label: string;
+	state: "done" | "current" | "todo";
+};
+
+/**
+ * Maps folio_status + stay_status onto the linear folio journey
+ * (Open → Checked out → Settled → Closed) for the FolioJourney stepper.
+ * Cancelled and Transferred don't fit a linear journey — returns null so
+ * the caller falls back to a plain status badge.
+ */
+export function deriveJourney(
+	folioStatus: FolioStatus,
+	stayStatus?: string | null
+): JourneyStep[] | null {
+	if (folioStatus === "Cancelled" || folioStatus === "Transferred") return null;
+
+	const closed = folioStatus === "Closed";
+	const settled = closed || folioStatus === "Settled";
+	const checkedOut = settled || stayStatus === "Checked Out";
+	const open = folioStatus !== "Draft";
+
+	const done = [open, checkedOut, settled, closed];
+	const labels = ["Open", "Checked out", "Settled", "Closed"];
+	const currentIndex = done.indexOf(false);
+
+	return labels.map((label, i) => ({
+		label,
+		state: done[i] ? "done" : i === currentIndex ? "current" : "todo",
+	}));
+}
+
 /**
  * Spec §6.4: closed/cancelled/settled/transferred folios render read-only
  * with a status-specific banner.

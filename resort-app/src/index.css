@@ -1,6 +1,14 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+	.font-display {
+		font-family: "Fraunces", Georgia, "Times New Roman", serif;
+	}
+}
 
 @layer base {
 	:root {
@@ -23,6 +31,8 @@
 		--border: 0 0% 30%;
 		--input: 0 0% 30%;
 		--ring: 0 0% 44%;
+		--brass: 38 47% 60%;
+		--brass-foreground: 30 25% 8%;
 		--radius: 0.75rem;
 		--chart-1: 0 0% 92%;
 		--chart-2: 0 0% 62%;
@@ -70,6 +80,8 @@
 		--border: 0 0% 88%;
 		--input: 0 0% 88%;
 		--ring: 0 0% 45%;
+		--brass: 38 55% 34%;
+		--brass-foreground: 40 40% 97%;
 		--chart-1: 0 0% 12%;
 		--chart-2: 0 0% 30%;
 		--chart-3: 0 0% 48%;
@@ -105,6 +117,8 @@
 		--border: 0 0% 30%;
 		--input: 0 0% 30%;
 		--ring: 0 0% 44%;
+		--brass: 38 47% 60%;
+		--brass-foreground: 30 25% 8%;
 		--chart-1: 0 0% 92%;
 		--chart-2: 0 0% 62%;
 		--chart-3: 0 0% 44%;

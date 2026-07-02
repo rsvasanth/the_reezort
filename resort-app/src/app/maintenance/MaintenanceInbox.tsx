@@ -23,7 +23,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { staggerContainer, staggerItem } from "@/lib/motion";
+import { EASE_OUT } from "@/lib/motion";
 import { FolioApiError } from "@/lib/folio-api";
 import { ReportIssueSheet } from "@/components/maintenance/report-issue-sheet";
 import {
@@ -191,9 +191,14 @@ export default function MaintenanceInbox() {
 					</p>
 				</div>
 			) : (
-				<motion.div className="flex flex-col gap-3" variants={staggerContainer} initial="hidden" animate="show">
-					{rows.map((t) => (
-						<motion.div key={t.name} variants={staggerItem}>
+				<div className="flex flex-col gap-3">
+					{rows.map((t, i) => (
+						<motion.div
+							key={t.name}
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.3, ease: EASE_OUT, delay: Math.min(i * 0.04, 0.4) }}
+						>
 							<TicketRow
 								ticket={t}
 								busy={busyRow === t.name}
@@ -204,7 +209,7 @@ export default function MaintenanceInbox() {
 							/>
 						</motion.div>
 					))}
-				</motion.div>
+				</div>
 			)}
 
 			<ReportIssueSheet

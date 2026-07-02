@@ -50,6 +50,9 @@ const CONTRACTS = [
 	{ file: "maintenance-api.ts", type: "MaintenanceState", doctype: "maintenance_ticket", field: "state" },
 	{ file: "maintenance-api.ts", type: "MaintenanceCategory", doctype: "maintenance_ticket", field: "category" },
 	{ file: "maintenance-api.ts", type: "MaintenancePriority", doctype: "maintenance_ticket", field: "priority" },
+	// ota-api.ts ↔ OTA Reservation Message
+	{ file: "ota-api.ts", type: "OtaMessageState", doctype: "ota_reservation_message", field: "state" },
+	{ file: "ota-api.ts", type: "OtaSource", doctype: "ota_reservation_message", field: "source" },
 ];
 
 function doctypeOptions(doctype, field) {

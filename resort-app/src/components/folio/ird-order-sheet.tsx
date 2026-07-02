@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import {
-	AlertTriangle, Flame, Leaf, Loader2, Minus, Plus, Search, UtensilsCrossed,
+	AlertTriangle, Leaf, Loader2, Minus, Plus, Search, UtensilsCrossed,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -37,6 +37,12 @@ import {
 import { staggerContainer, staggerItem } from "@/lib/motion";
 import { FolioApiError } from "@/lib/folio-api";
 import {
+	MenuItemThumb,
+	SpiceIcons,
+	formatINR,
+	parseTags,
+} from "@/components/fnb/menu-visuals";
+import {
 	listMenuItems,
 	listOutlets,
 	listRecentFnbOrders,
@@ -45,10 +51,6 @@ import {
 	type FnbOutlet,
 	type MenuItem,
 } from "@/lib/fnb-api";
-
-function formatINR(n: number): string {
-	return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
-}
 
 function nowLocalIso(): string {
 	const d = new Date();
@@ -64,78 +66,6 @@ function fmtDT(iso: string | null): string {
 	return new Intl.DateTimeFormat("en-IN", {
 		day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
 	}).format(d);
-}
-
-function parseTags(s: string | null | undefined): string[] {
-	if (!s) return [];
-	return s.split(",").map((t) => t.trim()).filter(Boolean);
-}
-
-function VegDot({ flag }: { flag: string }) {
-	const color =
-		flag === "Non-veg" ? "bg-red-500" :
-		flag === "Egg" ? "bg-amber-500" :
-		flag === "Vegan" ? "bg-emerald-600" :
-		"bg-green-500"; // Veg
-	return (
-		<span
-			className={`inline-block size-2.5 rounded-full ring-1 ring-black/10 ${color}`}
-			aria-label={flag}
-			title={flag}
-		/>
-	);
-}
-
-function SpiceIcons({ level }: { level: number }) {
-	if (!level || level <= 0) return null;
-	return (
-		<span className="inline-flex" aria-label={`Spice ${level}/3`}>
-			{Array.from({ length: level }).map((_, i) => (
-				<Flame key={i} className="size-3 text-red-500" />
-			))}
-		</span>
-	);
-}
-
-// Category → gradient for the fallback tile (matches the seeded PIL tiles).
-const CATEGORY_GRADIENT: Record<string, string> = {
-	Starters:   "from-orange-500 to-orange-900",
-	Mains:      "from-rose-500 to-rose-950",
-	Desserts:   "from-pink-400 to-fuchsia-900",
-	Beverages:  "from-teal-500 to-slate-900",
-	Alcohol:    "from-indigo-500 to-purple-950",
-	Sides:      "from-amber-500 to-amber-900",
-	Breakfast:  "from-yellow-500 to-orange-900",
-	Other:      "from-lime-500 to-slate-900",
-};
-
-function ItemThumb({
-	src,
-	category,
-	name,
-	vegFlag,
-}: {
-	src: string | null;
-	category: string;
-	name: string;
-	vegFlag: string;
-}) {
-	const gradient = CATEGORY_GRADIENT[category] ?? "from-stone-500 to-stone-900";
-	const initial = name.trim().slice(0, 1).toUpperCase();
-	return (
-		<div className="relative size-14 shrink-0 overflow-hidden rounded-md ring-1 ring-black/10">
-			{src ? (
-				<img src={src} alt={name} className="h-full w-full object-cover" loading="lazy" />
-			) : (
-				<div className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${gradient}`}>
-					<span className="font-serif text-lg text-white/90">{initial}</span>
-				</div>
-			)}
-			<span className="pointer-events-none absolute bottom-1 left-1">
-				<VegDot flag={vegFlag} />
-			</span>
-		</div>
-	);
 }
 
 type Basket = Record<string, number>;
@@ -443,7 +373,7 @@ export function IrdOrderSheet({
 										className="flex items-start gap-3 p-2.5"
 										data-testid={`item-${i.item_code_short}`}
 									>
-										<ItemThumb
+										<MenuItemThumb
 											src={i.image}
 											category={i.category}
 											name={i.item_name}

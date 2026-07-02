@@ -87,15 +87,20 @@ export default function KitchenScreen() {
 	}, [outlet, load]);
 
 	async function advance(order: RestaurantOrder, status: "Preparing" | "Ready" | "Served") {
+		// Guard against a double-tap firing the same transition twice — the second
+		// would hit the backend with a now-invalid same-state transition.
+		if (busy) return;
 		setBusy(order.name);
 		try {
 			await markKotStatus(order.name, status);
 			toast.success(`${order.kot_number ?? order.name} → ${status}`);
-			load(outlet, true);
 		} catch (error) {
 			const msg = error instanceof FolioApiError ? error.blockers[0]?.message ?? error.message : String(error);
 			toast.error("Could not update ticket", { description: msg });
 		} finally {
+			// Always resync from the server — whether the call succeeded or the
+			// ticket moved underneath us, the queue reflects true state.
+			load(outlet, true);
 			setBusy(null);
 		}
 	}

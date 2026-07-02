@@ -108,7 +108,7 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 	const basketCount = Object.values(basket).reduce((s, q) => s + q, 0);
 
 	async function sendRound() {
-		if (!order || basketCount === 0) return;
+		if (!order || basketCount === 0 || busy) return;
 		setBusy(true);
 		try {
 			const payload = Object.entries(basket).map(([menu_item, quantity]) => ({ menu_item, quantity }));
@@ -126,7 +126,7 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 	}
 
 	async function settle() {
-		if (!order) return;
+		if (!order || busy) return;
 		setBusy(true);
 		try {
 			const res = await closeWalkIn(order.name, [{ mode_of_payment: "Cash", amount: order.grand_total }]);

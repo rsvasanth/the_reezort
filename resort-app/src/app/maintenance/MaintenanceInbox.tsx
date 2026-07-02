@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { staggerContainer, staggerItem } from "@/lib/motion";
 import { FolioApiError } from "@/lib/folio-api";
+import { getManagementDashboardSnapshot } from "@/lib/resort-api";
 import { ReportIssueSheet } from "@/components/maintenance/report-issue-sheet";
 import {
 	MOCK_LIST,
@@ -51,9 +52,18 @@ export default function MaintenanceInbox() {
 	const [search, setSearch] = useState("");
 	const [reportOpen, setReportOpen] = useState(false);
 	const [busyRow, setBusyRow] = useState<string | null>(null);
+	const [propertyName, setPropertyName] = useState<string | null>(null);
 
-	const load = useCallback(() => {
-		setState("loading");
+	// Property for new tickets — the inbox may be empty (no ticket to derive
+	// from), so resolve it from the dashboard snapshot once on mount.
+	useEffect(() => {
+		getManagementDashboardSnapshot()
+			.then((snap) => setPropertyName(snap.property ?? null))
+			.catch(() => {});
+	}, []);
+
+	const load = useCallback((quiet = false) => {
+		if (!quiet) setState("loading");
 		listTickets({
 			state: status === "Open" || status === "All" ? undefined : status,
 			priority: priority === "Any" ? undefined : priority,
@@ -81,7 +91,7 @@ export default function MaintenanceInbox() {
 		return () => window.clearTimeout(t);
 	}, [load, search]);
 
-	const resortProperty = data?.tickets[0]?.resort_property ?? "REEZORT";
+	const resortProperty = data?.tickets[0]?.resort_property ?? propertyName ?? "RZ-DEMO";
 
 	// "Open" is a client-side rollup of the three open states.
 	const rows = useMemo(() => {
@@ -95,7 +105,7 @@ export default function MaintenanceInbox() {
 		setBusyRow(ticket.name);
 		try {
 			await fn();
-			load();
+			load(true);
 		} catch (error) {
 			const msg = error instanceof FolioApiError ? error.blockers[0]?.message ?? error.message : String(error);
 			toast.error("Action failed", { description: msg });
@@ -136,7 +146,7 @@ export default function MaintenanceInbox() {
 					</p>
 				</div>
 				<div className="flex items-center gap-2">
-					<Button variant="outline" size="icon" aria-label="Refresh" onClick={load}>
+					<Button variant="outline" size="icon" aria-label="Refresh" onClick={() => load()}>
 						<RefreshCw className="size-4" />
 					</Button>
 					<Button className="bg-brass text-brass-foreground hover:bg-brass/90" onClick={() => setReportOpen(true)} data-testid="report-issue-open">
@@ -201,7 +211,7 @@ export default function MaintenanceInbox() {
 				open={reportOpen}
 				onOpenChange={setReportOpen}
 				resortProperty={resortProperty}
-				onCreated={load}
+				onCreated={() => load(true)}
 			/>
 		</main>
 	);

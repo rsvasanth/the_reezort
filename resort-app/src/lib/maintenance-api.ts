@@ -219,7 +219,9 @@ export function listRecentForRoom(room: string, limit = 5): Promise<{ room: stri
  * allow_duplicate). `reused: true` means an idempotent same-minute repeat.
  */
 export function createTicket(payload: CreateTicketPayload): Promise<FolioApiEnvelope<CreateTicketResult>> {
-	return callEnvelope<CreateTicketResult>("create_ticket", { method: "POST", body: { ...payload } });
+	// Backend signature is create_ticket(payload) — the fields go inside a single
+	// `payload` dict (like add_folio_line), NOT flattened at the top level.
+	return callEnvelope<CreateTicketResult>("create_ticket", { method: "POST", body: { payload } });
 }
 
 export function assignTicket(name: string, user: string): Promise<{ ticket: MaintenanceTicket }> {

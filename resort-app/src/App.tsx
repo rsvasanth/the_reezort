@@ -36,6 +36,7 @@ import ReservationsScreen from "@/app/reservations/ReservationsScreen";
 import RestaurantFloor from "@/app/restaurant/RestaurantFloor";
 import TableOrderScreen from "@/app/restaurant/TableOrderScreen";
 import KitchenScreen from "@/app/restaurant/KitchenScreen";
+import MaintenanceInbox from "@/app/maintenance/MaintenanceInbox";
 import { parseHashRoute, useHashRoute } from "@/hooks/use-hash-route";
 import { canAccessDesk, defaultLandingRoute, useUserProfile } from "@/hooks/use-user-profile";
 import { useVersionCheck } from "@/hooks/use-version-check";
@@ -296,6 +297,14 @@ function AuthGate() {
 		return (
 			<AppShell>
 				<KitchenScreen />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "maintenance") {
+		return (
+			<AppShell>
+				<MaintenanceInbox />
 			</AppShell>
 		);
 	}

@@ -53,6 +53,7 @@ export type ParsedRoute =
 	| { kind: "restaurant" }
 	| { kind: "restaurant-table"; order: string | null }
 	| { kind: "restaurant-kitchen" }
+	| { kind: "maintenance" }
 	| { kind: "condition"; stay: string | null };
 
 export function parseHashRoute(hash: string): ParsedRoute {
@@ -108,6 +109,9 @@ export function parseHashRoute(hash: string): ParsedRoute {
 		return { kind: "restaurant-table", order: order ? decodeURIComponent(order) : null };
 	}
 	if (path === "/restaurant") return { kind: "restaurant" };
+
+	// Maintenance inbox — tolerate a trailing ?ticket=… deep-link query.
+	if (path === "/maintenance" || path.startsWith("/maintenance?")) return { kind: "maintenance" };
 
 	const checkinMatch = path.match(/^\/check-in(?:\/(.*))?$/);
 	if (checkinMatch) {

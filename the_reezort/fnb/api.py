@@ -370,7 +370,12 @@ DEFAULT_MENU = (
 
 @frappe.whitelist()
 def seed_fnb_catalog(resort_property: str | None = None) -> dict:
-	"""Idempotent seeder — 4 outlets + ~30-item menu across them."""
+	"""Idempotent seeder — 4 outlets + ~30-item menu + food images.
+
+	Images are read from `setup/seed_assets/menu_photos/{OUTLET}_{CODE}.jpg`
+	(same pattern as villa renders). Missing files just skip the image —
+	the UI falls back to a category-tinted gradient tile.
+	"""
 	if not resort_property:
 		resort_property = frappe.db.get_value("Resort Property", {"is_active": 1}, "name")
 	if not resort_property:
@@ -411,7 +416,7 @@ def seed_fnb_catalog(resort_property: str | None = None) -> dict:
 		if frappe.db.exists("Menu Item", {"outlet": outlet_name, "item_code_short": code}):
 			skipped_items.append(f"{out_code}/{code}")
 			continue
-		frappe.get_doc({
+		item = frappe.get_doc({
 			"doctype": "Menu Item",
 			"outlet": outlet_name,
 			"item_name": name,
@@ -428,9 +433,17 @@ def seed_fnb_catalog(resort_property: str | None = None) -> dict:
 			"is_available": 1,
 		}).insert(ignore_permissions=True)
 		created_items.append(f"{out_code}/{code}")
+
+	# Now attach images from seed_assets/menu_photos to every Menu Item that
+	# has a matching file. Idempotent — same content_hash won't re-upload.
+	from the_reezort.fnb.image_seed import seed_menu_images
+
+	image_result = seed_menu_images(resort_property=resort_property)
+
 	frappe.db.commit()
 	return {
 		"resort_property": resort_property,
 		"outlets": {"created": created_outlets, "skipped": skipped_outlets},
 		"items": {"created": created_items, "skipped": skipped_items},
+		"images": image_result,
 	}

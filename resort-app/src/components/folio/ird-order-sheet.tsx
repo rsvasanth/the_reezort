@@ -97,6 +97,47 @@ function SpiceIcons({ level }: { level: number }) {
 	);
 }
 
+// Category → gradient for the fallback tile (matches the seeded PIL tiles).
+const CATEGORY_GRADIENT: Record<string, string> = {
+	Starters:   "from-orange-500 to-orange-900",
+	Mains:      "from-rose-500 to-rose-950",
+	Desserts:   "from-pink-400 to-fuchsia-900",
+	Beverages:  "from-teal-500 to-slate-900",
+	Alcohol:    "from-indigo-500 to-purple-950",
+	Sides:      "from-amber-500 to-amber-900",
+	Breakfast:  "from-yellow-500 to-orange-900",
+	Other:      "from-lime-500 to-slate-900",
+};
+
+function ItemThumb({
+	src,
+	category,
+	name,
+	vegFlag,
+}: {
+	src: string | null;
+	category: string;
+	name: string;
+	vegFlag: string;
+}) {
+	const gradient = CATEGORY_GRADIENT[category] ?? "from-stone-500 to-stone-900";
+	const initial = name.trim().slice(0, 1).toUpperCase();
+	return (
+		<div className="relative size-14 shrink-0 overflow-hidden rounded-md ring-1 ring-black/10">
+			{src ? (
+				<img src={src} alt={name} className="h-full w-full object-cover" loading="lazy" />
+			) : (
+				<div className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${gradient}`}>
+					<span className="font-serif text-lg text-white/90">{initial}</span>
+				</div>
+			)}
+			<span className="pointer-events-none absolute bottom-1 left-1">
+				<VegDot flag={vegFlag} />
+			</span>
+		</div>
+	);
+}
+
 type Basket = Record<string, number>;
 
 export function IrdOrderSheet({
@@ -399,12 +440,17 @@ export function IrdOrderSheet({
 									<motion.div
 										key={i.name}
 										variants={staggerItem}
-										className="flex items-start justify-between gap-2 p-2.5"
+										className="flex items-start gap-3 p-2.5"
 										data-testid={`item-${i.item_code_short}`}
 									>
+										<ItemThumb
+											src={i.image}
+											category={i.category}
+											name={i.item_name}
+											vegFlag={i.veg_flag}
+										/>
 										<div className="min-w-0 flex-1">
 											<div className="flex items-center gap-2">
-												<VegDot flag={i.veg_flag} />
 												<span className="truncate text-sm font-medium">{i.item_name}</span>
 												<SpiceIcons level={i.spice_level ?? 0} />
 											</div>
@@ -417,7 +463,7 @@ export function IrdOrderSheet({
 												{allergens ? <span>· Contains {allergens}</span> : null}
 											</div>
 										</div>
-										<div className="flex items-center gap-1.5">
+										<div className="flex items-center gap-1.5 self-center">
 											<Button
 												variant="ghost"
 												size="icon"

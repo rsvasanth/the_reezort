@@ -258,6 +258,63 @@ class TestRestaurantPos(FrappeTestCase):
 		result = cancel_order(order["name"], reason="Guest walked out")
 		self.assertEqual(result["data"]["order"]["state"], "Cancelled")
 
+	def test_close_walk_in_works_for_restaurant_only_user(self):
+		"""Regression guard: prod QA (2026-07-02) hit HTTP 403 'No permission for
+		Item Price' when a Restaurant / Resort Manager operator closed a walk-in.
+		The SI/PE posting path must run elevated so it can touch Item Price /
+		GL Entry / Stock Ledger that operational roles don't own."""
+		# Seed a user with ONLY the Restaurant role — no Accounts access.
+		test_user = "waiter.pos.test@thereezort.com"
+		if not frappe.db.exists("User", test_user):
+			frappe.get_doc(
+				{
+					"doctype": "User",
+					"email": test_user,
+					"first_name": "Test",
+					"send_welcome_email": 0,
+					"roles": [{"role": "Restaurant"}],
+				}
+			).insert(ignore_permissions=True)
+
+		table = self._any_table()
+		items = self._first_two_items()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		add_items(order["name"], [{"menu_item": items[0].name, "quantity": 1}])
+		send_to_kitchen(order["name"])
+		mark_kot_status(order["name"], "Preparing")
+		mark_kot_status(order["name"], "Ready")
+		mark_kot_status(order["name"], "Served")
+		grand_total = get_order(order["name"])["data"]["order"]["grand_total"]
+
+		# Switch to the low-privilege user and close the walk-in — must succeed.
+		original = frappe.session.user
+		try:
+			frappe.set_user(test_user)
+			result = close_walk_in(order["name"], payments=[{"mode_of_payment": "Cash", "amount": grand_total}])
+		finally:
+			frappe.set_user(original)
+
+		self.assertEqual(result["data"]["order"]["state"], "Settled")
+		self.assertIsNotNone(result["data"]["sales_invoice"])
+		self.assertIsNotNone(result["data"]["payment_entry"])
+		# And after the elevated block ends, session.user should be restored.
+		self.assertEqual(frappe.session.user, "Administrator")
+
+	def test_cancel_served_order(self):
+		"""Comp'd meal / walkout / dispute path — a manager can void a Served
+		order without ever settling. Regression guard for a T02 order stuck
+		in Served on prod because Served → Cancelled wasn't in the state machine."""
+		table = self._any_table()
+		items = self._first_two_items()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		add_items(order["name"], [{"menu_item": items[0].name, "quantity": 1}])
+		send_to_kitchen(order["name"])
+		mark_kot_status(order["name"], "Preparing")
+		mark_kot_status(order["name"], "Ready")
+		mark_kot_status(order["name"], "Served")
+		result = cancel_order(order["name"], reason="Guest comp'd — manager sign-off")
+		self.assertEqual(result["data"]["order"]["state"], "Cancelled")
+
 	def test_list_orders_by_state_filter(self):
 		table = self._any_table()
 		items = self._first_two_items()

@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from contextlib import contextmanager
 
 import frappe
 from frappe import _
@@ -40,13 +41,35 @@ from the_reezort.staff.api import _envelope
 
 BACKDATE_HOURS = 24
 
+
+@contextmanager
+def _as_admin():
+	"""Run an ERPNext posting block as Administrator.
+
+	The whitelisted Restaurant endpoints ARE the trusted service boundary — role
+	permissions are enforced at the entry (Restaurant / Resort Manager can call
+	close_walk_in). Behind that boundary, submitting a Sales Invoice + Payment
+	Entry touches Item / Item Price / GL Entry etc. that operational roles have
+	no direct rights on. Elevating the block inside the service method is the
+	standard Frappe pattern for this. Restored on any path (exception or clean).
+	"""
+	original = frappe.session.user
+	try:
+		frappe.set_user("Administrator")
+		yield
+	finally:
+		frappe.set_user(original)
+
+
 # State machine — allowed forward transitions.
+# Served → Cancelled is a real path: comp'd meal, walkout, dispute at the
+# table where the manager voids the whole order without ever settling.
 STATE_TRANSITIONS = {
 	"Draft": {"Sent to Kitchen", "Cancelled"},
 	"Sent to Kitchen": {"Preparing", "Cancelled"},
 	"Preparing": {"Ready", "Cancelled"},
 	"Ready": {"Served", "Cancelled"},
-	"Served": {"Bill Pending", "Settled"},
+	"Served": {"Bill Pending", "Settled", "Cancelled"},
 	"Bill Pending": {"Settled", "Cancelled"},
 	"Settled": set(),
 	"Cancelled": set(),
@@ -560,57 +583,61 @@ def close_walk_in(order: str, payments: list[dict] | str | None = None) -> dict:
 	company = frappe.db.get_value("Resort Property", doc.resort_property, "company") or frappe.db.get_single_value(
 		"Global Defaults", "default_company"
 	)
-	# Walk-in charges — we don't have a customer profile so bill to a generic walk-in customer.
-	walk_in_customer = frappe.db.get_value("Customer", {"customer_name": "Walk-in Guest"}, "name")
-	if not walk_in_customer:
-		walk_in_customer = frappe.get_doc(
-			{
-				"doctype": "Customer",
-				"customer_name": "Walk-in Guest",
-				"customer_group": "Individual",
-				"territory": "All Territories",
-			}
-		).insert(ignore_permissions=True).name
+	# Entire ERPNext posting block runs elevated — SI.submit + PE.submit touch
+	# Item Price / GL Entry / Stock Ledger that operational (Restaurant /
+	# Resort Manager) roles have no direct rights on. The whitelisted endpoint
+	# above is the trusted service boundary.
+	with _as_admin():
+		# Walk-in charges — no guest profile, bill to a generic walk-in customer.
+		walk_in_customer = frappe.db.get_value("Customer", {"customer_name": "Walk-in Guest"}, "name")
+		if not walk_in_customer:
+			walk_in_customer = frappe.get_doc(
+				{
+					"doctype": "Customer",
+					"customer_name": "Walk-in Guest",
+					"customer_group": "Individual",
+					"territory": "All Territories",
+				}
+			).insert(ignore_permissions=True).name
 
-	# Build lines from menu items → ERPNext items, auto-provisioning missing links.
-	invoice_lines = []
-	for item in doc.items:
-		erp_item = frappe.db.get_value("Menu Item", item.menu_item, "erpnext_item") or _ensure_erpnext_item_for_menu(
-			item.menu_item
-		)
-		invoice_lines.append(
-			{
-				"item_code": erp_item,
-				"qty": item.quantity,
-				"rate": flt(item.rate),
-				"description": item.item_name,
-			}
+		# Build lines from menu items → ERPNext items, auto-provisioning missing links.
+		invoice_lines = []
+		for item in doc.items:
+			erp_item = frappe.db.get_value(
+				"Menu Item", item.menu_item, "erpnext_item"
+			) or _ensure_erpnext_item_for_menu(item.menu_item)
+			invoice_lines.append(
+				{
+					"item_code": erp_item,
+					"qty": item.quantity,
+					"rate": flt(item.rate),
+					"description": item.item_name,
+				}
+			)
+
+		sales_invoice = build_and_submit_sales_invoice(
+			company=company,
+			customer=walk_in_customer,
+			currency=doc.currency or "INR",
+			lines=invoice_lines,
+			remarks=_("Restaurant Order {0} · {1}").format(doc.name, doc.outlet),
 		)
 
-	sales_invoice = build_and_submit_sales_invoice(
-		company=company,
-		customer=walk_in_customer,
-		currency=doc.currency or "INR",
-		lines=invoice_lines,
-		remarks=_("Restaurant Order {0} · {1}").format(doc.name, doc.outlet),
-	)
-
-	payment_entry_name = None
-	if payments:
-		payment = payments[0]
-		# Cap PE amount at the SI grand_total. Order.grand_total may include
-		# service charge which isn't carried on the SI in Slice 4 (Slice 5 adds
-		# service charge as an SI Adjustment line); paying more than the SI
-		# outstanding is rejected by ERPNext. Client can send any figure; we
-		# collect at most what the invoice actually owes.
-		si_grand_total = flt(sales_invoice.grand_total)
-		requested = flt(payment.get("amount")) or si_grand_total
-		payment_entry_name = create_payment_entry_for_invoice(
-			sales_invoice=sales_invoice.name,
-			amount=min(requested, si_grand_total),
-			mode_of_payment=payment.get("mode_of_payment") or "Cash",
-			reference_no=sales_invoice.name,
-		)
+		payment_entry_name = None
+		if payments:
+			payment = payments[0]
+			# Cap PE amount at SI grand_total. Order.grand_total may include
+			# service charge which isn't carried on the SI in Slice 4 (Slice 5 adds
+			# service charge as an SI Adjustment line); paying more than the SI
+			# outstanding is rejected by ERPNext.
+			si_grand_total = flt(sales_invoice.grand_total)
+			requested = flt(payment.get("amount")) or si_grand_total
+			payment_entry_name = create_payment_entry_for_invoice(
+				sales_invoice=sales_invoice.name,
+				amount=min(requested, si_grand_total),
+				mode_of_payment=payment.get("mode_of_payment") or "Cash",
+				reference_no=sales_invoice.name,
+			)
 
 	doc.erpnext_sales_invoice = sales_invoice.name
 	if payment_entry_name:

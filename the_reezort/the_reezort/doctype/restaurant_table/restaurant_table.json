@@ -1,0 +1,50 @@
+{
+ "actions": [],
+ "allow_import": 0,
+ "allow_rename": 0,
+ "autoname": "field:table_full_code",
+ "creation": "2026-07-02 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "engine": "InnoDB",
+ "field_order": [
+  "table_full_code",
+  "outlet",
+  "resort_property",
+  "table_code",
+  "table_name",
+  "column_break_1",
+  "zone",
+  "seats",
+  "is_active",
+  "display_order"
+ ],
+ "fields": [
+  {"fieldname": "table_full_code", "fieldtype": "Data", "hidden": 1, "label": "Full Code", "read_only": 1, "unique": 1},
+  {"fieldname": "outlet", "fieldtype": "Link", "in_list_view": 1, "in_standard_filter": 1, "label": "Outlet", "options": "FnB Outlet", "reqd": 1},
+  {"fetch_from": "outlet.resort_property", "fieldname": "resort_property", "fieldtype": "Link", "in_standard_filter": 1, "label": "Resort Property", "options": "Resort Property", "read_only": 1},
+  {"description": "Short code within the outlet e.g. T01, BAR2, PATIO3", "fieldname": "table_code", "fieldtype": "Data", "in_list_view": 1, "label": "Table Code", "reqd": 1},
+  {"fieldname": "table_name", "fieldtype": "Data", "in_list_view": 1, "label": "Table Name"},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"default": "Indoor", "fieldname": "zone", "fieldtype": "Select", "in_list_view": 1, "label": "Zone", "options": "Indoor\nOutdoor\nBar\nPrivate\nPoolside\nRooftop\nPatio"},
+  {"default": "2", "fieldname": "seats", "fieldtype": "Int", "in_list_view": 1, "label": "Seats"},
+  {"default": "1", "fieldname": "is_active", "fieldtype": "Check", "in_list_view": 1, "label": "Active"},
+  {"default": "0", "description": "Sort order within the outlet's floor plan (lower = earlier)", "fieldname": "display_order", "fieldtype": "Int", "label": "Display Order"}
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-02 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Restaurant Table",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Resort Manager", "share": 1, "write": 1},
+  {"email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Restaurant", "share": 1}
+ ],
+ "sort_field": "display_order",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}

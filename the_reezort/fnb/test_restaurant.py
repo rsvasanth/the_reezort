@@ -1,0 +1,274 @@
+"""Restaurant POS + KOT tests — spec 006 · Slice 4."""
+
+import frappe
+from frappe.tests.utils import FrappeTestCase
+from frappe.utils import flt
+
+from the_reezort.fnb.api import seed_fnb_catalog
+from the_reezort.fnb.restaurant import (
+	add_items,
+	cancel_order,
+	close_walk_in,
+	get_order,
+	list_active_kots,
+	list_orders_by_state,
+	list_tables,
+	mark_kot_status,
+	open_walk_in_order,
+	send_to_kitchen,
+)
+from the_reezort.fnb.table_seed import seed_restaurant_tables
+from the_reezort.property.api import seed_demo_property
+from the_reezort.setup.bootstrap import seed_erpnext_demo_masters
+
+
+class TestRestaurantPos(FrappeTestCase):
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		frappe.set_user("Administrator")
+		cls.company = frappe.db.get_single_value("Global Defaults", "default_company") or frappe.db.get_value(
+			"Company", {}, "name"
+		)
+		cls.currency = frappe.db.get_value("Company", cls.company, "default_currency") or "INR"
+		seed_erpnext_demo_masters(cls.company, currency=cls.currency)
+		seed = seed_demo_property(cls.company)
+		cls.resort_property = seed["property"]
+		seed_fnb_catalog(resort_property=cls.resort_property)
+		seed_restaurant_tables(resort_property=cls.resort_property)
+		cls.outlet = frappe.db.get_value(
+			"FnB Outlet", {"resort_property": cls.resort_property, "outlet_code": "SIGREST"}, "name"
+		)
+
+	def setUp(self):
+		super().setUp()
+		frappe.set_user("Administrator")
+		# Wipe any open orders from prior test cases so each test starts fresh.
+		for name in frappe.get_all(
+			"Restaurant Order", filters={"outlet": self.outlet}, pluck="name"
+		):
+			frappe.delete_doc("Restaurant Order", name, force=True, ignore_permissions=True)
+
+	def _first_two_items(self):
+		return frappe.get_all(
+			"Menu Item",
+			filters={"outlet": self.outlet, "is_available": 1},
+			fields=["name", "price"],
+			limit=2,
+		)
+
+	def _any_table(self):
+		return frappe.db.get_value("Restaurant Table", {"outlet": self.outlet, "is_active": 1}, "name")
+
+	# ---------- seeder ----------
+
+	def test_table_seeder_is_idempotent(self):
+		before = frappe.db.count("Restaurant Table", {"outlet": self.outlet})
+		result = seed_restaurant_tables(resort_property=self.resort_property)
+		after = frappe.db.count("Restaurant Table", {"outlet": self.outlet})
+		self.assertEqual(before, after)
+		self.assertTrue(result["ok"])
+
+	def test_signature_restaurant_has_8_tables(self):
+		self.assertEqual(frappe.db.count("Restaurant Table", {"outlet": self.outlet}), 8)
+
+	# ---------- floor plan ----------
+
+	def test_list_tables_returns_vacant_by_default(self):
+		result = list_tables(self.outlet)
+		self.assertEqual(len(result["data"]["tables"]), 8)
+		for t in result["data"]["tables"]:
+			self.assertEqual(t["live_status"], "Vacant")
+			self.assertIsNone(t["open_order"])
+
+	def test_list_tables_reflects_open_order(self):
+		table = self._any_table()
+		open_walk_in_order(self.outlet, table)
+		result = list_tables(self.outlet)
+		by_name = {t["name"]: t for t in result["data"]["tables"]}
+		self.assertEqual(by_name[table]["live_status"], "Seated")
+		self.assertIsNotNone(by_name[table]["open_order"])
+
+	# ---------- lifecycle ----------
+
+	def test_open_walk_in_creates_draft_order(self):
+		table = self._any_table()
+		result = open_walk_in_order(self.outlet, table, party_size=4, guest_name="Test Guest")
+		order = result["data"]["order"]
+		self.assertEqual(order["state"], "Draft")
+		self.assertEqual(order["party_size"], 4)
+		self.assertEqual(order["guest_name"], "Test Guest")
+		self.assertEqual(order["table"], table)
+
+	def test_open_walk_in_is_idempotent_on_same_table(self):
+		table = self._any_table()
+		r1 = open_walk_in_order(self.outlet, table)
+		r2 = open_walk_in_order(self.outlet, table)
+		self.assertEqual(r1["data"]["order"]["name"], r2["data"]["order"]["name"])
+		self.assertTrue(r2["data"]["reused"])
+
+	def test_open_walk_in_rejects_unknown_table(self):
+		with self.assertRaises(frappe.ValidationError):
+			open_walk_in_order(self.outlet, "FAKE-TABLE-999")
+
+	def test_add_items_computes_totals(self):
+		table = self._any_table()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		items = self._first_two_items()
+		add_result = add_items(
+			order["name"],
+			[
+				{"menu_item": items[0].name, "quantity": 2},
+				{"menu_item": items[1].name, "quantity": 1},
+			],
+		)
+		result_order = add_result["data"]["order"]
+		self.assertEqual(len(result_order["items"]), 2)
+		expected_subtotal = flt(items[0].price) * 2 + flt(items[1].price)
+		self.assertAlmostEqual(result_order["subtotal"], expected_subtotal, delta=1)
+		# grand_total = subtotal + service + tax; both should be > subtotal (18% GST default)
+		self.assertGreater(result_order["grand_total"], expected_subtotal)
+
+	def test_add_items_rejects_on_non_draft_state(self):
+		table = self._any_table()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		items = self._first_two_items()
+		add_items(order["name"], [{"menu_item": items[0].name, "quantity": 1}])
+		send_to_kitchen(order["name"])
+		with self.assertRaises(frappe.ValidationError):
+			add_items(order["name"], [{"menu_item": items[1].name, "quantity": 1}])
+
+	def test_add_items_rejects_wrong_outlet_item(self):
+		# Create an item in another outlet.
+		other_outlet = frappe.db.get_value(
+			"FnB Outlet", {"resort_property": self.resort_property, "outlet_code": "POOLBAR"}, "name"
+		)
+		other_item = frappe.get_all(
+			"Menu Item", filters={"outlet": other_outlet}, pluck="name", limit=1
+		)
+		self.assertTrue(other_item)
+		table = self._any_table()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		with self.assertRaises(frappe.ValidationError):
+			add_items(order["name"], [{"menu_item": other_item[0], "quantity": 1}])
+
+	def test_send_to_kitchen_transitions_state_and_stamps_items(self):
+		table = self._any_table()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		items = self._first_two_items()
+		add_items(order["name"], [{"menu_item": items[0].name, "quantity": 1}])
+		result = send_to_kitchen(order["name"])
+		out = result["data"]["order"]
+		self.assertEqual(out["state"], "Sent to Kitchen")
+		self.assertTrue(out["kot_number"].startswith("KOT-SIGREST-"))
+		self.assertIsNotNone(out["sent_to_kitchen_at"])
+		for item in out["items"]:
+			self.assertEqual(item["line_status"], "Sent")
+			self.assertIsNotNone(item["sent_at"])
+
+	def test_send_to_kitchen_rejects_empty_order(self):
+		table = self._any_table()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		with self.assertRaises(frappe.ValidationError):
+			send_to_kitchen(order["name"])
+
+	def test_list_active_kots_returns_orders_in_kitchen_states(self):
+		table = self._any_table()
+		items = self._first_two_items()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		add_items(order["name"], [{"menu_item": items[0].name, "quantity": 1}])
+		send_to_kitchen(order["name"])
+		result = list_active_kots(self.outlet)
+		self.assertEqual(len(result["data"]["orders"]), 1)
+		self.assertEqual(result["data"]["orders"][0]["name"], order["name"])
+
+	def test_state_machine_marches_forward_correctly(self):
+		table = self._any_table()
+		items = self._first_two_items()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		add_items(order["name"], [{"menu_item": items[0].name, "quantity": 1}])
+		send_to_kitchen(order["name"])
+
+		mark_kot_status(order["name"], "Preparing")
+		self.assertEqual(get_order(order["name"])["data"]["order"]["state"], "Preparing")
+
+		mark_kot_status(order["name"], "Ready")
+		out = get_order(order["name"])["data"]["order"]
+		self.assertEqual(out["state"], "Ready")
+		self.assertIsNotNone(out["ready_at"])
+
+		mark_kot_status(order["name"], "Served")
+		out = get_order(order["name"])["data"]["order"]
+		self.assertEqual(out["state"], "Served")
+		self.assertIsNotNone(out["served_at"])
+
+	def test_invalid_transitions_are_rejected(self):
+		table = self._any_table()
+		items = self._first_two_items()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		add_items(order["name"], [{"menu_item": items[0].name, "quantity": 1}])
+		# Draft → Ready is not allowed.
+		with self.assertRaises(frappe.ValidationError):
+			mark_kot_status(order["name"], "Ready")
+
+	def test_close_walk_in_creates_sales_invoice_and_settles(self):
+		table = self._any_table()
+		items = self._first_two_items()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		add_items(order["name"], [{"menu_item": items[0].name, "quantity": 2}])
+		send_to_kitchen(order["name"])
+		mark_kot_status(order["name"], "Preparing")
+		mark_kot_status(order["name"], "Ready")
+		mark_kot_status(order["name"], "Served")
+
+		order_state = get_order(order["name"])["data"]["order"]
+		order_grand_total = order_state["grand_total"]
+		result = close_walk_in(order["name"], payments=[{"mode_of_payment": "Cash", "amount": order_grand_total}])
+
+		self.assertEqual(result["data"]["order"]["state"], "Settled")
+		self.assertIsNotNone(result["data"]["sales_invoice"])
+		self.assertIsNotNone(result["data"]["payment_entry"])
+		# SI is submitted; SI grand_total = subtotal + tax (service charge is not
+		# on the SI in Slice 4 — it's added in Slice 5). SI grand_total should
+		# always be <= order.grand_total.
+		si_doc = frappe.get_doc("Sales Invoice", result["data"]["sales_invoice"])
+		self.assertEqual(si_doc.docstatus, 1)
+		self.assertLessEqual(flt(si_doc.grand_total), flt(order_grand_total) + 1)
+
+	def test_close_walk_in_is_idempotent(self):
+		table = self._any_table()
+		items = self._first_two_items()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		add_items(order["name"], [{"menu_item": items[0].name, "quantity": 1}])
+		send_to_kitchen(order["name"])
+		mark_kot_status(order["name"], "Preparing")
+		mark_kot_status(order["name"], "Ready")
+		mark_kot_status(order["name"], "Served")
+		grand_total = get_order(order["name"])["data"]["order"]["grand_total"]
+		r1 = close_walk_in(order["name"], payments=[{"mode_of_payment": "Cash", "amount": grand_total}])
+		r2 = close_walk_in(order["name"])
+		self.assertEqual(r1["data"]["order"]["erpnext_sales_invoice"], r2["data"]["order"]["erpnext_sales_invoice"])
+		self.assertTrue(r2["data"]["reused"])
+
+	def test_cancel_order(self):
+		table = self._any_table()
+		items = self._first_two_items()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		add_items(order["name"], [{"menu_item": items[0].name, "quantity": 1}])
+		result = cancel_order(order["name"], reason="Guest walked out")
+		self.assertEqual(result["data"]["order"]["state"], "Cancelled")
+
+	def test_list_orders_by_state_filter(self):
+		table = self._any_table()
+		items = self._first_two_items()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		add_items(order["name"], [{"menu_item": items[0].name, "quantity": 1}])
+		# Draft filter
+		drafts = list_orders_by_state(self.outlet, states=["Draft"])["data"]["orders"]
+		self.assertEqual(len(drafts), 1)
+		# Send + filter should now show empty Drafts
+		send_to_kitchen(order["name"])
+		drafts_after = list_orders_by_state(self.outlet, states=["Draft"])["data"]["orders"]
+		self.assertEqual(len(drafts_after), 0)
+		sent_after = list_orders_by_state(self.outlet, states=["Sent to Kitchen"])["data"]["orders"]
+		self.assertEqual(len(sent_after), 1)

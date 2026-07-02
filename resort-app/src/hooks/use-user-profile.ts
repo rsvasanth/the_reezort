@@ -43,11 +43,11 @@ export function defaultLandingRoute(profile: UserProfile | null): string {
  */
 const ROLE_SIDEBAR: Record<string, string[]> = {
 	"Front Desk": ["Executive cockpit", "Reservations", "Front desk", "Housekeeping", "All tasks", "Billing", "Service desk", "Maintenance"],
-	"Reservation Agent": ["Executive cockpit", "Reservations", "Front desk", "Billing"],
+	"Reservation Agent": ["Executive cockpit", "Reservations", "Front desk", "Billing", "Integrations"],
 	Housekeeping: ["Executive cockpit", "Housekeeping", "My tasks", "Service desk"],
 	Maintenance: ["Executive cockpit", "My tasks", "Service desk", "Housekeeping", "Maintenance"],
 	"Accounts User": ["Executive cockpit", "Billing", "Reservations", "Front desk"],
-	"Accounts Manager": ["Executive cockpit", "Billing", "Reservations", "Front desk", "Analytics"],
+	"Accounts Manager": ["Executive cockpit", "Billing", "Reservations", "Front desk", "Analytics", "Integrations"],
 	Restaurant: ["Executive cockpit", "Restaurant & bar"],
 	Concierge: ["Executive cockpit", "Concierge", "Front desk", "Reservations"],
 	"Analytics User": ["Executive cockpit", "Analytics"],

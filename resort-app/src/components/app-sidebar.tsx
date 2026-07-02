@@ -64,7 +64,7 @@ const system: NavItem[] = [
 	{ title: "Approvals", url: "/resort-app#/approvals", icon: ShieldCheckIcon, status: "live" },
 	{ title: "Audit trail", url: "/resort-app#/audit", icon: DatabaseIcon, status: "live" },
 	{ title: "ERPNext desk", url: "/app", icon: DatabaseIcon, status: "live" },
-	{ title: "Integrations", url: "#", icon: PlugIcon, status: "soon" },
+	{ title: "Integrations", url: "/resort-app#/integrations/ota-inbox", icon: PlugIcon, status: "live" },
 ];
 
 type ActiveFolio = { name: string; guest: string; room: string | null };

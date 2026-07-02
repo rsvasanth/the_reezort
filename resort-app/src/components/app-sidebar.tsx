@@ -48,7 +48,7 @@ const operations: NavItem[] = [
 	{ title: "My tasks", url: "/resort-app#/my-tasks", icon: ListChecksIcon, status: "live" },
 	{ title: "All tasks", url: "/resort-app#/tasks", icon: ClipboardListIcon, status: "live" },
 	{ title: "Billing", url: "/resort-app#/billing", icon: ReceiptTextIcon, status: "live" },
-	{ title: "Restaurant & bar", url: "#", icon: UtensilsIcon, status: "soon" },
+	{ title: "Restaurant & bar", url: "/resort-app#/restaurant", icon: UtensilsIcon, status: "live" },
 	{ title: "Maintenance", url: "#", icon: WrenchIcon, status: "soon" },
 	{ title: "Concierge", url: "#", icon: BellIcon, status: "soon" },
 	{ title: "Service desk", url: "/resort-app#/servicedesk", icon: LifeBuoyIcon, status: "live" },

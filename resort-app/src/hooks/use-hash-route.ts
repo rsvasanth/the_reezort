@@ -8,6 +8,9 @@ import { useEffect, useState } from "react";
  *   #/housekeeping        → housekeeping board
  *   #/setup               → property setup wizard
  *   #/condition/<stay>    → room condition capture for a stay
+ *   #/restaurant          → restaurant POS floor plan
+ *   #/restaurant/table/<order> → order detail / cart
+ *   #/restaurant/kitchen  → KOT kitchen queue
  *   (anything else)       → dashboard
  */
 export function useHashRoute(): string {
@@ -47,6 +50,9 @@ export type ParsedRoute =
 	| { kind: "floor"; code: string | null }
 	| { kind: "approvals" }
 	| { kind: "audit" }
+	| { kind: "restaurant" }
+	| { kind: "restaurant-table"; order: string | null }
+	| { kind: "restaurant-kitchen" }
 	| { kind: "condition"; stay: string | null };
 
 export function parseHashRoute(hash: string): ParsedRoute {
@@ -93,6 +99,15 @@ export function parseHashRoute(hash: string): ParsedRoute {
 	if (bldMatch) return { kind: "building", code: bldMatch[1] ? decodeURIComponent(bldMatch[1]) : null };
 	const floorMatch = path.match(/^\/floor(?:\/(.*))?$/);
 	if (floorMatch) return { kind: "floor", code: floorMatch[1] ? decodeURIComponent(floorMatch[1]) : null };
+
+	// Restaurant POS — order matters: kitchen + table before the bare outlet route.
+	if (path === "/restaurant/kitchen") return { kind: "restaurant-kitchen" };
+	const tableMatch = path.match(/^\/restaurant\/table(?:\/(.*))?$/);
+	if (tableMatch) {
+		const order = tableMatch[1];
+		return { kind: "restaurant-table", order: order ? decodeURIComponent(order) : null };
+	}
+	if (path === "/restaurant") return { kind: "restaurant" };
 
 	const checkinMatch = path.match(/^\/check-in(?:\/(.*))?$/);
 	if (checkinMatch) {

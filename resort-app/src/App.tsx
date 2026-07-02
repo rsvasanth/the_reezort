@@ -33,6 +33,9 @@ import ServiceDeskScreen from "@/app/servicedesk/ServiceDeskScreen";
 import BillingOverviewScreen from "@/app/billing/BillingOverviewScreen";
 import FrontDeskScreen from "@/app/frontdesk/FrontDeskScreen";
 import ReservationsScreen from "@/app/reservations/ReservationsScreen";
+import RestaurantFloor from "@/app/restaurant/RestaurantFloor";
+import TableOrderScreen from "@/app/restaurant/TableOrderScreen";
+import KitchenScreen from "@/app/restaurant/KitchenScreen";
 import { parseHashRoute, useHashRoute } from "@/hooks/use-hash-route";
 import { canAccessDesk, defaultLandingRoute, useUserProfile } from "@/hooks/use-user-profile";
 import { useVersionCheck } from "@/hooks/use-version-check";
@@ -269,6 +272,30 @@ function AuthGate() {
 		return (
 			<AppShell>
 				<ReservationsScreen id={route.id} />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "restaurant") {
+		return (
+			<AppShell>
+				<RestaurantFloor />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "restaurant-table") {
+		return (
+			<AppShell>
+				<TableOrderScreen order={route.order} />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "restaurant-kitchen") {
+		return (
+			<AppShell>
+				<KitchenScreen />
 			</AppShell>
 		);
 	}

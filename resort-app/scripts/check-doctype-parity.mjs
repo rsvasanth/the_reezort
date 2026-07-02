@@ -41,6 +41,11 @@ const CONTRACTS = [
 	{ file: "folio-api.ts", type: "LineStatus", doctype: "folio_line", field: "line_status" },
 	{ file: "folio-api.ts", type: "TaxTreatment", doctype: "folio_line", field: "tax_treatment" },
 	{ file: "folio-api.ts", type: "SourceModule", doctype: "folio_line", field: "source_module" },
+	// restaurant-api.ts ↔ Restaurant Order / Restaurant Order Item / Restaurant Table
+	{ file: "restaurant-api.ts", type: "RestaurantOrderState", doctype: "restaurant_order", field: "state" },
+	{ file: "restaurant-api.ts", type: "KitchenSection", doctype: "restaurant_order", field: "kitchen_section" },
+	{ file: "restaurant-api.ts", type: "RestaurantOrderItemLineStatus", doctype: "restaurant_order_item", field: "line_status" },
+	{ file: "restaurant-api.ts", type: "RestaurantTableZone", doctype: "restaurant_table", field: "zone" },
 ];
 
 function doctypeOptions(doctype, field) {

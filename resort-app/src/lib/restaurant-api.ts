@@ -14,6 +14,17 @@
 
 import { FolioApiError } from "@/lib/folio-api";
 import type { FolioApiEnvelope, FolioMessage } from "@/lib/folio-api";
+import type { FnbOutlet } from "@/lib/fnb-api";
+
+/**
+ * The dine-in outlet a table/KOT screen should open on. In-Room Dining is a
+ * virtual outlet (no tables — orders route through the folio IRD sheet), so
+ * the POS floor plan must not default to it even though it's `is_default`.
+ * Prefer the first non-IRD outlet; fall back to the first outlet.
+ */
+export function pickDineInOutlet(outlets: FnbOutlet[]): FnbOutlet | undefined {
+	return outlets.find((o) => o.outlet_type !== "IRD") ?? outlets[0];
+}
 
 // ---------- doctype-mirrored unions (parity-guarded) ----------
 

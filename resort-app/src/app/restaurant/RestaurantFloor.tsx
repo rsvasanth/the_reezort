@@ -28,6 +28,7 @@ import {
 	MOCK_TABLES,
 	listTables,
 	openWalkInOrder,
+	pickDineInOutlet,
 	type RestaurantTable,
 } from "@/lib/restaurant-api";
 
@@ -46,7 +47,7 @@ export default function RestaurantFloor() {
 		listOutlets()
 			.then((res) => {
 				setOutlets(res.outlets);
-				const def = res.outlets.find((o) => o.is_default === 1) ?? res.outlets[0];
+				const def = pickDineInOutlet(res.outlets);
 				if (def) setOutlet(def.name);
 				else setState("mock");
 			})
@@ -65,8 +66,14 @@ export default function RestaurantFloor() {
 				setState("live");
 			})
 			.catch((error: unknown) => {
-				if (error instanceof FolioApiError && error.status >= 400 && error.status < 500) {
+				// A live server that errors (bad outlet, permission) gets an empty
+				// live floor + a toast — NOT fake mock tables. Only a true network
+				// failure (no FolioApiError) falls back to the dev fixtures.
+				if (error instanceof FolioApiError) {
 					toast.error("Could not load tables", { description: error.blockers[0]?.message ?? error.message });
+					setTables([]);
+					setState("live");
+					return;
 				}
 				setTables(MOCK_TABLES);
 				setState("mock");
@@ -147,6 +154,11 @@ export default function RestaurantFloor() {
 			{state === "loading" ? (
 				<div className="flex items-center gap-2 py-10 text-sm text-muted-foreground">
 					<Loader2 className="size-4 animate-spin" /> Loading floor…
+				</div>
+			) : tables.length === 0 ? (
+				<div className="flex flex-col items-center gap-2 rounded-xl border border-dashed py-16 text-center">
+					<Users className="size-7 text-muted-foreground/50" />
+					<p className="text-sm text-muted-foreground">No tables in this outlet. Pick another outlet above.</p>
 				</div>
 			) : (
 				<div className="flex flex-col gap-7">

@@ -28,6 +28,7 @@ import {
 	MOCK_KOTS,
 	listActiveKots,
 	markKotStatus,
+	pickDineInOutlet,
 	type RestaurantOrder,
 } from "@/lib/restaurant-api";
 
@@ -48,7 +49,7 @@ export default function KitchenScreen() {
 		listOutlets()
 			.then((res) => {
 				setOutlets(res.outlets);
-				const def = res.outlets.find((o) => o.is_default === 1) ?? res.outlets[0];
+				const def = pickDineInOutlet(res.outlets);
 				if (def) setOutlet(def.name);
 			})
 			.catch(() => {
@@ -65,7 +66,14 @@ export default function KitchenScreen() {
 				setOrders(res.orders);
 				setState("live");
 			})
-			.catch(() => {
+			.catch((error: unknown) => {
+				// Live server error → empty queue, not fake tickets; only a network
+				// failure falls back to the dev fixtures.
+				if (error instanceof FolioApiError) {
+					setOrders([]);
+					setState("live");
+					return;
+				}
 				setOrders(MOCK_KOTS);
 				setState("mock");
 			});

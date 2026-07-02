@@ -1,12 +1,12 @@
 /**
- * RoomGallery — bento tiles with lightbox. Height-capped so a tall source
- * image never explodes the layout — the container is a fixed aspect on
- * desktop (16:9) and hero-with-strip on mobile.
+ * RoomGallery — compact tile strip with lightbox. Absolute-height flex
+ * layout (no CSS-grid + aspect games) so the container is literally
+ * pinned at 320px tall on desktop. Never grows with the source image.
  */
 
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronLeft, ChevronRight, ImageIcon, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImageIcon, Maximize2, X } from "lucide-react";
 
 import { staggerContainer, staggerItem, EASE_OUT } from "@/lib/motion";
 import type { GalleryItem } from "@/lib/timeline-api";
@@ -25,7 +25,7 @@ export function RoomGallery({ items, roomLabel = "Villa" }: Props) {
 
 	if (!hero) {
 		return (
-			<div className="flex aspect-[3/1] w-full items-center justify-center rounded-lg border bg-muted/40 text-sm text-muted-foreground">
+			<div className="flex h-40 w-full items-center justify-center rounded-lg border bg-muted/40 text-sm text-muted-foreground">
 				<ImageIcon className="mr-2 size-4" /> No renders yet — seed villa images to populate.
 			</div>
 		);
@@ -33,23 +33,22 @@ export function RoomGallery({ items, roomLabel = "Villa" }: Props) {
 
 	function openAt(index: number) { setLightboxAt(index); }
 
-	// The whole gallery is a single 16:9 box on desktop (≈420px tall at
-	// 1440 wide) — never grows with the source image. On mobile it's a
-	// stacked hero-then-2×2.
 	return (
 		<>
+			{/* Desktop: 1 hero (2/3 width) + 3 stacked tiles (1/3 width), h-80.
+			    Mobile: stacked hero on top + 2x2 grid below, both height-capped. */}
 			<motion.div
-				className="grid grid-cols-1 gap-2 md:grid-cols-3 md:aspect-[16/9]"
+				className="flex flex-col gap-2 md:h-80 md:flex-row"
 				variants={staggerContainer}
 				initial="hidden"
 				animate="show"
 				data-testid="room-gallery"
 			>
-				{/* Hero tile — 2 cols on md+, capped by parent aspect. */}
+				{/* Hero */}
 				<motion.button
 					variants={staggerItem}
 					onClick={() => openAt(0)}
-					className="group relative col-span-1 aspect-[4/3] overflow-hidden rounded-lg border md:col-span-2 md:aspect-auto md:h-full"
+					className="group relative h-48 overflow-hidden rounded-lg border md:h-full md:flex-[2]"
 					aria-label={`Open ${hero.caption} in gallery`}
 					data-testid="hero-tile"
 				>
@@ -59,13 +58,14 @@ export function RoomGallery({ items, roomLabel = "Villa" }: Props) {
 						className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
 					/>
 					<div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-					<div className="pointer-events-none absolute bottom-3 left-3 rounded-md bg-black/50 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+					<div className="pointer-events-none absolute bottom-2 left-2 flex items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-xs text-white">
+						<Maximize2 className="size-3" />
 						{hero.caption}
 					</div>
 				</motion.button>
 
-				{/* Side tiles — 3 stacked on md+, 2×2 grid below hero on mobile. */}
-				<div className="col-span-1 grid grid-cols-2 gap-2 md:h-full md:grid-cols-1 md:grid-rows-3">
+				{/* Side tiles */}
+				<div className="grid grid-cols-2 gap-2 md:flex md:h-full md:flex-1 md:flex-col">
 					{side.map((g, i) => {
 						const isLast = i === side.length - 1 && extraCount > 0;
 						return (
@@ -73,7 +73,7 @@ export function RoomGallery({ items, roomLabel = "Villa" }: Props) {
 								key={g.image}
 								variants={staggerItem}
 								onClick={() => openAt(i + 1)}
-								className="group relative overflow-hidden rounded-lg border aspect-[4/3] md:aspect-auto md:h-full md:min-h-0"
+								className="group relative h-28 overflow-hidden rounded-lg border md:h-0 md:flex-1"
 								aria-label={`Open ${g.caption}`}
 								data-testid={`tile-${i + 1}`}
 							>
@@ -91,11 +91,10 @@ export function RoomGallery({ items, roomLabel = "Villa" }: Props) {
 							</motion.button>
 						);
 					})}
-					{/* Fill blanks so grid stays even */}
 					{Array.from({ length: Math.max(0, 3 - side.length) }).map((_, i) => (
 						<div
 							key={`blank-${i}`}
-							className="hidden aspect-[4/3] rounded-lg border border-dashed bg-muted/40 md:block md:aspect-auto md:h-full md:min-h-0"
+							className="hidden h-28 rounded-lg border border-dashed bg-muted/40 md:block md:h-0 md:flex-1"
 							aria-hidden
 						/>
 					))}

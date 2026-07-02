@@ -37,6 +37,7 @@ import RestaurantFloor from "@/app/restaurant/RestaurantFloor";
 import TableOrderScreen from "@/app/restaurant/TableOrderScreen";
 import KitchenScreen from "@/app/restaurant/KitchenScreen";
 import MaintenanceInbox from "@/app/maintenance/MaintenanceInbox";
+import RevenueDashboard from "@/app/analytics/RevenueDashboard";
 import { parseHashRoute, useHashRoute } from "@/hooks/use-hash-route";
 import { canAccessDesk, defaultLandingRoute, useUserProfile } from "@/hooks/use-user-profile";
 import { useVersionCheck } from "@/hooks/use-version-check";
@@ -305,6 +306,14 @@ function AuthGate() {
 		return (
 			<AppShell>
 				<MaintenanceInbox />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "analytics-revenue") {
+		return (
+			<AppShell>
+				<RevenueDashboard />
 			</AppShell>
 		);
 	}

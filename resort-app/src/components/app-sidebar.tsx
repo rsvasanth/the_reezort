@@ -54,7 +54,7 @@ const operations: NavItem[] = [
 	{ title: "Service desk", url: "/resort-app#/servicedesk", icon: LifeBuoyIcon, status: "live" },
 	{ title: "Banquets & events", url: "#", icon: PartyPopperIcon, status: "soon" },
 	{ title: "CRM & loyalty", url: "#", icon: HeartHandshakeIcon, status: "soon" },
-	{ title: "Analytics", url: "#", icon: BarChartIcon, status: "soon" },
+	{ title: "Analytics", url: "/resort-app#/analytics/revenue", icon: BarChartIcon, status: "live" },
 ];
 
 const system: NavItem[] = [

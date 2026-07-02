@@ -47,9 +47,10 @@ const ROLE_SIDEBAR: Record<string, string[]> = {
 	Housekeeping: ["Executive cockpit", "Housekeeping", "My tasks", "Service desk"],
 	Maintenance: ["Executive cockpit", "My tasks", "Service desk", "Housekeeping", "Maintenance"],
 	"Accounts User": ["Executive cockpit", "Billing", "Reservations", "Front desk"],
-	"Accounts Manager": ["Executive cockpit", "Billing", "Reservations", "Front desk"],
+	"Accounts Manager": ["Executive cockpit", "Billing", "Reservations", "Front desk", "Analytics"],
 	Restaurant: ["Executive cockpit", "Restaurant & bar"],
 	Concierge: ["Executive cockpit", "Concierge", "Front desk", "Reservations"],
+	"Analytics User": ["Executive cockpit", "Analytics"],
 };
 
 /** Returns the set of sidebar titles a user may see — null = everything (managers). */

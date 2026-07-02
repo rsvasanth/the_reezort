@@ -11,7 +11,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Loader2, Search, Send } from "lucide-react";
+import { ArrowLeft, Loader2, Lock, Search, Send } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -184,44 +184,55 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 			</div>
 
 			<div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_23rem]">
-				{/* Menu grid */}
+				{/* Menu grid — hidden once the order is closed (Settled / Cancelled),
+				    so a closed order shows a clear banner instead of 86'ing every dish. */}
 				<div className="flex flex-col gap-3">
-					<div className="flex flex-col gap-2">
-						<div className="relative">
-							<Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-							<Input className="pl-8" placeholder="Search the menu…" value={search} onChange={(e) => setSearch(e.target.value)} data-testid="menu-search" />
-						</div>
-						<div className="flex flex-wrap gap-1">
-							<Button size="sm" variant={category === "__all" ? "default" : "outline"} className="h-7 px-2.5 text-xs" onClick={() => setCategory("__all")}>All</Button>
-							{categories.map((c) => (
-								<Button key={c} size="sm" variant={category === c ? "default" : "outline"} className="h-7 px-2.5 text-xs" onClick={() => setCategory(c)}>{c}</Button>
-							))}
-						</div>
-					</div>
-
-					{items.length === 0 ? (
-						<div className="rounded-xl border border-dashed p-10 text-center text-sm text-muted-foreground">
-							No menu items for this outlet.
+					{!canAdd ? (
+						<div className="flex flex-col items-center gap-2 rounded-xl border border-dashed py-16 text-center">
+							<Lock className="size-6 text-muted-foreground/50" />
+							<p className="text-sm text-muted-foreground">
+								This order is {order.state.toLowerCase()} — no further items can be added.
+							</p>
 						</div>
 					) : (
-						<motion.div
-							className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
-							variants={staggerContainer}
-							initial="hidden"
-							animate="show"
-						>
-							{filtered.map((item) => (
-								<motion.div key={item.name} variants={staggerItem}>
-									<MenuItemCard
-										item={item}
-										qty={basket[item.name] ?? 0}
-										onAdd={() => canAdd && bump(item.name, 1)}
-										onRemove={() => bump(item.name, -1)}
-										unavailable={!canAdd}
-									/>
+						<>
+							<div className="flex flex-col gap-2">
+								<div className="relative">
+									<Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+									<Input className="pl-8" placeholder="Search the menu…" value={search} onChange={(e) => setSearch(e.target.value)} data-testid="menu-search" />
+								</div>
+								<div className="flex flex-wrap gap-1">
+									<Button size="sm" variant={category === "__all" ? "default" : "outline"} className="h-7 px-2.5 text-xs" onClick={() => setCategory("__all")}>All</Button>
+									{categories.map((c) => (
+										<Button key={c} size="sm" variant={category === c ? "default" : "outline"} className="h-7 px-2.5 text-xs" onClick={() => setCategory(c)}>{c}</Button>
+									))}
+								</div>
+							</div>
+
+							{items.length === 0 ? (
+								<div className="rounded-xl border border-dashed p-10 text-center text-sm text-muted-foreground">
+									No menu items for this outlet.
+								</div>
+							) : (
+								<motion.div
+									className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+									variants={staggerContainer}
+									initial="hidden"
+									animate="show"
+								>
+									{filtered.map((item) => (
+										<motion.div key={item.name} variants={staggerItem}>
+											<MenuItemCard
+												item={item}
+												qty={basket[item.name] ?? 0}
+												onAdd={() => bump(item.name, 1)}
+												onRemove={() => bump(item.name, -1)}
+											/>
+										</motion.div>
+									))}
 								</motion.div>
-							))}
-						</motion.div>
+							)}
+						</>
 					)}
 				</div>
 
@@ -263,23 +274,25 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 						</div>
 					) : null}
 
-					<div className="h-[26rem]">
-						<ItemCartRail
-							items={items}
-							basket={basket}
-							onAdd={(n) => bump(n, 1)}
-							onRemove={(n) => bump(n, -1)}
-							onClear={() => setBasket({})}
-							submitLabel={busy ? "Sending…" : "Send to kitchen"}
-							onSubmit={sendRound}
-							submitting={busy}
-							footerSlot={
-								<div className="mb-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-									<Send className="size-3" /> New items dispatch as a fresh KOT round.
-								</div>
-							}
-						/>
-					</div>
+					{canAdd ? (
+						<div className="h-[26rem]">
+							<ItemCartRail
+								items={items}
+								basket={basket}
+								onAdd={(n) => bump(n, 1)}
+								onRemove={(n) => bump(n, -1)}
+								onClear={() => setBasket({})}
+								submitLabel={busy ? "Sending…" : "Send to kitchen"}
+								onSubmit={sendRound}
+								submitting={busy}
+								footerSlot={
+									<div className="mb-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+										<Send className="size-3" /> New items dispatch as a fresh KOT round.
+									</div>
+								}
+							/>
+						</div>
+					) : null}
 				</div>
 			</div>
 		</main>

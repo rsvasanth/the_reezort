@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
  *   #/restaurant          → restaurant POS floor plan
  *   #/restaurant/table/<order> → order detail / cart
  *   #/restaurant/kitchen  → KOT kitchen queue
+ *   #/restaurant/management → F&B management hub (sales / calendar / dishes / shifts / audit)
  *   (anything else)       → dashboard
  */
 export function useHashRoute(): string {
@@ -53,6 +54,7 @@ export type ParsedRoute =
 	| { kind: "restaurant" }
 	| { kind: "restaurant-table"; order: string | null }
 	| { kind: "restaurant-kitchen" }
+	| { kind: "restaurant-management" }
 	| { kind: "maintenance" }
 	| { kind: "analytics-revenue" }
 	| { kind: "ota-inbox" }
@@ -103,8 +105,9 @@ export function parseHashRoute(hash: string): ParsedRoute {
 	const floorMatch = path.match(/^\/floor(?:\/(.*))?$/);
 	if (floorMatch) return { kind: "floor", code: floorMatch[1] ? decodeURIComponent(floorMatch[1]) : null };
 
-	// Restaurant POS — order matters: kitchen + table before the bare outlet route.
+	// Restaurant POS — order matters: kitchen + management + table before the bare outlet route.
 	if (path === "/restaurant/kitchen") return { kind: "restaurant-kitchen" };
+	if (path === "/restaurant/management") return { kind: "restaurant-management" };
 	const tableMatch = path.match(/^\/restaurant\/table(?:\/(.*))?$/);
 	if (tableMatch) {
 		const order = tableMatch[1];

@@ -36,6 +36,7 @@ import ReservationsScreen from "@/app/reservations/ReservationsScreen";
 import RestaurantFloor from "@/app/restaurant/RestaurantFloor";
 import TableOrderScreen from "@/app/restaurant/TableOrderScreen";
 import KitchenScreen from "@/app/restaurant/KitchenScreen";
+import RestaurantManagementScreen from "@/app/restaurant/management/RestaurantManagementScreen";
 import MaintenanceInbox from "@/app/maintenance/MaintenanceInbox";
 import RevenueDashboard from "@/app/analytics/RevenueDashboard";
 import OtaInbox from "@/app/integrations/OtaInbox";
@@ -299,6 +300,14 @@ function AuthGate() {
 		return (
 			<AppShell>
 				<KitchenScreen />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "restaurant-management") {
+		return (
+			<AppShell>
+				<RestaurantManagementScreen />
 			</AppShell>
 		);
 	}

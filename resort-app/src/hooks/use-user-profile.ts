@@ -48,7 +48,7 @@ const ROLE_SIDEBAR: Record<string, string[]> = {
 	Maintenance: ["Executive cockpit", "My tasks", "Service desk", "Housekeeping", "Maintenance"],
 	"Accounts User": ["Executive cockpit", "Billing", "Reservations", "Front desk"],
 	"Accounts Manager": ["Executive cockpit", "Billing", "Reservations", "Front desk", "Analytics", "Integrations"],
-	Restaurant: ["Executive cockpit", "Restaurant & bar"],
+	Restaurant: ["Executive cockpit", "Restaurant & bar", "Restaurant mgmt"],
 	Concierge: ["Executive cockpit", "Concierge", "Front desk", "Reservations"],
 	"Analytics User": ["Executive cockpit", "Analytics"],
 };

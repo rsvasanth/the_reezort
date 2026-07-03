@@ -46,6 +46,8 @@ const CONTRACTS = [
 	{ file: "restaurant-api.ts", type: "KitchenSection", doctype: "restaurant_order", field: "kitchen_section" },
 	{ file: "restaurant-api.ts", type: "RestaurantOrderItemLineStatus", doctype: "restaurant_order_item", field: "line_status" },
 	{ file: "restaurant-api.ts", type: "RestaurantTableZone", doctype: "restaurant_table", field: "zone" },
+	// restaurant-management-api.ts ↔ Waiter Assignment
+	{ file: "restaurant-management-api.ts", type: "WaiterAssignmentStatus", doctype: "waiter_assignment", field: "status" },
 	// maintenance-api.ts ↔ Maintenance Ticket
 	{ file: "maintenance-api.ts", type: "MaintenanceState", doctype: "maintenance_ticket", field: "state" },
 	{ file: "maintenance-api.ts", type: "MaintenanceCategory", doctype: "maintenance_ticket", field: "category" },

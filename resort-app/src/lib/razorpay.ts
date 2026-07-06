@@ -95,7 +95,7 @@ export async function openRazorpayCheckout(input: {
 				email: input.guestEmail ?? undefined,
 				contact: input.guestPhone ?? undefined,
 			},
-			theme: { color: "#0f172a" },
+			theme: { color: "#292622" },
 			handler: (response) => {
 				resolve({
 					order_id: response.razorpay_order_id,

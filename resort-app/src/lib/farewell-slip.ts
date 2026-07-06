@@ -41,7 +41,7 @@ export async function printFarewellSlip(ctx: FarewellContext): Promise<void> {
 	const M = 8;
 
 	// ---------- header brand strip ----------
-	doc.setFillColor(15, 23, 42); // slate-900
+	doc.setFillColor(41, 38, 34); // warm ink
 	doc.rect(0, 0, W, 16, "F");
 	doc.setTextColor(255);
 	doc.setFont("helvetica", "bold");
@@ -51,7 +51,7 @@ export async function printFarewellSlip(ctx: FarewellContext): Promise<void> {
 	doc.setFontSize(7);
 	doc.text(ctx.property, W / 2, 12.5, { align: "center" });
 
-	doc.setTextColor(15, 23, 42);
+	doc.setTextColor(41, 38, 34);
 
 	// ---------- thank-you note ----------
 	let y = 24;
@@ -63,7 +63,7 @@ export async function printFarewellSlip(ctx: FarewellContext): Promise<void> {
 	y += 8;
 	doc.setFont("helvetica", "bold");
 	doc.setFontSize(16);
-	doc.setTextColor(15, 23, 42);
+	doc.setTextColor(41, 38, 34);
 	// Wrap long names.
 	const nameLines = doc.splitTextToSize(ctx.guest.name, W - 2 * M);
 	doc.text(nameLines, W / 2, y, { align: "center" });
@@ -84,7 +84,7 @@ export async function printFarewellSlip(ctx: FarewellContext): Promise<void> {
 	y += 5;
 	doc.setFont("helvetica", "bold");
 	doc.setFontSize(10);
-	doc.setTextColor(15, 23, 42);
+	doc.setTextColor(41, 38, 34);
 	doc.text(ctx.stay.current_room ?? "—", M, y);
 	doc.text(`${fmtDate(ctx.stay.arrival_date)} → ${fmtDate(ctx.stay.departure_date)}`, M + 40, y);
 	doc.text(String(ctx.stay.nights ?? "—"), W - M, y, { align: "right" });
@@ -139,12 +139,12 @@ export async function printFarewellSlip(ctx: FarewellContext): Promise<void> {
 	}
 
 	// ---------- Farewell footer ----------
-	doc.setFillColor(248, 250, 252);
+	doc.setFillColor(251, 249, 245);
 	doc.rect(0, H - 22, W, 22, "F");
 
 	doc.setFont("helvetica", "italic");
 	doc.setFontSize(9);
-	doc.setTextColor(15, 23, 42);
+	doc.setTextColor(41, 38, 34);
 	doc.text("Safe travels — we can’t wait to welcome you back.", W / 2, H - 15, { align: "center" });
 
 	doc.setFont("helvetica", "normal");

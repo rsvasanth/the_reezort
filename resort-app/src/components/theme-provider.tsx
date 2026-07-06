@@ -12,7 +12,7 @@ type ThemeProviderState = {
 const storageKey = "the-reezort-ui-theme";
 
 const initialState: ThemeProviderState = {
-	theme: "dark",
+	theme: "light",
 	setTheme: () => null,
 };
 
@@ -39,7 +39,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 			return storedTheme;
 		}
 
-		return "dark";
+		return "light";
 	});
 
 	React.useEffect(() => {

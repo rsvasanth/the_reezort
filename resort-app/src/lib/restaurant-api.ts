@@ -15,6 +15,7 @@
 import { FolioApiError } from "@/lib/folio-api";
 import type { FolioApiEnvelope, FolioMessage } from "@/lib/folio-api";
 import type { FnbOutlet } from "@/lib/fnb-api";
+import { openRazorpayCheckout, type RazorpayOrder } from "@/lib/razorpay";
 
 // Outlet types that have physical tables (a walk-in POS floor). In-Room Dining
 // is a virtual outlet — its orders route through the folio IRD sheet, not a
@@ -282,7 +283,7 @@ export function markKotStatus(order: string, status: "Preparing" | "Ready" | "Se
 }
 
 export function closeWalkIn(order: string, payments?: SettlePaymentInput[]) {
-	return call<{ order: RestaurantOrder; sales_invoice: string; payment_entry: string }>(
+	return call<{ order: RestaurantOrder; sales_invoice: string; payment_entry: string; payment_entries: string[] }>(
 		"close_walk_in",
 		{ method: "POST", body: { order, payments } },
 	);
@@ -290,6 +291,62 @@ export function closeWalkIn(order: string, payments?: SettlePaymentInput[]) {
 
 export function cancelOrder(order: string, reason?: string) {
 	return call<{ order: RestaurantOrder }>("cancel_order", { method: "POST", body: { order, reason } });
+}
+
+// ---------- guest, room-charge, and Razorpay (POS payment sheet) ----------
+
+export function setOrderGuest(order: string, guest_name?: string, party_size?: number) {
+	return call<{ order: RestaurantOrder }>("set_order_guest", {
+		method: "POST",
+		body: { order, guest_name, party_size },
+	});
+}
+
+export type InHouseStay = {
+	name: string;
+	primary_guest_name: string | null;
+	current_room: string | null;
+	resort_property: string;
+};
+
+export function listInHouseStays(search?: string) {
+	return call<{ stays: InHouseStay[] }>("list_in_house_stays", { method: "GET", params: { search } });
+}
+
+export function postOrderToRoom(order: string, stay: string) {
+	return call<{ order: RestaurantOrder; guest_folio: string; folio_lines: string[] }>("post_order_to_room", {
+		method: "POST",
+		body: { order, stay },
+	});
+}
+
+/**
+ * Card / UPI at the POS: create a Razorpay order for the walk-in, open the
+ * checkout modal, and settle the order with the verified payment. The amount is
+ * re-derived from Razorpay server-side, never trusted from the client.
+ */
+export async function payWalkInViaRazorpay(input: {
+	order: string;
+	guestName?: string | null;
+}): Promise<{ order: RestaurantOrder }> {
+	const rzOrder = await call<RazorpayOrder>("create_restaurant_razorpay_order", {
+		method: "POST",
+		body: { order: input.order },
+	});
+	const result = await openRazorpayCheckout({
+		order: rzOrder,
+		guestName: input.guestName ?? undefined,
+		description: "Restaurant bill",
+	});
+	return call<{ order: RestaurantOrder }>("capture_restaurant_payment", {
+		method: "POST",
+		body: {
+			order: input.order,
+			razorpay_order_id: result.order_id,
+			razorpay_payment_id: result.payment_id,
+			razorpay_signature: result.signature,
+		},
+	});
 }
 
 export function getOrder(order: string) {

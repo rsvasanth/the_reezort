@@ -55,7 +55,7 @@ export function SignaturePad({
 		if (!ctx) return;
 		const [x, y] = point(e);
 		ctx.lineTo(x, y);
-		ctx.strokeStyle = "#111827";
+		ctx.strokeStyle = "#292622";
 		ctx.lineWidth = 2;
 		ctx.lineCap = "round";
 		ctx.stroke();

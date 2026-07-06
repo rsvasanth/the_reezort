@@ -26,11 +26,11 @@ import { listMenuItems, type MenuItem } from "@/lib/fnb-api";
 import {
 	MOCK_KOTS,
 	addItems,
-	closeWalkIn,
 	getOrder,
 	sendToKitchen,
 	type RestaurantOrder,
 } from "@/lib/restaurant-api";
+import { SettlePaymentSheet } from "@/components/fnb/settle-payment-sheet";
 
 import { lineStatusTone, orderStateTone } from "./restaurant-format";
 
@@ -46,6 +46,7 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 	const [search, setSearch] = useState("");
 	const [basket, setBasket] = useState<CartBasket>({});
 	const [busy, setBusy] = useState(false);
+	const [settleOpen, setSettleOpen] = useState(false);
 
 	const loadOrder = useCallback(() => {
 		if (!orderName) {
@@ -125,20 +126,6 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 		}
 	}
 
-	async function settle() {
-		if (!order || busy) return;
-		setBusy(true);
-		try {
-			const res = await closeWalkIn(order.name, [{ mode_of_payment: "Cash", amount: order.grand_total }]);
-			setOrder(res.order);
-			toast.success("Walk-in settled", { description: res.sales_invoice });
-		} catch (error) {
-			const msg = error instanceof FolioApiError ? error.blockers[0]?.message ?? error.message : String(error);
-			toast.error("Could not settle", { description: msg });
-		} finally {
-			setBusy(false);
-		}
-	}
 
 	if (state === "loading") {
 		return (
@@ -265,9 +252,13 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 							</div>
 							{canSettle ? (
 								<div className="p-3 pt-0">
-									<Button className="w-full" disabled={busy} onClick={settle} data-testid="order-settle">
-										{busy ? <Loader2 className="mr-1.5 size-4 animate-spin" /> : null}
-										Close &amp; settle (cash · {formatINR(order.grand_total)})
+									<Button
+										className="w-full"
+										disabled={busy}
+										onClick={() => setSettleOpen(true)}
+										data-testid="order-settle"
+									>
+										Settle bill · {formatINR(order.grand_total)}
 									</Button>
 								</div>
 							) : null}
@@ -295,6 +286,14 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 					) : null}
 				</div>
 			</div>
+			{order ? (
+				<SettlePaymentSheet
+					order={order}
+					open={settleOpen}
+					onOpenChange={setSettleOpen}
+					onSettled={(updated) => setOrder(updated)}
+				/>
+			) : null}
 		</main>
 	);
 }

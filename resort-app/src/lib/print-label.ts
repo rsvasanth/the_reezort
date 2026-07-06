@@ -57,7 +57,7 @@ export async function printStayLabel(ctx: LabelContext): Promise<void> {
 	const PAD = 12;
 
 	// ---------- Header band ----------
-	doc.setFillColor(15, 23, 42); // slate-900
+	doc.setFillColor(41, 38, 34); // warm ink
 	doc.rect(0, 0, W, 22, "F");
 	doc.setTextColor(255);
 	doc.setFont("helvetica", "bold");
@@ -77,7 +77,7 @@ export async function printStayLabel(ctx: LabelContext): Promise<void> {
 	doc.setFontSize(8);
 	doc.text(new Date(ctx.timestamp).toLocaleString(), W - PAD, 17, { align: "right" });
 
-	doc.setTextColor(15, 23, 42);
+	doc.setTextColor(41, 38, 34);
 
 	// ---------- QR code (top-right block) ----------
 	const qrPayload = JSON.stringify({
@@ -98,7 +98,7 @@ export async function printStayLabel(ctx: LabelContext): Promise<void> {
 	doc.setFontSize(7);
 	doc.setTextColor(120);
 	doc.text("Scan for full record", W - PAD - qrSize / 2, 28 + qrSize + 3, { align: "center" });
-	doc.setTextColor(15, 23, 42);
+	doc.setTextColor(41, 38, 34);
 
 	// ---------- Guest block ----------
 	let y = 34;
@@ -122,7 +122,7 @@ export async function printStayLabel(ctx: LabelContext): Promise<void> {
 	doc.text("ROOM", PAD, y);
 	doc.text("ARRIVAL", PAD + 40, y);
 	doc.text("DEPARTURE", PAD + 80, y);
-	doc.setTextColor(15, 23, 42);
+	doc.setTextColor(41, 38, 34);
 	doc.setFont("helvetica", "bold");
 	doc.setFontSize(13);
 	y += 6;
@@ -139,7 +139,7 @@ export async function printStayLabel(ctx: LabelContext): Promise<void> {
 	doc.setFontSize(8);
 	doc.setTextColor(120);
 	doc.text("Reservation", PAD, y);
-	doc.setTextColor(15, 23, 42);
+	doc.setTextColor(41, 38, 34);
 	doc.setFont("courier", "bold");
 	doc.text(ctx.reservation.name, PAD + 22, y);
 
@@ -147,7 +147,7 @@ export async function printStayLabel(ctx: LabelContext): Promise<void> {
 	doc.setFont("helvetica", "normal");
 	doc.setTextColor(120);
 	doc.text("Stay", PAD, y);
-	doc.setTextColor(15, 23, 42);
+	doc.setTextColor(41, 38, 34);
 	doc.setFont("courier", "bold");
 	doc.text(ctx.stay.name ?? "—", PAD + 22, y);
 
@@ -155,7 +155,7 @@ export async function printStayLabel(ctx: LabelContext): Promise<void> {
 	doc.setFont("helvetica", "normal");
 	doc.setTextColor(120);
 	doc.text("Folio", PAD, y);
-	doc.setTextColor(15, 23, 42);
+	doc.setTextColor(41, 38, 34);
 	doc.setFont("courier", "bold");
 	doc.text(ctx.folio.name, PAD + 22, y);
 
@@ -180,7 +180,7 @@ export async function printStayLabel(ctx: LabelContext): Promise<void> {
 	for (const [label, value] of rows) {
 		doc.setTextColor(80);
 		doc.text(label, PAD, y);
-		doc.setTextColor(15, 23, 42);
+		doc.setTextColor(41, 38, 34);
 		doc.setFont("helvetica", "bold");
 		doc.text(value, W - PAD, y, { align: "right" });
 		doc.setFont("helvetica", "normal");

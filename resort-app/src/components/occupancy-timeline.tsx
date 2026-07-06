@@ -30,7 +30,7 @@ const TASK_COLOR: Record<string, string> = {
 	"Maintenance Follow-up": "bg-rose-500/25 text-rose-700 dark:text-rose-300",
 	"Arrival Touch-up": "bg-indigo-500/25 text-indigo-700 dark:text-indigo-300",
 };
-const DEFAULT_TASK_COLOR = "bg-slate-500/25 text-slate-700 dark:text-slate-300";
+const DEFAULT_TASK_COLOR = "bg-stone-500/25 text-stone-700 dark:text-stone-300";
 
 function addDaysIso(iso: string, days: number): string {
 	const d = new Date(iso + "T00:00:00");

@@ -153,7 +153,9 @@ export async function uploadConditionPhoto(file: File): Promise<UploadedFile> {
 	const form = new FormData();
 	form.append("file", file, file.name);
 	form.append("is_private", "0");
-	form.append("folder", "Home/Room Condition");
+	// "Home" is the always-present root File folder. A custom subfolder must be
+	// created first or Frappe's upload_file throws a ValidationError (HTTP 417).
+	form.append("folder", "Home");
 
 	const response = await fetch(`${BASE}/upload_file`, {
 		method: "POST",

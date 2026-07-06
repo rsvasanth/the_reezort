@@ -42,12 +42,12 @@ export function defaultLandingRoute(profile: UserProfile | null): string {
  * Including extras beyond the must-haves keeps the shell discoverable.
  */
 const ROLE_SIDEBAR: Record<string, string[]> = {
-	"Front Desk": ["Executive cockpit", "Reservations", "Front desk", "Housekeeping", "All tasks", "Billing", "Service desk", "Maintenance"],
+	"Front Desk": ["Executive cockpit", "Reservations", "Front desk", "Housekeeping", "All tasks", "Billing", "Cashier close", "Service desk", "Maintenance"],
 	"Reservation Agent": ["Executive cockpit", "Reservations", "Front desk", "Billing", "Integrations"],
 	Housekeeping: ["Executive cockpit", "Housekeeping", "My tasks", "Service desk"],
 	Maintenance: ["Executive cockpit", "My tasks", "Service desk", "Housekeeping", "Maintenance"],
-	"Accounts User": ["Executive cockpit", "Billing", "Reservations", "Front desk"],
-	"Accounts Manager": ["Executive cockpit", "Billing", "Reservations", "Front desk", "Analytics", "Integrations"],
+	"Accounts User": ["Executive cockpit", "Billing", "Cashier close", "Reservations", "Front desk"],
+	"Accounts Manager": ["Executive cockpit", "Billing", "Cashier close", "Reservations", "Front desk", "Analytics", "Integrations"],
 	Restaurant: ["Executive cockpit", "Restaurant & bar", "Restaurant mgmt"],
 	Concierge: ["Executive cockpit", "Concierge", "Front desk", "Reservations"],
 	"Analytics User": ["Executive cockpit", "Analytics"],

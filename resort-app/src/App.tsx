@@ -31,6 +31,7 @@ import ApprovalsInboxScreen from "@/app/compliance/ApprovalsInboxScreen";
 import AuditTrailScreen from "@/app/compliance/AuditTrailScreen";
 import ServiceDeskScreen from "@/app/servicedesk/ServiceDeskScreen";
 import BillingOverviewScreen from "@/app/billing/BillingOverviewScreen";
+import CashierCloseScreen from "@/app/backoffice/CashierCloseScreen";
 import FrontDeskScreen from "@/app/frontdesk/FrontDeskScreen";
 import ReservationsScreen from "@/app/reservations/ReservationsScreen";
 import RestaurantFloor from "@/app/restaurant/RestaurantFloor";
@@ -316,6 +317,14 @@ function AuthGate() {
 		return (
 			<AppShell>
 				<MaintenanceInbox />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "cashier-close") {
+		return (
+			<AppShell>
+				<CashierCloseScreen />
 			</AppShell>
 		);
 	}

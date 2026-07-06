@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useEffect, useState } from "react";
 import {
+	BanknoteIcon,
 	BarChartIcon,
 	BedDoubleIcon,
 	ClockIcon,
@@ -49,6 +50,7 @@ const operations: NavItem[] = [
 	{ title: "My tasks", url: "/resort-app#/my-tasks", icon: ListChecksIcon, status: "live" },
 	{ title: "All tasks", url: "/resort-app#/tasks", icon: ClipboardListIcon, status: "live" },
 	{ title: "Billing", url: "/resort-app#/billing", icon: ReceiptTextIcon, status: "live" },
+	{ title: "Cashier close", url: "/resort-app#/cashier-close", icon: BanknoteIcon, status: "live" },
 	{ title: "Restaurant & bar", url: "/resort-app#/restaurant", icon: UtensilsIcon, status: "live" },
 	{ title: "Restaurant mgmt", url: "/resort-app#/restaurant/management", icon: UtensilsCrossedIcon, status: "live" },
 	{ title: "Maintenance", url: "/resort-app#/maintenance", icon: WrenchIcon, status: "live" },

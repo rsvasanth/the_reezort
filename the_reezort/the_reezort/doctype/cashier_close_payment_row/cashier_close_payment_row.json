@@ -1,0 +1,26 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-07-06 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": ["payment_mode", "expected_amount", "declared_amount", "variance"],
+ "fields": [
+  {"fieldname": "payment_mode", "fieldtype": "Data", "in_list_view": 1, "label": "Payment Mode", "reqd": 1, "columns": 3},
+  {"fieldname": "expected_amount", "fieldtype": "Currency", "in_list_view": 1, "label": "Expected", "columns": 3},
+  {"fieldname": "declared_amount", "fieldtype": "Currency", "in_list_view": 1, "label": "Declared", "columns": 3},
+  {"fieldname": "variance", "fieldtype": "Currency", "in_list_view": 1, "label": "Variance", "read_only": 1, "columns": 2}
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-07-06 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Cashier Close Payment Row",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

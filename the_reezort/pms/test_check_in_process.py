@@ -102,6 +102,25 @@ class TestCheckInProcess(FrappeTestCase):
 		self.assertTrue(guest.kyc_verified_at)
 		self.assertEqual(get_check_in_context(res.name)["readiness"]["kyc"], True)
 
+	def test_kyc_id_document_is_attached_and_private(self):
+		res = self._reservation()
+		# Simulate an uploaded ID scan file, then run KYC with it.
+		f = frappe.get_doc(
+			{
+				"doctype": "File",
+				"file_name": f"id-scan-{frappe.generate_hash(length=6)}.png",
+				"content": "fake-image-bytes",
+				"is_private": 1,
+			}
+		).insert(ignore_permissions=True)
+		out = save_guest_kyc(res.name, {"id_type": "Passport", "id_number": "P1", "id_document": f.file_url})
+		f.reload()
+		# The File is now private and attached to the guest profile so permission
+		# cascades to any staff member who can read the profile.
+		self.assertTrue(f.is_private)
+		self.assertEqual(f.attached_to_doctype, "Guest Profile")
+		self.assertEqual(f.attached_to_name, out["guest_profile"])
+
 	def test_kyc_name_match_passes_for_matching_id(self):
 		res = self._reservation()  # guest "Arrival Guest"
 		out = save_guest_kyc(res.name, {"id_type": "Passport", "id_number": "P1", "id_name": "Arrival Guest"}, verify=1)

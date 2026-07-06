@@ -244,7 +244,8 @@ function KycStep({
 	async function onFile(file: File) {
 		setUploading(true);
 		try {
-			const up = await uploadConditionPhoto(file);
+			// KYC ID scans are PII — store privately (served only to a logged-in session).
+			const up = await uploadConditionPhoto(file, true);
 			setForm((f) => ({ ...f, id_document: up.file_url }));
 			toast.success("ID document uploaded");
 		} catch (error) {

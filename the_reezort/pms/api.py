@@ -717,7 +717,28 @@ def save_guest_kyc(reservation, kyc, verify=0, override_reason=None):
 		guest.kyc_verified_at = now()
 	guest.save(ignore_permissions=True)
 
+	# The ID scan is a private file — attach it to the Guest Profile so anyone with
+	# permission to read the profile can view it (not just the uploader/System Manager).
+	if kyc.get("id_document"):
+		_attach_private_file(kyc.get("id_document"), "Guest Profile", guest.name)
+
 	return {"guest_profile": guest.name, "guest": _guest_context(guest.name), "name_match": match}
+
+
+def _attach_private_file(file_url, doctype, docname):
+	"""Link an already-uploaded File to a document so private-file permission
+	cascades from that document (and force it private if it isn't)."""
+	name = frappe.db.get_value("File", {"file_url": file_url}, "name")
+	if not name:
+		return
+	updates = {}
+	f = frappe.db.get_value("File", name, ["attached_to_doctype", "attached_to_name", "is_private"], as_dict=True)
+	if not f.attached_to_doctype:
+		updates.update({"attached_to_doctype": doctype, "attached_to_name": docname})
+	if not f.is_private:
+		updates["is_private"] = 1
+	if updates:
+		frappe.db.set_value("File", name, updates)
 
 
 @frappe.whitelist()

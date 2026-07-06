@@ -148,11 +148,15 @@ export type UploadedFile = {
  * Uses FormData + credentials:"include" + CSRF — identical auth mechanism
  * to the JSON calls above; multipart/form-data Content-Type is set by the
  * browser automatically when using FormData (do NOT set it manually).
+ *
+ * Pass `isPrivate: true` for sensitive uploads (e.g. guest KYC ID documents) so
+ * the file lands under /private/files/ and is only served to an authenticated
+ * session. Room-condition photos stay public (the default).
  */
-export async function uploadConditionPhoto(file: File): Promise<UploadedFile> {
+export async function uploadConditionPhoto(file: File, isPrivate = false): Promise<UploadedFile> {
 	const form = new FormData();
 	form.append("file", file, file.name);
-	form.append("is_private", "0");
+	form.append("is_private", isPrivate ? "1" : "0");
 	// "Home" is the always-present root File folder. A custom subfolder must be
 	// created first or Frappe's upload_file throws a ValidationError (HTTP 417).
 	form.append("folder", "Home");

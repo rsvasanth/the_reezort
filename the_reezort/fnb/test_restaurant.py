@@ -89,6 +89,25 @@ class TestRestaurantPos(FrappeTestCase):
 		self.assertEqual(by_name[table]["live_status"], "Seated")
 		self.assertIsNotNone(by_name[table]["open_order"])
 
+	def test_list_tables_handles_outlet_with_no_tables(self):
+		# Regression: an outlet with zero tables (e.g. In-Room Dining) used to
+		# crash with IndexError from a malformed Restaurant Order filter.
+		outlet_name = f"{self.resort_property}-NOTBL"
+		if not frappe.db.exists("FnB Outlet", outlet_name):
+			frappe.get_doc(
+				{
+					"doctype": "FnB Outlet",
+					"resort_property": self.resort_property,
+					"outlet_name": "No Tables Outlet",
+					"outlet_code": "NOTBL",
+					"outlet_type": "In-Room Dining",
+					"is_active": 1,
+				}
+			).insert(ignore_permissions=True)
+		result = list_tables(outlet_name)
+		self.assertTrue(result["ok"])
+		self.assertEqual(result["data"]["tables"], [])
+
 	# ---------- lifecycle ----------
 
 	def test_open_walk_in_creates_draft_order(self):

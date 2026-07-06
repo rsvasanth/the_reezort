@@ -289,15 +289,20 @@ def list_tables(outlet: str) -> dict:
 		order_by="display_order asc, table_code asc",
 	)
 
-	# Batch fetch open orders for these tables.
-	open_orders = frappe.get_all(
-		"Restaurant Order",
-		filters={
-			"outlet": outlet,
-			"restaurant_table": ["in", [t["name"] for t in tables]] if tables else [""],
-			"state": ["in", list(OPEN_STATES)],
-		},
-		fields=["name", "restaurant_table", "state", "opened_at", "grand_total", "guest_name", "kot_number"],
+	# Batch fetch open orders for these tables. An outlet with no tables
+	# (e.g. In-Room Dining) has nothing to match — skip the query entirely.
+	open_orders = (
+		frappe.get_all(
+			"Restaurant Order",
+			filters={
+				"outlet": outlet,
+				"restaurant_table": ["in", [t["name"] for t in tables]],
+				"state": ["in", list(OPEN_STATES)],
+			},
+			fields=["name", "restaurant_table", "state", "opened_at", "grand_total", "guest_name", "kot_number"],
+		)
+		if tables
+		else []
 	)
 	by_table: dict[str, dict] = {}
 	for order in open_orders:

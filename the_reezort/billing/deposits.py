@@ -74,9 +74,18 @@ def record_deposit(guest_folio, amount, mode_of_payment="Cash", reference_no=Non
 	if not folio.customer:
 		frappe.throw(_("Folio has no customer to receive the deposit."))
 
-	key = (idempotency_key or f"deposit:{guest_folio}:{amount}:{mode_of_payment}") + ":line"
-	existing = frappe.db.get_value("Folio Line", {"idempotency_key": key}, ["name", "erpnext_payment_entry"], as_dict=True)
+	# Add a random nonce to the auto-generated key so it can't be guessed and
+	# replayed against another folio.
+	key = (idempotency_key or f"deposit:{guest_folio}:{amount}:{mode_of_payment}:{frappe.generate_hash(length=10)}") + ":line"
+	existing = frappe.db.get_value(
+		"Folio Line", {"idempotency_key": key},
+		["name", "erpnext_payment_entry", "guest_folio"], as_dict=True,
+	)
 	if existing:
+		# An idempotency key is scoped to one folio. A cache hit for a different
+		# folio means someone replayed another folio's key — refuse it.
+		if existing.guest_folio != guest_folio:
+			frappe.throw(_("Idempotency key already used for a different folio."))
 		folio.reload()
 		return _envelope(
 			{

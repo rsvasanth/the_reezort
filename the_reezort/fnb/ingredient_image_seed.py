@@ -13,6 +13,7 @@ import mimetypes
 from pathlib import Path
 
 import frappe
+from the_reezort.permissions import system_manager_only
 from frappe import _
 
 
@@ -82,6 +83,7 @@ def _path_for(item_code: str) -> Path | None:
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_ingredient_images() -> dict:
 	if not SEED_DIR.exists():
 		return {"ok": False, "reason": f"Missing folder {SEED_DIR}"}

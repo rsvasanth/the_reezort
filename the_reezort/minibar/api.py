@@ -16,6 +16,7 @@ import hashlib
 import json
 
 import frappe
+from the_reezort.permissions import system_manager_only
 from frappe import _
 from frappe.utils import flt, get_datetime, getdate, now_datetime, today
 
@@ -28,6 +29,14 @@ BACKDATE_HOURS = 24
 def _require_login():
 	if frappe.session.user == "Guest":
 		frappe.throw(_("Login required."), frappe.PermissionError)
+
+
+def _safe_int(value) -> int:
+	"""Coerce a client-supplied quantity to int, treating junk as 0."""
+	try:
+		return int(value or 0)
+	except (TypeError, ValueError):
+		return 0
 
 
 def _stay_or_throw(stay: str):
@@ -95,7 +104,11 @@ def post_minibar_consumption(
 
 	if isinstance(items, str):
 		items = json.loads(items)
-	items = [i for i in (items or []) if int(i.get("quantity") or 0) > 0]
+	if not isinstance(items, list):
+		frappe.throw(_("items must be a list of {item_code, quantity} objects."))
+	if not all(isinstance(i, dict) for i in items):
+		frappe.throw(_("Each item must be an object with item_code and quantity."))
+	items = [i for i in items if _safe_int(i.get("quantity")) > 0]
 	if not items:
 		frappe.throw(_("Add at least one item with quantity > 0."))
 
@@ -295,6 +308,7 @@ DEFAULT_CATALOG = (
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_minibar_catalog(resort_property: str | None = None) -> dict:
 	"""Idempotent seeder for a demo minibar catalog. Runs against the
 	given (or default active) property; skips items whose code_short already

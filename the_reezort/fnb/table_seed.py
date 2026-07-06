@@ -8,6 +8,7 @@ gets zero (it's a virtual outlet, not a floor).
 from __future__ import annotations
 
 import frappe
+from the_reezort.permissions import system_manager_only
 
 
 # Per-outlet floor plans. (table_code, table_name, zone, seats, display_order)
@@ -47,6 +48,7 @@ FLOOR_PLANS: dict[str, list[tuple[str, str, str, int, int]]] = {
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_restaurant_tables(resort_property: str | None = None) -> dict:
 	filters = {"is_active": 1}
 	if resort_property:

@@ -39,6 +39,7 @@ Idempotency:
 from __future__ import annotations
 
 import frappe
+from the_reezort.permissions import system_manager_only
 
 from the_reezort.setup.demo_seed import (
 	DEMO_PASSWORD,
@@ -149,6 +150,7 @@ def _set_reports_to(employee_name: str, reports_to_employee_name: str | None) ->
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_fnb_staff(password: str = DEMO_PASSWORD) -> dict:
 	"""Idempotent — safe to call any number of times."""
 	company = ensure_reezort_company()
@@ -200,11 +202,12 @@ def seed_fnb_staff(password: str = DEMO_PASSWORD) -> dict:
 
 	frappe.db.commit()
 
+	# Do not echo the password back over the wire (API response / logs / history).
 	return {
 		"company": company,
 		"departments": [FNB_ROOT_DEPARTMENT] + FNB_SUB_DEPARTMENTS,
 		"designations": FNB_DESIGNATIONS,
 		"employees": len(employees),
 		"users": created_users,
-		"demo_password": password,
+		"password_set": bool(password),
 	}

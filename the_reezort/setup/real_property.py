@@ -8,6 +8,7 @@ Idempotent: safe to re-run (re-wipes, re-creates, refreshes the nightly rate).
 """
 
 import frappe
+from the_reezort.permissions import system_manager_only
 
 from the_reezort.setup import api as setup_api
 from the_reezort.setup import management
@@ -76,6 +77,7 @@ EQUIPMENT = [("WiFi", "WIFI"), ("Television", "TV"), ("Air Conditioner", "AC")]
 
 
 @frappe.whitelist()
+@system_manager_only
 def reset_and_seed_real_property(nightly_rate=18000, wipe=1):
 	"""Clean slate, then build THE REEZORT with 7 priced Signature Arch Villas."""
 	nightly_rate = float(nightly_rate)

@@ -16,6 +16,7 @@ consumption on order settle. Idempotent — safe to re-run.
 from __future__ import annotations
 
 import frappe
+from the_reezort.permissions import system_manager_only
 
 
 PER_OUTLET_WAREHOUSES = [
@@ -32,6 +33,7 @@ def _company_abbr(company: str) -> str:
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_fnb_warehouses(company: str | None = None) -> dict:
 	company = company or frappe.db.get_single_value("Global Defaults", "default_company") or frappe.db.get_value(
 		"Company", {}, "name"

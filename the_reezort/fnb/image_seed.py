@@ -16,6 +16,7 @@ import mimetypes
 from pathlib import Path
 
 import frappe
+from the_reezort.permissions import system_manager_only
 from frappe import _
 
 _HERE = Path(__file__).resolve().parent
@@ -87,6 +88,7 @@ def _path_for(outlet_code: str, item_code_short: str) -> Path | None:
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_menu_images(resort_property: str | None = None) -> dict:
 	if not SEED_DIR.exists():
 		return {"ok": False, "reason": f"Missing folder {SEED_DIR}"}

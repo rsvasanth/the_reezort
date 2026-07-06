@@ -202,8 +202,13 @@ def decide_advance(name, action, notes=None):
 	row = _advance_row(name)
 	if not row:
 		frappe.throw(_("Advance request not found."))
+	# Block self-approval on BOTH axes: the user who created the request, and the
+	# employee the advance is FOR. The owner check alone is bypassable when the
+	# request was created on the employee's behalf by someone else.
 	if row["owner"] == frappe.session.user:
 		frappe.throw(_("You cannot decide your own request."), frappe.PermissionError)
+	if row.get("employee") and row["employee"] == _self_employee_or_none():
+		frappe.throw(_("You cannot decide an advance for your own employee record."), frappe.PermissionError)
 	if row["docstatus"] != 0:
 		frappe.throw(_("Only Draft requests can be decided."))
 

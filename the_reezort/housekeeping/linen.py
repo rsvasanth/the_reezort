@@ -10,6 +10,7 @@ Idempotent per (room, phase, counted_at.date()).
 from __future__ import annotations
 
 import frappe
+from the_reezort.permissions import system_manager_only
 from frappe import _
 from frappe.utils import flt, get_datetime, getdate, now_datetime, today
 
@@ -302,6 +303,7 @@ DEFAULT_CATALOG = (
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_linen_catalog(resort_property: str | None = None) -> dict:
 	"""Idempotent seeder for the demo linen catalog + property-level par
 	fallbacks (per Room Type on the property)."""

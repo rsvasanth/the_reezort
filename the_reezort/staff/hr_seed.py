@@ -14,6 +14,7 @@ first Company on the site (matches the rest of the setup module).
 """
 
 import frappe
+from the_reezort.permissions import system_manager_only
 from frappe.utils import today, getdate
 
 
@@ -198,6 +199,7 @@ def _seed_payroll_period():
 # ---------- Public entrypoint ----------
 
 @frappe.whitelist()
+@system_manager_only
 def seed_hr_masters():
 	"""Whitelisted so a System Manager can trigger from the console/desk."""
 	shifts = _seed_shifts()

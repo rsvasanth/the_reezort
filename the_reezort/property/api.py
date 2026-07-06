@@ -2,6 +2,7 @@ import json
 from collections import Counter
 
 import frappe
+from the_reezort.permissions import system_manager_only
 from frappe import _
 from frappe.utils import getdate
 
@@ -284,6 +285,7 @@ def _next_setup_action(missing):
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_demo_property(company=None):
 	_require_permission("Resort Property", "create")
 

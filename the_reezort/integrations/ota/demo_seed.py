@@ -18,6 +18,7 @@ import json
 from datetime import date, timedelta
 
 import frappe
+from the_reezort.permissions import system_manager_only
 from frappe.utils import add_days, now_datetime, today
 
 DEMO_MESSAGES = [
@@ -32,6 +33,7 @@ DEMO_MESSAGES = [
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_ota_inbox(resort_property: str | None = None) -> dict:
 	prop = resort_property or frappe.db.get_value("Resort Property", {"is_active": 1}, "name") or frappe.db.get_value(
 		"Resort Property", {}, "name"

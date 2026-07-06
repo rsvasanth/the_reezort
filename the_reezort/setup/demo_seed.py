@@ -7,6 +7,7 @@ org/staff -> roles/users.
 """
 
 import frappe
+from the_reezort.permissions import system_manager_only
 from frappe.utils import add_days, getdate, today
 
 from the_reezort.billing.api import add_folio_line
@@ -75,6 +76,7 @@ def set_as_default_company(company):
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_company_base():
 	"""Step 1: ensure the India company exists, has a fiscal year, and is default."""
 	ensure_fiscal_year()
@@ -92,6 +94,7 @@ def seed_company_base():
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_base_masters():
 	"""Step 2: warehouses, cost centers, parties, payment modes, items, opening stock, property."""
 	company = ensure_reezort_company()
@@ -179,6 +182,7 @@ def _upsert_sales_tax_template(company, title, rows, is_default=0):
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_gst_tax():
 	"""Step 1a: India GST accounts, item tax templates, sales tax template, item assignment."""
 	company = ensure_reezort_company()
@@ -330,6 +334,7 @@ def _ensure_user(email, first_name, roles, password):
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_org_and_users(password=DEMO_PASSWORD):
 	"""Step 1b + 1c: departments, designations, employees, roles, and per-role demo users."""
 	company = ensure_reezort_company()
@@ -355,13 +360,16 @@ def seed_org_and_users(password=DEMO_PASSWORD):
 
 	frappe.db.commit()
 
+	# Never echo the password back over the wire — it lands in API responses,
+	# browser history, and logs. The operator already knows it (they passed it
+	# or it's the documented default).
 	return {
 		"company": company,
 		"departments": len(departments),
 		"employees": len(employees),
 		"roles": RESORT_ROLES,
 		"users": users,
-		"demo_password": password,
+		"password_set": bool(password),
 	}
 
 
@@ -405,6 +413,7 @@ def _create_demo_reservation(property_name, guest_name, room_type):
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_demo_folios():
 	"""Check a few demo guests in with open folios + charges (idempotent by guest name)."""
 	company = ensure_reezort_company()
@@ -466,6 +475,7 @@ def seed_demo_folios():
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_doctype_permissions():
 	"""Grant resort/finance roles access to the operational billing doctypes.
 
@@ -536,6 +546,7 @@ DESK_ACCESS_REVOKED = [
 
 
 @frappe.whitelist()
+@system_manager_only
 def lock_desk_access():
 	"""Restrict the ERPNext desk: operational roles lose /app (SPA only); admin/accounts/GM keep it.
 
@@ -564,6 +575,7 @@ DEFAULT_APPROVAL_POLICIES = (
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_approval_policies():
 	"""Idempotent seed of default approval gates for the 4 correction actions
 	plus a large-discount slot. Threshold amounts are conservative defaults;
@@ -588,6 +600,7 @@ def seed_approval_policies():
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_full_demo(password=DEMO_PASSWORD):
 	"""Run the full idempotent THE REEZORT demo seed end to end."""
 	ensure_fiscal_year()

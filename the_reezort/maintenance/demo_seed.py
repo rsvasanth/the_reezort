@@ -16,6 +16,7 @@ All rows attached to real rooms + property auto-resolved from
 from __future__ import annotations
 
 import frappe
+from the_reezort.permissions import system_manager_only
 from frappe.utils import add_to_date, now_datetime
 
 from the_reezort.maintenance.sla_targets import sla_minutes
@@ -72,6 +73,7 @@ DEMO_TICKETS = [
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_maintenance_tickets(resort_property: str | None = None) -> dict:
 	"""Idempotent — matches on (resort_property, subject)."""
 	resort_property = resort_property or frappe.db.get_value(

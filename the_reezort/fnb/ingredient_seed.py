@@ -24,6 +24,7 @@ follow-up):
 from __future__ import annotations
 
 import frappe
+from the_reezort.permissions import system_manager_only
 from frappe.utils import now_datetime
 
 
@@ -487,6 +488,7 @@ def _stock_reconciliation_seed(company: str) -> list[str]:
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_fnb_ingredients_and_boms(company: str | None = None) -> dict:
 	company = company or _resolve_company()
 	if not company:

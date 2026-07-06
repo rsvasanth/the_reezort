@@ -50,6 +50,36 @@ def _envelope(data, warnings=None, blockers=None, next_actions=None):
 	}
 
 
+# Line types that reduce a folio balance — money leaving the guest's favour.
+# These must never be posted by a plain operational login without finance review.
+REDUCTION_LINE_TYPES = {"Discount", "Adjustment", "Write-Off", "Refund"}
+
+
+def _authorize_folio_line(line_type, amount, rate, discount_amount):
+	"""Reject folio lines that move money in the guest's favour unless the caller
+	holds a finance/manager role.
+
+	- Positive-charge line types (Charge, Tax Preview, etc.) may not carry a
+	  negative amount/rate — that would silently reduce the outstanding balance.
+	- Reduction line types (Discount / Adjustment / Write-Off / Refund) and any
+	  explicit discount_amount require a finance role.
+	"""
+	is_reduction = (
+		line_type in REDUCTION_LINE_TYPES
+		or amount < 0
+		or rate < 0
+		or discount_amount > 0
+	)
+	if not is_reduction:
+		return
+
+	if not _is_finance_user():
+		frappe.throw(
+			_("Discounts, adjustments, refunds, and negative charges require a finance role."),
+			frappe.PermissionError,
+		)
+
+
 def _guest_image_for_folio(doc):
 	if not doc.reservation:
 		return None
@@ -268,8 +298,20 @@ def _line_dict(line, expose_erpnext_links):
 	return row
 
 
-def _can_view_erpnext_links():
+def _is_finance_user():
 	return bool(set(frappe.get_roles(frappe.session.user)).intersection(FINANCE_ROLES))
+
+
+# Roles permitted to see guest government-ID data (legal/compliance need).
+KYC_VIEW_ROLES = FINANCE_ROLES | {"Front Desk", "Resort Manager"}
+
+
+def _can_view_kyc():
+	return bool(set(frappe.get_roles(frappe.session.user)).intersection(KYC_VIEW_ROLES))
+
+
+def _can_view_erpnext_links():
+	return _is_finance_user()
 
 
 def _group_lines(lines, expose_erpnext_links):
@@ -340,13 +382,16 @@ def add_folio_line(guest_folio, payload):
 	amount = payload.get("amount")
 	if amount is None:
 		amount = qty * rate
+	amount = flt(amount)
 
-	# TODO: Approval hooks for discounts, negative amounts, and backdated charges belong to a later packet.
+	line_type = payload.get("line_type") or "Charge"
+	_authorize_folio_line(line_type, amount, rate, flt(payload.get("discount_amount")))
+
 	line = frappe.get_doc(
 		{
 			"doctype": "Folio Line",
 			"guest_folio": guest_folio,
-			"line_type": payload.get("line_type") or "Charge",
+			"line_type": line_type,
 			"source_module": payload.get("source_module") or "Manual",
 			"source_doctype": payload.get("source_doctype"),
 			"source_name": payload.get("source_name"),
@@ -474,16 +519,16 @@ def get_invoice_bundle(guest_folio):
 	folio = frappe.get_doc("Guest Folio", guest_folio)
 
 	# Guest profile — via the reservation (if any), else the folio's customer.
+	# Government-ID fields are PII: only expose them to KYC-authorized roles.
 	guest_profile = None
 	if folio.reservation:
 		p = frappe.db.get_value("Reservation", folio.reservation, "staying_guest_profile")
 		if p:
-			guest_profile = frappe.db.get_value(
-				"Guest Profile", p,
-				["name", "guest_full_name", "email", "phone", "date_of_birth", "nationality",
-					"address", "id_type", "id_number"],
-				as_dict=True,
-			)
+			fields = ["name", "guest_full_name", "email", "phone", "date_of_birth",
+				"nationality", "address"]
+			if _can_view_kyc():
+				fields += ["id_type", "id_number"]
+			guest_profile = frappe.db.get_value("Guest Profile", p, fields, as_dict=True)
 
 	# Stay
 	stay = None

@@ -21,6 +21,7 @@ from the_reezort.billing.deposits import record_deposit
 from the_reezort.billing.settlement import settle_folio
 
 RAZORPAY_ORDERS_URL = "https://api.razorpay.com/v1/orders"
+RAZORPAY_PAYMENTS_URL = "https://api.razorpay.com/v1/payments"
 
 
 def _require_login():
@@ -65,6 +66,31 @@ def verify_signature(order_id, payment_id, signature, key_secret=None):
 		key_secret.encode(), f"{order_id}|{payment_id}".encode(), hashlib.sha256
 	).hexdigest()
 	return hmac.compare_digest(expected, signature or "")
+
+
+def _authoritative_amount(payment_id, order_id):
+	"""Fetch the real captured amount from Razorpay — never trust the client.
+
+	The SPA callback supplies an ``amount`` that an attacker can tamper with
+	after a valid low-value payment. We re-fetch the payment server-side and use
+	Razorpay's own figure, asserting the payment succeeded and belongs to the
+	order we created.
+	"""
+	key_id, key_secret = _keys()
+	response = requests.get(
+		f"{RAZORPAY_PAYMENTS_URL}/{payment_id}",
+		auth=(key_id, key_secret),
+		timeout=30,
+	)
+	response.raise_for_status()
+	payment = response.json()
+
+	if payment.get("order_id") != order_id:
+		frappe.throw(_("Razorpay payment does not belong to the presented order."))
+	if payment.get("status") not in ("captured", "authorized"):
+		frappe.throw(_("Razorpay payment is not in a captured state."))
+
+	return flt(payment.get("amount")) / 100.0
 
 
 def _create_order(amount, currency, receipt, notes):
@@ -132,13 +158,17 @@ def capture_payment(guest_folio, razorpay_order_id, razorpay_payment_id, razorpa
 	if not verify_signature(razorpay_order_id, razorpay_payment_id, razorpay_signature):
 		frappe.throw(_("Razorpay signature verification failed."))
 
+	# Ignore the client-supplied amount — derive it from Razorpay directly so a
+	# tampered callback cannot over-credit the folio.
+	captured_amount = _authoritative_amount(razorpay_payment_id, razorpay_order_id)
+
 	mode_of_payment = _ensure_razorpay_mode_of_payment()
 	return settle_folio(
 		guest_folio,
 		payments=[
 			{
 				"mode_of_payment": mode_of_payment,
-				"amount": flt(amount),
+				"amount": captured_amount,
 				"reference_no": razorpay_payment_id,
 			}
 		],
@@ -158,10 +188,14 @@ def capture_deposit(guest_folio, razorpay_order_id, razorpay_payment_id, razorpa
 	if not verify_signature(razorpay_order_id, razorpay_payment_id, razorpay_signature):
 		frappe.throw(_("Razorpay signature verification failed."))
 
+	# Ignore the client-supplied amount — derive it from Razorpay directly so a
+	# tampered callback cannot over-credit the deposit.
+	captured_amount = _authoritative_amount(razorpay_payment_id, razorpay_order_id)
+
 	mode_of_payment = _ensure_razorpay_mode_of_payment()
 	return record_deposit(
 		guest_folio=guest_folio,
-		amount=flt(amount),
+		amount=captured_amount,
 		mode_of_payment=mode_of_payment,
 		reference_no=razorpay_payment_id,
 		idempotency_key=f"razorpay-deposit:{razorpay_payment_id}",

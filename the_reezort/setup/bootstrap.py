@@ -1,4 +1,5 @@
 import frappe
+from the_reezort.permissions import system_manager_only
 from frappe import _
 from frappe.utils import getdate, today
 
@@ -374,6 +375,7 @@ def seed_erpnext_demo_masters(company, country="India", currency="INR"):
 
 
 @frappe.whitelist()
+@system_manager_only
 def bootstrap_demo_site(
 	company_name="THE REEZORT Private Limited",
 	company_abbr="TRZ",

@@ -32,6 +32,7 @@ import os
 from pathlib import Path
 
 import frappe
+from the_reezort.permissions import system_manager_only
 
 CAPTURE_STAGE = "Marketing"
 ROOM_TYPE_NAME_CANDIDATES = [
@@ -190,6 +191,7 @@ def _attach_gallery_to_room(room: str, source_paths: list[tuple[Path, str]]) -> 
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_villa_renders() -> dict:
 	if not SEED_DIR.exists() or not any(SEED_DIR.iterdir()):
 		return {

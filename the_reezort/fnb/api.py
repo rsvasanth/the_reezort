@@ -18,6 +18,7 @@ import hashlib
 import json
 
 import frappe
+from the_reezort.permissions import system_manager_only
 from frappe import _
 from frappe.utils import flt, get_datetime, getdate, now_datetime, today
 
@@ -392,6 +393,7 @@ DEFAULT_MENU = (
 
 
 @frappe.whitelist()
+@system_manager_only
 def seed_fnb_catalog(resort_property: str | None = None) -> dict:
 	"""Idempotent seeder — 4 outlets + ~30-item menu + food images.
 

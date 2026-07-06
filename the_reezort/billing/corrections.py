@@ -29,6 +29,30 @@ POSTED_LINE_STATUS = "Posted"
 REFUNDABLE_TYPES = {"Payment Reference", "Deposit Application"}
 
 
+def _prior_refunded(line_name):
+	"""Total already-refunded on a Folio Line — sum of Posted refund postings.
+
+	Each refund is recorded as an ERPNext Posting Log with idempotency key
+	``refund:<line>:<amount_in_paise>``. Summing the paise suffix of the Posted
+	ones gives the cumulative refunded amount for the line.
+	"""
+	logs = frappe.get_all(
+		"ERPNext Posting Log",
+		filters={
+			"idempotency_key": ["like", f"refund:{line_name}:%"],
+			"posting_status": "Posted",
+		},
+		pluck="idempotency_key",
+	)
+	total = 0.0
+	for key in logs:
+		try:
+			total += int(key.rsplit(":", 1)[1]) / 100.0
+		except (ValueError, IndexError):
+			continue
+	return total
+
+
 def _audit(source_doctype, source_name, action, reason, details=None):
 	"""Real Audit Event write — same signature as before; log is now live."""
 	from the_reezort.audit.api import record_audit_event
@@ -309,6 +333,17 @@ def post_refund(line, amount=None, mode_of_payment=None, reason="", approval_req
 	amount = flt(amount) or flt(doc.amount)
 	if amount <= 0 or amount > flt(doc.amount):
 		frappe.throw(_("Refund amount must be between 0 and {0}.").format(flt(doc.amount)))
+
+	# Cap the CUMULATIVE refunds on this line at the original amount. Without
+	# this, two differing partial refunds (each under the line total) can
+	# collectively exceed what was paid.
+	already_refunded = _prior_refunded(doc.name)
+	if already_refunded + amount > flt(doc.amount) + 0.001:
+		frappe.throw(
+			_("Refunding {0} would exceed the line's remaining refundable balance of {1}.").format(
+				amount, flt(doc.amount) - already_refunded
+			)
+		)
 
 	# Approval gate — refund over policy threshold requires manager sign-off.
 	from the_reezort.approvals.api import require_approval

@@ -11,6 +11,9 @@ from the_reezort.fnb.api import seed_fnb_catalog
 from the_reezort.fnb.restaurant import (
 	add_items,
 	close_walk_in,
+	create_room_service_order,
+	list_active_kots,
+	mark_kot_status,
 	open_walk_in_order,
 	post_order_to_room,
 	send_to_kitchen,
@@ -43,6 +46,11 @@ class TestPosDepth(FrappeTestCase):
 		frappe.set_user("Administrator")
 		for name in frappe.get_all("Restaurant Order", filters={"outlet": self.outlet}, pluck="name"):
 			frappe.delete_doc("Restaurant Order", name, force=True, ignore_permissions=True)
+		# These endpoints commit, so F&B folio lines persist across tests and can
+		# collide on the global idempotency_key constraint — clear them each test.
+		for name in frappe.get_all("Folio Line", filters={"source_doctype": "Restaurant Order"}, pluck="name"):
+			frappe.delete_doc("Folio Line", name, force=True, ignore_permissions=True)
+		frappe.db.commit()
 
 	def _items(self, n=2):
 		return frappe.get_all(
@@ -122,8 +130,16 @@ class TestPosDepth(FrappeTestCase):
 	# ---------- charge to room ----------
 
 	def _in_house_stay(self):
-		customer = frappe.db.get_value("Customer", {}, "name") or frappe.get_doc(
-			{"doctype": "Customer", "customer_name": "ZZ Dine Guest"}
+		# Unique customer per stay — these endpoints commit, so a shared customer
+		# would reuse a prior test's folio and collide on idempotency keys.
+		cname = f"ZZ Dine Guest {frappe.generate_hash(length=6)}"
+		customer = frappe.get_doc(
+			{
+				"doctype": "Customer",
+				"customer_name": cname,
+				"customer_group": "Individual",
+				"territory": "All Territories",
+			}
 		).insert(ignore_permissions=True).name
 		room = frappe.db.get_value("Room", {"resort_property": self.resort_property}, ["name", "room_type"], as_dict=True)
 		stay = frappe.get_doc({
@@ -168,3 +184,55 @@ class TestPosDepth(FrappeTestCase):
 		frappe.db.set_value("Stay", stay, "stay_status", "Checked Out")
 		with self.assertRaises(frappe.ValidationError):
 			post_order_to_room(order, stay)
+
+	# ---------- in-room dining → kitchen KOT bridge ----------
+
+	def test_room_service_order_hits_the_kitchen_queue(self):
+		stay = self._in_house_stay()
+		items = self._items(2)
+		out = create_room_service_order(
+			stay=stay,
+			outlet=self.outlet,
+			items=[{"menu_item": r["name"], "quantity": 1} for r in items],
+			guest_note="no onions",
+		)["data"]["order"]
+		# It's a Room-billed order, fired to the kitchen with a KOT.
+		self.assertEqual(out["bill_type"], "Room")
+		self.assertEqual(out["stay"], stay)
+		self.assertTrue(out["kot_number"])
+		self.assertEqual(out["state"], "Sent to Kitchen")
+		# It appears on the SAME kitchen queue as POS table orders.
+		kot_names = [o["name"] for o in list_active_kots(self.outlet)["data"]["orders"]]
+		self.assertIn(out["name"], kot_names)
+
+	def test_room_service_order_closes_to_folio_not_invoice(self):
+		stay = self._in_house_stay()
+		order = create_room_service_order(
+			stay=stay, outlet=self.outlet, items=[{"menu_item": self._items(1)[0]["name"], "quantity": 1}]
+		)["data"]["order"]["name"]
+		frappe.db.set_value("Restaurant Order", order, "state", "Served")
+		# close_walk_in routes a Room order to the folio, not a POS Sales Invoice.
+		out = close_walk_in(order)["data"]
+		self.assertTrue(out.get("guest_folio"))
+		self.assertIsNone(frappe.db.get_value("Restaurant Order", order, "erpnext_sales_invoice"))
+		self.assertEqual(frappe.db.get_value("Restaurant Order", order, "state"), "Settled")
+
+	def test_room_service_auto_charges_folio_on_served(self):
+		stay = self._in_house_stay()
+		order = create_room_service_order(
+			stay=stay, outlet=self.outlet, items=[{"menu_item": self._items(1)[0]["name"], "quantity": 1}]
+		)["data"]["order"]["name"]
+		# Walk it through the kitchen; marking Served auto-charges the folio.
+		mark_kot_status(order, "Preparing")
+		mark_kot_status(order, "Ready")
+		out = mark_kot_status(order, "Served")["data"]["order"]
+		self.assertTrue(out["guest_folio"])
+		self.assertEqual(frappe.db.get_value("Restaurant Order", order, "state"), "Settled")
+
+	def test_room_service_rejects_non_in_house(self):
+		stay = self._in_house_stay()
+		frappe.db.set_value("Stay", stay, "stay_status", "Checked Out")
+		with self.assertRaises(frappe.ValidationError):
+			create_room_service_order(
+				stay=stay, outlet=self.outlet, items=[{"menu_item": self._items(1)[0]["name"], "quantity": 1}]
+			)

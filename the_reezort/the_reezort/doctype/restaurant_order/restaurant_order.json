@@ -12,6 +12,8 @@
   "resort_property",
   "outlet",
   "restaurant_table",
+  "bill_type",
+  "stay",
   "column_break_1",
   "state",
   "opened_at",
@@ -49,45 +51,270 @@
   "items"
  ],
  "fields": [
-  {"default": "RZ-POS-.YYYY.-.#####", "fieldname": "naming_series", "fieldtype": "Select", "hidden": 1, "label": "Series", "options": "RZ-POS-.YYYY.-.#####"},
-  {"fieldname": "resort_property", "fieldtype": "Link", "in_standard_filter": 1, "label": "Resort Property", "options": "Resort Property", "reqd": 1},
-  {"fieldname": "outlet", "fieldtype": "Link", "in_list_view": 1, "in_standard_filter": 1, "label": "Outlet", "options": "FnB Outlet", "reqd": 1},
-  {"fieldname": "restaurant_table", "fieldtype": "Link", "in_list_view": 1, "in_standard_filter": 1, "label": "Table", "options": "Restaurant Table"},
-  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
-  {"default": "Draft", "fieldname": "state", "fieldtype": "Select", "in_list_view": 1, "in_standard_filter": 1, "label": "State", "options": "Draft\nSent to Kitchen\nPreparing\nReady\nServed\nBill Pending\nSettled\nCancelled", "reqd": 1},
-  {"fieldname": "opened_at", "fieldtype": "Datetime", "in_list_view": 1, "label": "Opened At", "reqd": 1},
-  {"fieldname": "waiter_user", "fieldtype": "Link", "label": "Waiter", "options": "User"},
-  {"default": "2", "fieldname": "party_size", "fieldtype": "Int", "label": "Party Size"},
-  {"description": "Optional walk-in guest name for the bill", "fieldname": "guest_name", "fieldtype": "Data", "label": "Guest Name"},
-  {"description": "Hash of (outlet + table + waiter + opened_at) — dedupes concurrent tablet clicks", "fieldname": "idempotency_key", "fieldtype": "Data", "label": "Idempotency Key", "unique": 1},
-  {"description": "Which kitchen section handles this order — auto-derived from menu categories at send time", "fieldname": "kitchen_section", "fieldtype": "Select", "label": "Kitchen Section", "options": "\nHot Kitchen\nCold Kitchen\nBar\nPastry\nMixed"},
-  {"description": "Sequential per-outlet KOT number generated at send-to-kitchen", "fieldname": "kot_number", "fieldtype": "Data", "label": "KOT Number", "read_only": 1},
-  {"fieldname": "sent_to_kitchen_at", "fieldtype": "Datetime", "label": "Sent to Kitchen At", "read_only": 1},
-  {"fieldname": "ready_at", "fieldtype": "Datetime", "label": "Ready At", "read_only": 1},
-  {"fieldname": "served_at", "fieldtype": "Datetime", "label": "Served At", "read_only": 1},
-  {"fieldname": "bill_requested_at", "fieldtype": "Datetime", "label": "Bill Requested At", "read_only": 1},
-  {"fieldname": "settled_at", "fieldtype": "Datetime", "label": "Settled At", "read_only": 1},
-  {"fieldname": "cancelled_at", "fieldtype": "Datetime", "label": "Cancelled At", "read_only": 1},
-  {"fieldname": "totals_section", "fieldtype": "Section Break", "label": "Totals"},
-  {"fieldname": "subtotal", "fieldtype": "Currency", "in_list_view": 1, "label": "Subtotal", "read_only": 1},
-  {"default": "0", "fieldname": "discount_amount", "fieldtype": "Currency", "label": "Discount Amount"},
-  {"default": "0", "description": "Service charge % — sourced from FnB Outlet.default_service_charge_pct at open time", "fieldname": "service_charge_pct", "fieldtype": "Percent", "label": "Service Charge %"},
-  {"fieldname": "service_charge_amount", "fieldtype": "Currency", "label": "Service Charge Amount", "read_only": 1},
-  {"fieldname": "total_taxes", "fieldtype": "Currency", "label": "Total Taxes", "read_only": 1},
-  {"fieldname": "grand_total", "fieldtype": "Currency", "in_list_view": 1, "label": "Grand Total", "read_only": 1},
-  {"fieldname": "currency", "fieldtype": "Link", "label": "Currency", "options": "Currency"},
-  {"fieldname": "column_break_totals", "fieldtype": "Column Break"},
-  {"fieldname": "posting_section", "fieldtype": "Section Break", "label": "ERPNext Posting"},
-  {"fieldname": "erpnext_sales_invoice", "fieldtype": "Link", "label": "Sales Invoice", "options": "Sales Invoice", "read_only": 1},
-  {"fieldname": "erpnext_payment_entry", "fieldtype": "Link", "label": "Payment Entry", "options": "Payment Entry", "read_only": 1},
-  {"description": "Only set when order was charged to an in-house stay's folio instead of walk-in checkout", "fieldname": "guest_folio", "fieldtype": "Link", "label": "Guest Folio", "options": "Guest Folio", "read_only": 1},
-  {"fieldname": "folio_line", "fieldtype": "Link", "label": "Folio Line", "options": "Folio Line", "read_only": 1},
-  {"fieldname": "column_break_posting", "fieldtype": "Column Break"},
-  {"fieldname": "notes_section", "fieldtype": "Section Break", "label": "Notes"},
-  {"description": "Kitchen instructions (allergies, prep notes)", "fieldname": "chef_notes", "fieldtype": "Small Text", "label": "Chef Notes"},
-  {"description": "Note for the guest (ETA, out-of-stock swaps)", "fieldname": "guest_note", "fieldtype": "Small Text", "label": "Guest Note"},
-  {"fieldname": "items_section", "fieldtype": "Section Break", "label": "Items"},
-  {"fieldname": "items", "fieldtype": "Table", "label": "Items", "options": "Restaurant Order Item"}
+  {
+   "default": "RZ-POS-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "RZ-POS-.YYYY.-.#####"
+  },
+  {
+   "fieldname": "resort_property",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Resort Property",
+   "options": "Resort Property",
+   "reqd": 1
+  },
+  {
+   "fieldname": "outlet",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Outlet",
+   "options": "FnB Outlet",
+   "reqd": 1
+  },
+  {
+   "fieldname": "restaurant_table",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Table",
+   "options": "Restaurant Table"
+  },
+  {
+   "fieldname": "bill_type",
+   "fieldtype": "Select",
+   "label": "Bill Type",
+   "options": "Walk-in\nRoom",
+   "default": "Walk-in",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "stay",
+   "fieldtype": "Link",
+   "label": "Stay",
+   "options": "Stay"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "state",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "State",
+   "options": "Draft\nSent to Kitchen\nPreparing\nReady\nServed\nBill Pending\nSettled\nCancelled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "opened_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Opened At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "waiter_user",
+   "fieldtype": "Link",
+   "label": "Waiter",
+   "options": "User"
+  },
+  {
+   "default": "2",
+   "fieldname": "party_size",
+   "fieldtype": "Int",
+   "label": "Party Size"
+  },
+  {
+   "description": "Optional walk-in guest name for the bill",
+   "fieldname": "guest_name",
+   "fieldtype": "Data",
+   "label": "Guest Name"
+  },
+  {
+   "description": "Hash of (outlet + table + waiter + opened_at) \u2014 dedupes concurrent tablet clicks",
+   "fieldname": "idempotency_key",
+   "fieldtype": "Data",
+   "label": "Idempotency Key",
+   "unique": 1
+  },
+  {
+   "description": "Which kitchen section handles this order \u2014 auto-derived from menu categories at send time",
+   "fieldname": "kitchen_section",
+   "fieldtype": "Select",
+   "label": "Kitchen Section",
+   "options": "\nHot Kitchen\nCold Kitchen\nBar\nPastry\nMixed"
+  },
+  {
+   "description": "Sequential per-outlet KOT number generated at send-to-kitchen",
+   "fieldname": "kot_number",
+   "fieldtype": "Data",
+   "label": "KOT Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sent_to_kitchen_at",
+   "fieldtype": "Datetime",
+   "label": "Sent to Kitchen At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ready_at",
+   "fieldtype": "Datetime",
+   "label": "Ready At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "served_at",
+   "fieldtype": "Datetime",
+   "label": "Served At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "bill_requested_at",
+   "fieldtype": "Datetime",
+   "label": "Bill Requested At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "settled_at",
+   "fieldtype": "Datetime",
+   "label": "Settled At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cancelled_at",
+   "fieldtype": "Datetime",
+   "label": "Cancelled At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "totals_section",
+   "fieldtype": "Section Break",
+   "label": "Totals"
+  },
+  {
+   "fieldname": "subtotal",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Subtotal",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "discount_amount",
+   "fieldtype": "Currency",
+   "label": "Discount Amount"
+  },
+  {
+   "default": "0",
+   "description": "Service charge % \u2014 sourced from FnB Outlet.default_service_charge_pct at open time",
+   "fieldname": "service_charge_pct",
+   "fieldtype": "Percent",
+   "label": "Service Charge %"
+  },
+  {
+   "fieldname": "service_charge_amount",
+   "fieldtype": "Currency",
+   "label": "Service Charge Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_taxes",
+   "fieldtype": "Currency",
+   "label": "Total Taxes",
+   "read_only": 1
+  },
+  {
+   "fieldname": "grand_total",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Grand Total",
+   "read_only": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "column_break_totals",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "posting_section",
+   "fieldtype": "Section Break",
+   "label": "ERPNext Posting"
+  },
+  {
+   "fieldname": "erpnext_sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "erpnext_payment_entry",
+   "fieldtype": "Link",
+   "label": "Payment Entry",
+   "options": "Payment Entry",
+   "read_only": 1
+  },
+  {
+   "description": "Only set when order was charged to an in-house stay's folio instead of walk-in checkout",
+   "fieldname": "guest_folio",
+   "fieldtype": "Link",
+   "label": "Guest Folio",
+   "options": "Guest Folio",
+   "read_only": 1
+  },
+  {
+   "fieldname": "folio_line",
+   "fieldtype": "Link",
+   "label": "Folio Line",
+   "options": "Folio Line",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_posting",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "description": "Kitchen instructions (allergies, prep notes)",
+   "fieldname": "chef_notes",
+   "fieldtype": "Small Text",
+   "label": "Chef Notes"
+  },
+  {
+   "description": "Note for the guest (ETA, out-of-stock swaps)",
+   "fieldname": "guest_note",
+   "fieldtype": "Small Text",
+   "label": "Guest Note"
+  },
+  {
+   "fieldname": "items_section",
+   "fieldtype": "Section Break",
+   "label": "Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Restaurant Order Item"
+  }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
@@ -97,10 +324,52 @@
  "name": "Restaurant Order",
  "owner": "Administrator",
  "permissions": [
-  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
-  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Resort Manager", "share": 1, "write": 1},
-  {"create": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Restaurant", "share": 1, "write": 1},
-  {"create": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Front Desk", "share": 1, "write": 1}
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Resort Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Restaurant",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Front Desk",
+   "share": 1,
+   "write": 1
+  }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",

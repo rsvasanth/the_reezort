@@ -137,6 +137,23 @@ export async function postRoomChargeOrder(payload: {
 	return call("the_reezort.fnb.api.post_room_charge_order", { method: "POST", body: payload });
 }
 
+/**
+ * In-room-dining order that ALSO fires a real KOT to the kitchen (bridges the
+ * front-desk / room-service order onto the same kitchen queue as POS tables).
+ * The folio is charged automatically when the kitchen marks it Served.
+ */
+export async function createRoomServiceOrder(payload: {
+	stay: string;
+	outlet: string;
+	items: Array<{ menu_item: string; quantity: number }>;
+	party_size?: number;
+	guest_name?: string;
+	chef_notes?: string;
+	guest_note?: string;
+}): Promise<{ order: { name: string; kot_number: string | null; state: string; grand_total: number } }> {
+	return call("the_reezort.fnb.restaurant.create_room_service_order", { method: "POST", body: payload });
+}
+
 export async function listRecentFnbOrders(stay: string, limit = 10): Promise<{ orders: FnbOrderRow[] }> {
 	return call("the_reezort.fnb.api.list_recent_orders", {
 		method: "GET",

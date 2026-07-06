@@ -104,6 +104,9 @@ export type RestaurantOrder = {
 	name: string;
 	outlet: string;
 	table: string | null;
+	bill_type?: "Walk-in" | "Room";
+	stay?: string | null;
+	guest_folio?: string | null;
 	state: RestaurantOrderState;
 	kot_number: string | null;
 	kitchen_section: KitchenSection | "" | null;

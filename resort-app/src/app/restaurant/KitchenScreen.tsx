@@ -183,7 +183,11 @@ function KotTicket({
 				</span>
 			</div>
 			<div className="flex items-center justify-between border-b px-4 py-2 text-[11px] text-muted-foreground">
-				<span>{order.table ?? "Walk-in"} · {order.party_size} cover{order.party_size === 1 ? "" : "s"}</span>
+				<span>
+					{order.bill_type === "Room"
+						? `Room service · ${order.guest_name ?? order.stay ?? "in-house"}`
+						: `${order.table ?? "Walk-in"} · ${order.party_size} cover${order.party_size === 1 ? "" : "s"}`}
+				</span>
 				<span className={tone.text}>{tone.label}</span>
 			</div>
 

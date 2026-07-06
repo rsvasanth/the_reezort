@@ -43,10 +43,10 @@ import {
 	parseTags,
 } from "@/components/fnb/menu-visuals";
 import {
+	createRoomServiceOrder,
 	listMenuItems,
 	listOutlets,
 	listRecentFnbOrders,
-	postRoomChargeOrder,
 	type FnbOrderRow,
 	type FnbOutlet,
 	type MenuItem,
@@ -212,17 +212,18 @@ export function IrdOrderSheet({
 		if (!outlet) return;
 		setBusy(true);
 		try {
-			const payload = {
+			// Route the in-room-dining order through the kitchen (real KOT) instead
+			// of posting straight to the folio — it's charged to the room when the
+			// kitchen marks it Served, and appears on the same KOT queue as tables.
+			const res = await createRoomServiceOrder({
 				stay,
 				outlet,
 				items: Object.entries(basket).map(([menu_item, quantity]) => ({ menu_item, quantity })),
-				ordered_at: orderedAt.replace("T", " "),
 				chef_notes: chefNotes || undefined,
 				guest_note: guestNote || undefined,
-			};
-			const res = await postRoomChargeOrder(payload);
-			toast.success(`Sent to kitchen · ${formatINR(res.total_amount)} to folio`, {
-				description: res.reused ? "Already sent — reused folio line." : res.folio_line,
+			});
+			toast.success(`Sent to kitchen · KOT ${res.order.kot_number ?? "pending"}`, {
+				description: `${formatINR(res.order.grand_total)} — charges to the room on serve.`,
 			});
 			onOpenChange(false);
 			onPosted?.();

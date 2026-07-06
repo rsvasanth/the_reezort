@@ -260,6 +260,9 @@ def _order_dict(doc) -> dict:
 		"name": doc.name,
 		"outlet": doc.outlet,
 		"table": doc.restaurant_table,
+		"bill_type": doc.bill_type or "Walk-in",
+		"stay": doc.stay,
+		"guest_folio": doc.guest_folio,
 		"state": doc.state,
 		"kot_number": doc.kot_number,
 		"kitchen_section": doc.kitchen_section,
@@ -623,6 +626,13 @@ def mark_kot_status(order: str, status: str) -> dict:
 		f"restaurant.kot_{status.lower().replace(' ', '_')}",
 		details={"kot": doc.kot_number, "state": status},
 	)
+
+	# A Room-billed order is charged to the guest's folio the moment it's served —
+	# no separate POS settlement step for room service.
+	if status == "Served" and doc.bill_type == "Room" and doc.stay and not doc.guest_folio:
+		post_order_to_room(doc.name, doc.stay)
+		doc.reload()
+
 	return _envelope({"order": _order_dict(doc)})
 
 
@@ -635,6 +645,10 @@ def close_walk_in(order: str, payments: list[dict] | str | None = None) -> dict:
 	"""
 	_require_login()
 	doc = _order_or_throw(order)
+
+	# A Room-billed order settles to the guest's folio, not a POS Sales Invoice.
+	if doc.bill_type == "Room" and doc.stay:
+		return post_order_to_room(order, doc.stay)
 
 	if doc.erpnext_sales_invoice and doc.state == "Settled":
 		return _envelope({"order": _order_dict(doc), "reused": True})
@@ -783,6 +797,144 @@ def close_walk_in(order: str, payments: list[dict] | str | None = None) -> dict:
 			"consumption_dropped": consumption_result.get("dropped_items", []),
 		}
 	)
+
+
+@frappe.whitelist()
+def create_room_service_order(
+	stay: str,
+	outlet: str,
+	items: list[dict] | str,
+	party_size: int | None = None,
+	guest_name: str | None = None,
+	chef_notes: str | None = None,
+	guest_note: str | None = None,
+) -> dict:
+	"""In-room-dining order for an in-house guest — one call: create a Room-billed
+	Restaurant Order, add the items, and fire it to the kitchen (KOT).
+
+	This is the bridge that makes front-desk / guest room-service orders appear on
+	the SAME kitchen queue as POS table orders. Billing happens on close via
+	post_order_to_room (charge to folio), not here.
+	"""
+	_require_login()
+	stay_row = frappe.db.get_value(
+		"Stay", stay, ["name", "stay_status", "resort_property", "primary_guest_name"], as_dict=True
+	)
+	if not stay_row:
+		frappe.throw(_("Unknown stay: {0}").format(stay))
+	if stay_row.stay_status != "In House":
+		frappe.throw(_("Room service requires an in-house stay (stay is {0}).").format(stay_row.stay_status))
+	_outlet_or_throw(outlet)
+
+	doc = frappe.get_doc(
+		{
+			"doctype": "Restaurant Order",
+			"resort_property": stay_row.resort_property,
+			"outlet": outlet,
+			"bill_type": "Room",
+			"stay": stay,
+			"guest_name": guest_name or stay_row.primary_guest_name,
+			"party_size": int(party_size or 1),
+			"state": "Draft",
+			"opened_at": now_datetime(),
+			"waiter_user": frappe.session.user,
+			"currency": _property_currency(stay_row.resort_property) or "INR",
+			"chef_notes": chef_notes,
+			"guest_note": guest_note,
+		}
+	)
+	doc.flags.ignore_permissions = True
+	doc.insert(ignore_permissions=True)
+
+	add_items(doc.name, items)
+	send_to_kitchen(doc.name)  # assigns KOT, notifies kitchen, shows on the KOT screen
+	frappe.db.commit()
+
+	return _envelope({"order": _order_dict(frappe.get_doc("Restaurant Order", doc.name))})
+
+
+@frappe.whitelist()
+def set_order_guest(order: str, guest_name: str | None = None, party_size: int | None = None) -> dict:
+	"""Attach / update the walk-in guest name (and optionally covers) on an order."""
+	_require_login()
+	doc = _order_or_throw(order)
+	if doc.state in {"Settled", "Cancelled"}:
+		frappe.throw(_("Order {0} is {1}; guest details are locked.").format(order, doc.state))
+	if guest_name is not None:
+		doc.guest_name = guest_name.strip() or None
+	if party_size:
+		doc.party_size = int(party_size)
+	doc.flags.ignore_permissions = True
+	doc.save()
+	return _envelope({"order": _order_dict(doc)})
+
+
+@frappe.whitelist()
+def create_restaurant_razorpay_order(order: str) -> dict:
+	"""Create a Razorpay order for a walk-in's grand total (card / UPI at the POS)."""
+	_require_login()
+	doc = _order_or_throw(order)
+	if doc.state not in {"Served", "Bill Pending"}:
+		frappe.throw(_("Order {0} must be Served or Bill Pending to take payment.").format(order))
+
+	amount = flt(doc.grand_total)
+	if amount <= 0:
+		frappe.throw(_("Order {0} has no payable amount.").format(order))
+
+	from the_reezort.billing.razorpay_gateway import _create_order
+
+	razorpay_order = _create_order(
+		amount, doc.currency or "INR", f"RO-{doc.name}", {"restaurant_order": doc.name, "intent": "pos"}
+	)
+	razorpay_order["order"] = doc.name
+	return _envelope(razorpay_order)
+
+
+@frappe.whitelist()
+def capture_restaurant_payment(order: str, razorpay_order_id: str, razorpay_payment_id: str, razorpay_signature: str) -> dict:
+	"""Verify a Razorpay POS payment and settle the walk-in with it."""
+	_require_login()
+	from the_reezort.billing.razorpay_gateway import (
+		_authoritative_amount,
+		_ensure_razorpay_mode_of_payment,
+		verify_signature,
+	)
+
+	if not verify_signature(razorpay_order_id, razorpay_payment_id, razorpay_signature):
+		frappe.throw(_("Razorpay signature verification failed."))
+
+	# Never trust a client amount — take it from Razorpay.
+	amount = _authoritative_amount(razorpay_payment_id, razorpay_order_id)
+	mode = _ensure_razorpay_mode_of_payment()
+	return close_walk_in(
+		order,
+		payments=[{"mode_of_payment": mode, "amount": amount, "reference_no": razorpay_payment_id}],
+	)
+
+
+@frappe.whitelist()
+def list_in_house_stays(search: str | None = None, limit: int = 20) -> dict:
+	"""In-house stays for the POS 'charge to room' picker — optional search over
+	guest name or room."""
+	_require_login()
+	filters = {"stay_status": "In House"}
+	rows = frappe.get_all(
+		"Stay",
+		filters=filters,
+		fields=["name", "primary_guest_name", "current_room", "resort_property"],
+		order_by="modified desc",
+		limit_page_length=int(limit),
+	)
+	if search:
+		needle = search.strip().lower()
+		rows = [
+			r
+			for r in rows
+			if needle in (r.get("primary_guest_name") or "").lower()
+			or needle in (r.get("current_room") or "").lower()
+			or needle in (r.get("name") or "").lower()
+		]
+	return _envelope({"stays": rows})
 
 
 @frappe.whitelist()

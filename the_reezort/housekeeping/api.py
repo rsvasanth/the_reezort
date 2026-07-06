@@ -322,8 +322,12 @@ def complete_task(task, checklist=None, notes=None, photos=None, exception_appro
 	task_doc.completion_notes = completion_notes
 	task_doc.save(ignore_permissions=True)
 
+	# Only advance the room to Clean (an allocatable status) when no inspection
+	# is required. When it is, the room must NOT become sellable until inspection
+	# passes — record_inspection sets it to Inspected then. Marking it Clean here
+	# would let a not-yet-inspected room re-enter sellable inventory.
 	room_condition = None
-	if task_doc.room:
+	if task_doc.room and not task_doc.requires_inspection:
 		room_condition = "Clean"
 		log_room_condition(
 			task_doc.room,

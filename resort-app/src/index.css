@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -6,47 +6,52 @@
 
 @layer utilities {
 	.font-display {
-		font-family: "Fraunces", Georgia, "Times New Roman", serif;
+		font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
 	}
 }
 
+/*
+ * Carbon Design System v11 tokens (IBM), mapped onto the shadcn variable
+ * contract. Light = Gray 10 theme, dark = Gray 100 theme. Values are the
+ * HSL components of the official hex tokens (e.g. Blue 60 #0f62fe).
+ */
 @layer base {
 	:root {
-		--background: 40 43% 97%;
-		--foreground: 34 9% 15%;
+		--background: 0 0% 96%;
+		--foreground: 0 0% 9%;
 		--card: 0 0% 100%;
-		--card-foreground: 34 9% 15%;
+		--card-foreground: 0 0% 9%;
 		--popover: 0 0% 100%;
-		--popover-foreground: 34 9% 15%;
-		--primary: 34 9% 15%;
-		--primary-foreground: 40 43% 97%;
-		--secondary: 43 28% 95%;
-		--secondary-foreground: 34 9% 25%;
-		--muted: 43 28% 95%;
-		--muted-foreground: 34 8% 40%;
-		--accent: 40 25% 92%;
-		--accent-foreground: 34 9% 12%;
-		--destructive: 8 50% 51%;
-		--destructive-foreground: 40 43% 97%;
-		--border: 40 22% 88%;
-		--input: 40 22% 88%;
-		--ring: 21 33% 53%;
-		--brass: 21 33% 53%;
-		--brass-foreground: 40 40% 97%;
-		--radius: 0.75rem;
-		--chart-1: 21 33% 53%;
-		--chart-2: 25 46% 84%;
-		--chart-3: 24 37% 39%;
-		--chart-4: 27 30% 27%;
-		--chart-5: 36 15% 70%;
-		--sidebar-background: 40 43% 97%;
-		--sidebar-foreground: 34 9% 30%;
-		--sidebar-primary: 34 9% 15%;
-		--sidebar-primary-foreground: 40 43% 97%;
-		--sidebar-accent: 43 28% 93%;
-		--sidebar-accent-foreground: 34 9% 12%;
-		--sidebar-border: 40 22% 89%;
-		--sidebar-ring: 21 33% 53%;
+		--popover-foreground: 0 0% 9%;
+		--primary: 219 99% 53%;
+		--primary-foreground: 0 0% 100%;
+		--secondary: 0 0% 88%;
+		--secondary-foreground: 0 0% 22%;
+		--muted: 0 0% 91%;
+		--muted-foreground: 0 0% 32%;
+		--accent: 0 0% 91%;
+		--accent-foreground: 0 0% 9%;
+		--destructive: 357 76% 49%;
+		--destructive-foreground: 0 0% 100%;
+		--border: 0 0% 88%;
+		--input: 0 0% 88%;
+		--ring: 219 99% 53%;
+		--brass: 219 99% 53%;
+		--brass-foreground: 0 0% 100%;
+		--radius: 0rem;
+		--chart-1: 265 65% 46%;
+		--chart-2: 204 86% 49%;
+		--chart-3: 180 100% 18%;
+		--chart-4: 334 74% 36%;
+		--chart-5: 357 94% 64%;
+		--sidebar-background: 0 0% 100%;
+		--sidebar-foreground: 0 0% 32%;
+		--sidebar-primary: 0 0% 9%;
+		--sidebar-primary-foreground: 0 0% 100%;
+		--sidebar-accent: 0 0% 91%;
+		--sidebar-accent-foreground: 0 0% 9%;
+		--sidebar-border: 0 0% 88%;
+		--sidebar-ring: 219 99% 53%;
 	}
 
 	* {
@@ -56,81 +61,81 @@
 	body {
 		@apply bg-background text-foreground antialiased;
 		font-family:
-			Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-			sans-serif;
+			"IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+			"Segoe UI", sans-serif;
 	}
 
 	.light {
-		--background: 40 43% 97%;
-		--foreground: 34 9% 15%;
+		--background: 0 0% 96%;
+		--foreground: 0 0% 9%;
 		--card: 0 0% 100%;
-		--card-foreground: 34 9% 15%;
+		--card-foreground: 0 0% 9%;
 		--popover: 0 0% 100%;
-		--popover-foreground: 34 9% 15%;
-		--primary: 34 9% 15%;
-		--primary-foreground: 40 43% 97%;
-		--secondary: 43 28% 95%;
-		--secondary-foreground: 34 9% 25%;
-		--muted: 43 28% 95%;
-		--muted-foreground: 34 8% 40%;
-		--accent: 40 25% 92%;
-		--accent-foreground: 34 9% 12%;
-		--destructive: 8 50% 51%;
-		--destructive-foreground: 40 43% 97%;
-		--border: 40 22% 88%;
-		--input: 40 22% 88%;
-		--ring: 21 33% 53%;
-		--brass: 21 33% 53%;
-		--brass-foreground: 40 40% 97%;
-		--chart-1: 21 33% 53%;
-		--chart-2: 25 46% 84%;
-		--chart-3: 24 37% 39%;
-		--chart-4: 27 30% 27%;
-		--chart-5: 36 15% 70%;
-		--sidebar-background: 40 43% 97%;
-		--sidebar-foreground: 34 9% 30%;
-		--sidebar-primary: 34 9% 15%;
-		--sidebar-primary-foreground: 40 43% 97%;
-		--sidebar-accent: 43 28% 93%;
-		--sidebar-accent-foreground: 34 9% 12%;
-		--sidebar-border: 40 22% 89%;
-		--sidebar-ring: 21 33% 53%;
+		--popover-foreground: 0 0% 9%;
+		--primary: 219 99% 53%;
+		--primary-foreground: 0 0% 100%;
+		--secondary: 0 0% 88%;
+		--secondary-foreground: 0 0% 22%;
+		--muted: 0 0% 91%;
+		--muted-foreground: 0 0% 32%;
+		--accent: 0 0% 91%;
+		--accent-foreground: 0 0% 9%;
+		--destructive: 357 76% 49%;
+		--destructive-foreground: 0 0% 100%;
+		--border: 0 0% 88%;
+		--input: 0 0% 88%;
+		--ring: 219 99% 53%;
+		--brass: 219 99% 53%;
+		--brass-foreground: 0 0% 100%;
+		--chart-1: 265 65% 46%;
+		--chart-2: 204 86% 49%;
+		--chart-3: 180 100% 18%;
+		--chart-4: 334 74% 36%;
+		--chart-5: 357 94% 64%;
+		--sidebar-background: 0 0% 100%;
+		--sidebar-foreground: 0 0% 32%;
+		--sidebar-primary: 0 0% 9%;
+		--sidebar-primary-foreground: 0 0% 100%;
+		--sidebar-accent: 0 0% 91%;
+		--sidebar-accent-foreground: 0 0% 9%;
+		--sidebar-border: 0 0% 88%;
+		--sidebar-ring: 219 99% 53%;
 	}
 
 	.dark {
-		--background: 34 18% 8%;
-		--foreground: 38 38% 94%;
-		--card: 33 16% 11%;
-		--card-foreground: 38 38% 94%;
-		--popover: 33 16% 11%;
-		--popover-foreground: 38 38% 94%;
-		--primary: 40 43% 97%;
-		--primary-foreground: 34 18% 8%;
-		--secondary: 33 15% 15%;
-		--secondary-foreground: 36 15% 75%;
-		--muted: 33 15% 15%;
-		--muted-foreground: 35 12% 63%;
-		--accent: 32 15% 18%;
-		--accent-foreground: 38 38% 94%;
-		--destructive: 8 50% 51%;
-		--destructive-foreground: 40 43% 97%;
-		--border: 33 12% 24%;
-		--input: 33 12% 24%;
-		--ring: 22 35% 51%;
-		--brass: 22 35% 51%;
-		--brass-foreground: 30 25% 8%;
-		--chart-1: 22 35% 51%;
-		--chart-2: 25 27% 23%;
-		--chart-3: 24 44% 66%;
-		--chart-4: 33 12% 35%;
-		--chart-5: 33 14% 18%;
-		--sidebar-background: 38 17% 9%;
-		--sidebar-foreground: 36 15% 75%;
-		--sidebar-primary: 40 43% 97%;
-		--sidebar-primary-foreground: 34 18% 8%;
-		--sidebar-accent: 33 15% 15%;
-		--sidebar-accent-foreground: 38 38% 94%;
-		--sidebar-border: 33 12% 17%;
-		--sidebar-ring: 22 35% 51%;
+		--background: 0 0% 9%;
+		--foreground: 0 0% 96%;
+		--card: 0 0% 15%;
+		--card-foreground: 0 0% 96%;
+		--popover: 0 0% 15%;
+		--popover-foreground: 0 0% 96%;
+		--primary: 219 99% 53%;
+		--primary-foreground: 0 0% 100%;
+		--secondary: 0 0% 22%;
+		--secondary-foreground: 0 0% 96%;
+		--muted: 0 0% 15%;
+		--muted-foreground: 0 0% 78%;
+		--accent: 0 0% 20%;
+		--accent-foreground: 0 0% 96%;
+		--destructive: 357 76% 49%;
+		--destructive-foreground: 0 0% 100%;
+		--border: 0 0% 22%;
+		--input: 0 0% 22%;
+		--ring: 218 100% 64%;
+		--brass: 218 100% 64%;
+		--brass-foreground: 0 0% 9%;
+		--chart-1: 264 97% 62%;
+		--chart-2: 203 100% 60%;
+		--chart-3: 178 100% 25%;
+		--chart-4: 334 100% 75%;
+		--chart-5: 357 94% 64%;
+		--sidebar-background: 0 0% 9%;
+		--sidebar-foreground: 0 0% 78%;
+		--sidebar-primary: 0 0% 96%;
+		--sidebar-primary-foreground: 0 0% 9%;
+		--sidebar-accent: 0 0% 15%;
+		--sidebar-accent-foreground: 0 0% 96%;
+		--sidebar-border: 0 0% 15%;
+		--sidebar-ring: 218 100% 64%;
 	}
 }

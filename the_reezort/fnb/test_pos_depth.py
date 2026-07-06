@@ -229,6 +229,21 @@ class TestPosDepth(FrappeTestCase):
 		self.assertTrue(out["guest_folio"])
 		self.assertEqual(frappe.db.get_value("Restaurant Order", order, "state"), "Settled")
 
+	def test_recent_orders_includes_room_service(self):
+		from the_reezort.fnb.api import list_recent_orders
+
+		stay = self._in_house_stay()
+		order = create_room_service_order(
+			stay=stay, outlet=self.outlet, items=[{"menu_item": self._items(1)[0]["name"], "quantity": 1}]
+		)["data"]["order"]["name"]
+		# The folio's recent-F&B panel must surface the room-service order.
+		orders = list_recent_orders(stay)["data"]["orders"]
+		names = [o["name"] for o in orders]
+		self.assertIn(order, names)
+		match = next(o for o in orders if o["name"] == order)
+		self.assertEqual(match["source"], "Restaurant Order")
+		self.assertTrue(match["items"])
+
 	def test_room_service_rejects_non_in_house(self):
 		stay = self._in_house_stay()
 		frappe.db.set_value("Stay", stay, "stay_status", "Checked Out")

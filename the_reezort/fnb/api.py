@@ -325,6 +325,8 @@ def post_room_charge_order(
 
 @frappe.whitelist()
 def list_recent_orders(stay: str, limit: int = 10) -> dict:
+	"""Recent F&B activity for a stay — both legacy FnB Order room charges and the
+	newer room-service Restaurant Orders (which flow through the kitchen)."""
 	_require_login()
 	rows = frappe.get_all(
 		"FnB Order",
@@ -334,6 +336,7 @@ def list_recent_orders(stay: str, limit: int = 10) -> dict:
 		limit=int(limit),
 	)
 	for r in rows:
+		r["source"] = "FnB Order"
 		r["outlet_name"] = frappe.db.get_value("FnB Outlet", r["outlet"], "outlet_name")
 		r["items"] = frappe.get_all(
 			"FnB Order Item",
@@ -341,7 +344,41 @@ def list_recent_orders(stay: str, limit: int = 10) -> dict:
 			fields=["menu_item", "item_name", "quantity", "rate", "amount"],
 			order_by="idx asc",
 		)
-	return _envelope({"orders": rows})
+
+	# Room-service orders raised via the POS/kitchen bridge are Restaurant Orders.
+	for r in frappe.get_all(
+		"Restaurant Order",
+		filters={"stay": stay, "bill_type": "Room"},
+		fields=["name", "outlet", "opened_at", "waiter_user", "grand_total", "currency", "state", "folio_line", "chef_notes", "guest_note", "kot_number"],
+		order_by="opened_at desc",
+		limit=int(limit),
+	):
+		rows.append(
+			{
+				"name": r["name"],
+				"source": "Restaurant Order",
+				"outlet": r["outlet"],
+				"outlet_name": frappe.db.get_value("FnB Outlet", r["outlet"], "outlet_name"),
+				"ordered_at": str(r["opened_at"]) if r["opened_at"] else None,
+				"ordered_by": r["waiter_user"],
+				"total_amount": r["grand_total"],
+				"currency": r["currency"],
+				"state": r["state"],
+				"folio_line": r["folio_line"],
+				"chef_notes": r["chef_notes"],
+				"guest_note": r["guest_note"],
+				"kot_number": r["kot_number"],
+				"items": frappe.get_all(
+					"Restaurant Order Item",
+					filters={"parent": r["name"]},
+					fields=["menu_item", "item_name", "quantity", "rate", "amount"],
+					order_by="idx asc",
+				),
+			}
+		)
+
+	rows.sort(key=lambda x: x.get("ordered_at") or "", reverse=True)
+	return _envelope({"orders": rows[: int(limit)]})
 
 
 # ---------- seed ----------

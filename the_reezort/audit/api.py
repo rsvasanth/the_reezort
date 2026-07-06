@@ -21,7 +21,7 @@ def record_audit_event(
 ):
 	"""Best-effort append to the audit log. Swallows exceptions."""
 	try:
-		frappe.get_doc(
+		event = frappe.get_doc(
 			{
 				"doctype": "Audit Event",
 				"at": now(),
@@ -33,8 +33,10 @@ def record_audit_event(
 				"details": frappe.as_json(details or {}),
 			}
 		).insert(ignore_permissions=True)
+		return event.name
 	except Exception:
 		frappe.log_error(title="Audit Event insert failed", message=frappe.get_traceback())
+		return None
 
 
 def _envelope(data, warnings=None, blockers=None, next_actions=None):

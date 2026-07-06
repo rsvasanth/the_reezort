@@ -154,6 +154,7 @@ scheduler_events = {
 		"the_reezort.maintenance.api.escalate_overdue_tickets",
 		"the_reezort.integrations.ota.api.retry_dead_letter",
 		"the_reezort.staff.notification_scheduler.send_task_followups",
+		"the_reezort.reservation.api.expire_stale_holds",
 	],
 	"daily": [
 		"the_reezort.staff.notification_scheduler.send_approval_followups",

@@ -115,6 +115,82 @@ def _active_hold_usage(property_name, arrival_date, departure_date):
 	return usage
 
 
+def _active_hold_usage_excluding(property_name, arrival_date, departure_date, exclude_reservation):
+	"""Active-hold usage by room type, ignoring one reservation's own holds.
+
+	Used at confirm/amend time so a reservation isn't counted as competing with
+	itself when we re-validate that inventory still exists.
+	"""
+	rows = frappe.get_all(
+		"Room Hold",
+		filters={
+			"resort_property": property_name,
+			"status": "Active",
+			"start_date": ["<", departure_date],
+			"end_date": [">", arrival_date],
+			"expires_at": [">", now_datetime()],
+			"reservation": ["!=", exclude_reservation],
+		},
+		fields=["room_type", "quantity"],
+	)
+	usage = Counter()
+	for row in rows:
+		usage[row.room_type] += row.quantity or 1
+	return usage
+
+
+def _available_counts_excluding(property_name, arrival_date, departure_date, exclude_reservation):
+	"""Available room count per room type for a date range, excluding a given
+	reservation's own blocking usage (its confirmed rooms and its active holds)."""
+	inventory = _room_type_inventory(property_name)
+	others = [
+		r
+		for r in _overlapping_reservations(property_name, arrival_date, departure_date)
+		if r != exclude_reservation
+	]
+	reservation_usage = _reservation_room_usage(others)
+	hold_usage = _active_hold_usage_excluding(property_name, arrival_date, departure_date, exclude_reservation)
+	return {
+		room_type: max(physical - reservation_usage[room_type] - hold_usage[room_type], 0)
+		for room_type, physical in inventory.items()
+	}
+
+
+def _requested_counts(doc):
+	"""Requested room count per room type from a reservation's active rows."""
+	counts = Counter()
+	for row in doc.rooms:
+		if row.status not in ("Cancelled",):
+			counts[row.room_type] += 1
+	return counts
+
+
+def _reservation_active_holds(reservation):
+	return frappe.get_all(
+		"Room Hold",
+		filters={"reservation": reservation, "status": "Active", "expires_at": [">", now_datetime()]},
+		pluck="name",
+	)
+
+
+def _release_reservation_holds(reservation, new_status="Released"):
+	"""Move a reservation's non-terminal holds to a terminal state, freeing inventory."""
+	for name in frappe.get_all(
+		"Room Hold",
+		filters={"reservation": reservation, "status": ["in", ("Active", "Expired")]},
+		pluck="name",
+	):
+		frappe.db.set_value("Room Hold", name, "status", new_status)
+
+
+def _is_reservation_manager():
+	return bool(
+		{"Resort Manager", "Reservation Manager", "System Manager"}.intersection(
+			frappe.get_roles(frappe.session.user)
+		)
+	)
+
+
 def _room_rate(room_type, nights):
 	# Prefer the Room Type's own linked ERPNext item (set when a rate is configured in
 	# the console); fall back to the legacy hardcoded map for the original demo types.
@@ -505,7 +581,9 @@ def get_reservation_deposit_state(reservation):
 
 
 @frappe.whitelist()
-def confirm_reservation(reservation=None, booker=None, guests=None, guarantee=None, accepted_terms=False):
+def confirm_reservation(
+	reservation=None, booker=None, guests=None, guarantee=None, accepted_terms=False, allow_override=False
+):
 	_require_permission("Reservation", "write")
 
 	if not accepted_terms:
@@ -514,6 +592,30 @@ def confirm_reservation(reservation=None, booker=None, guests=None, guarantee=No
 	doc = frappe.get_doc("Reservation", reservation)
 	if doc.status not in {"Hold", "Draft", "Deposit Pending"}:
 		frappe.throw(_("Reservation cannot be confirmed from status {0}.").format(doc.status))
+
+	# Overbooking guard: the hold must still be active, and inventory must still
+	# exist. If the hold expired, re-validate live availability (excluding this
+	# reservation's own usage). A manager can override with allow_override=1.
+	allow_override = bool(int(allow_override or 0)) if str(allow_override).isdigit() else bool(allow_override)
+	if not allow_override:
+		hold_active = bool(_reservation_active_holds(reservation))
+		if not hold_active:
+			available = _available_counts_excluding(
+				doc.resort_property, doc.arrival_date, doc.departure_date, reservation
+			)
+			shortfall = [
+				room_type
+				for room_type, count in _requested_counts(doc).items()
+				if available.get(room_type, 0) < count
+			]
+			if shortfall:
+				frappe.throw(
+					_(
+						"The hold has expired and {0} is no longer available for these dates. "
+						"Please re-search availability."
+					).format(", ".join(shortfall)),
+					frappe.ValidationError,
+				)
 
 	# Owner policy: a Partial/Full deposit must be paid before confirmation.
 	pct = DEPOSIT_POLICY_PERCENT.get(doc.deposit_policy or "None", 0)
@@ -563,12 +665,19 @@ def confirm_reservation(reservation=None, booker=None, guests=None, guarantee=No
 	doc.booker_guest_profile = primary_profile
 	doc.staying_guest_profile = primary_profile
 	doc.status = "Confirmed"
+	doc.confirmed_at = now_datetime()
 	if pct > 0:
 		paid = _deposit_paid_on_reservation(reservation)
 		doc.deposit_status = "Paid" if paid >= round(flt(doc.total_estimated_amount) * pct / 100.0, 2) else "Partially Paid"
 	elif guarantee.get("method") == "Payment":
 		doc.deposit_status = "Paid"
 	doc.save(ignore_permissions=True)
+
+	# The confirmed reservation now blocks inventory via its status, so its holds
+	# must be consumed — otherwise the hold AND the reservation double-count.
+	for name in _reservation_active_holds(reservation):
+		frappe.db.set_value("Room Hold", name, "status", "Consumed")
+
 	frappe.db.commit()
 
 	return {"reservation": doc.name, "status": doc.status, "confirmation_number": doc.name}
@@ -585,15 +694,256 @@ def cancel_reservation(reservation=None, reason="Guest Request", requested_depos
 	for row in doc.rooms:
 		row.status = "Cancelled"
 	doc.status = "Cancelled"
+	doc.cancelled_at = now_datetime()
 	doc.internal_notes = "\n".join(filter(None, [doc.internal_notes, f"Cancellation reason: {reason}"]))
 	doc.save(ignore_permissions=True)
+
+	# Release any inventory this reservation was holding.
+	_release_reservation_holds(reservation, new_status="Released")
 	frappe.db.commit()
+
+	from the_reezort.audit.api import record_audit_event
+
+	record_audit_event("Reservation", reservation, "cancel", reason,
+		{"requested_deposit_action": requested_deposit_action})
 
 	return {
 		"reservation": doc.name,
 		"status": doc.status,
 		"financial_handoff_required": requested_deposit_action in {"Refund", "Forfeit"},
 	}
+
+
+@frappe.whitelist()
+def amend_reservation(reservation=None, changes=None, reason=None, allow_override=False):
+	"""Amend a reservation's dates and/or per-row room type, re-validating
+	availability and recalculating the estimate. Records an audit trail.
+
+	Supported changes: arrival_date, departure_date, and rooms (a list of
+	{room_type, adults, children} replacing the current rows). Confirmed
+	reservations move to 'Modified'; Hold/Draft keep their status.
+	"""
+	_require_permission("Reservation", "write")
+	changes = _as_dict(changes)
+	if not changes:
+		frappe.throw(_("No changes supplied."))
+	if not reason or not str(reason).strip():
+		frappe.throw(_("An amendment reason is required."))
+
+	doc = frappe.get_doc("Reservation", reservation)
+	AMENDABLE = {"Hold", "Quoted", "Draft", "Deposit Pending", "Confirmed", "Modified", "Waitlisted"}
+	if doc.status not in AMENDABLE:
+		frappe.throw(_("Reservation cannot be amended from status {0}.").format(doc.status))
+
+	before = {
+		"arrival_date": str(doc.arrival_date),
+		"departure_date": str(doc.departure_date),
+		"rooms": [{"room_type": r.room_type, "adults": r.adults, "children": r.children} for r in doc.rooms],
+		"total_estimated_amount": flt(doc.total_estimated_amount),
+	}
+
+	new_arrival = getdate(changes.get("arrival_date") or doc.arrival_date)
+	new_departure = getdate(changes.get("departure_date") or doc.departure_date)
+	_validate_stay_dates(new_arrival, new_departure)
+
+	new_rooms = _as_list(changes.get("rooms")) if changes.get("rooms") is not None else None
+	requested = (
+		Counter(r.get("room_type") for r in new_rooms)
+		if new_rooms
+		else Counter(r.room_type for r in doc.rooms if r.status != "Cancelled")
+	)
+	if not requested:
+		frappe.throw(_("At least one room is required."))
+
+	# Re-validate availability for the amended dates/types, excluding this
+	# reservation's own current usage. Manager override skips the check.
+	allow_override = bool(int(allow_override or 0)) if str(allow_override).isdigit() else bool(allow_override)
+	if not allow_override:
+		available = _available_counts_excluding(doc.resort_property, new_arrival, new_departure, reservation)
+		shortfall = [rt for rt, count in requested.items() if not rt or available.get(rt, 0) < count]
+		if shortfall:
+			frappe.throw(
+				_("Not available for the amended dates: {0}.").format(", ".join(map(str, shortfall))),
+				frappe.ValidationError,
+			)
+
+	nights = date_diff(new_departure, new_arrival)
+	doc.arrival_date = new_arrival
+	doc.departure_date = new_departure
+
+	if new_rooms is not None:
+		doc.set("rooms", [])
+		for row in new_rooms:
+			doc.append("rooms", {
+				"room_type": row.get("room_type"),
+				"adults": row.get("adults") or 2,
+				"children": row.get("children") or 0,
+				"estimated_amount": _room_rate(row.get("room_type"), nights),
+				"status": "Held" if doc.status in {"Hold", "Quoted", "Draft"} else "Confirmed",
+			})
+	else:
+		for row in doc.rooms:
+			row.estimated_amount = _room_rate(row.room_type, nights)
+
+	doc.total_estimated_amount = sum(flt(r.estimated_amount) for r in doc.rooms)
+	if doc.status in {"Confirmed", "Modified"}:
+		doc.status = "Modified"
+	doc.save(ignore_permissions=True)
+
+	# Re-point active holds to the amended dates/types so inventory tracking stays
+	# correct. Simplest correct approach: release old holds, create fresh ones.
+	if doc.status in {"Hold", "Quoted", "Draft", "Deposit Pending"}:
+		_release_reservation_holds(reservation, new_status="Released")
+		for room_type, quantity in requested.items():
+			frappe.get_doc({
+				"doctype": "Room Hold",
+				"resort_property": doc.resort_property,
+				"reservation": reservation,
+				"hold_scope": "Room Type",
+				"room_type": room_type,
+				"start_date": new_arrival,
+				"end_date": new_departure,
+				"quantity": quantity,
+				"status": "Active",
+				"expires_at": doc.hold_expires_at or add_to_date(now_datetime(), minutes=15),
+				"source": "Staff",
+			}).insert(ignore_permissions=True)
+
+	frappe.db.commit()
+
+	after = {
+		"arrival_date": str(doc.arrival_date),
+		"departure_date": str(doc.departure_date),
+		"rooms": [{"room_type": r.room_type, "adults": r.adults, "children": r.children} for r in doc.rooms],
+		"total_estimated_amount": flt(doc.total_estimated_amount),
+	}
+	from the_reezort.audit.api import record_audit_event
+
+	amendment = record_audit_event(
+		"Reservation", reservation, "amend", reason, {"before": before, "after": after}
+	)
+
+	return {
+		"reservation": doc.name,
+		"amendment": amendment,
+		"status": "Modified" if doc.status == "Modified" else doc.status,
+		"total_estimated_amount": flt(doc.total_estimated_amount),
+	}
+
+
+# No-show statuses a reservation can be marked from (arrival passed, guest never arrived).
+NO_SHOW_ELIGIBLE_STATUSES = {"Confirmed", "Modified", "Deposit Pending", "No Show Pending"}
+
+
+@frappe.whitelist()
+def mark_no_show(reservation=None, reason=None, forfeit_deposit=True, enforce_arrival=True):
+	"""Mark a reservation as No-Show: release its inventory, record the reason,
+	and forfeit the deposit per policy. Arrival date must have passed unless
+	enforce_arrival=0."""
+	_require_permission("Reservation", "write")
+	if not reason or not str(reason).strip():
+		frappe.throw(_("A no-show reason is required."))
+
+	doc = frappe.get_doc("Reservation", reservation)
+	if doc.status not in NO_SHOW_ELIGIBLE_STATUSES:
+		frappe.throw(_("Reservation cannot be marked no-show from status {0}.").format(doc.status))
+
+	enforce_arrival = bool(int(enforce_arrival or 0)) if str(enforce_arrival).isdigit() else bool(enforce_arrival)
+	if enforce_arrival and doc.arrival_date and getdate(doc.arrival_date) > getdate(now_datetime()):
+		frappe.throw(_("Arrival date has not passed yet; cannot mark no-show."))
+
+	for row in doc.rooms:
+		if row.status != "Checked In":
+			row.status = "Cancelled"
+	doc.status = "No Show"
+	doc.no_show_at = now_datetime()
+	doc.no_show_by = frappe.session.user
+	doc.no_show_reason = reason
+
+	forfeit_deposit = bool(int(forfeit_deposit or 0)) if str(forfeit_deposit).isdigit() else bool(forfeit_deposit)
+	if forfeit_deposit and doc.deposit_status in {"Paid", "Partially Paid"}:
+		doc.deposit_status = "Forfeited"
+	doc.save(ignore_permissions=True)
+
+	_release_reservation_holds(reservation, new_status="Released")
+	frappe.db.commit()
+
+	from the_reezort.audit.api import record_audit_event
+
+	record_audit_event("Reservation", reservation, "no_show", reason,
+		{"forfeit_deposit": forfeit_deposit, "deposit_status": doc.deposit_status})
+
+	return {
+		"reservation": doc.name,
+		"status": doc.status,
+		"deposit_status": doc.deposit_status,
+		"financial_handoff_required": forfeit_deposit and doc.deposit_status == "Forfeited",
+	}
+
+
+@frappe.whitelist()
+def reverse_no_show(reservation=None, reason=None):
+	"""Reverse a No-Show back to Confirmed (manager only) — e.g. late arrival."""
+	if not _is_reservation_manager():
+		frappe.throw(_("Only a manager can reverse a no-show."), frappe.PermissionError)
+	if not reason or not str(reason).strip():
+		frappe.throw(_("A reversal reason is required."))
+
+	doc = frappe.get_doc("Reservation", reservation)
+	if doc.status != "No Show":
+		frappe.throw(_("Only a No-Show reservation can be reversed (current: {0}).").format(doc.status))
+
+	for row in doc.rooms:
+		if row.status == "Cancelled":
+			row.status = "Confirmed"
+	doc.status = "Confirmed"
+	doc.no_show_reason = "\n".join(filter(None, [doc.no_show_reason, f"Reversed: {reason}"]))
+	if doc.deposit_status == "Forfeited":
+		doc.deposit_status = "Paid"
+	doc.save(ignore_permissions=True)
+	frappe.db.commit()
+
+	from the_reezort.audit.api import record_audit_event
+
+	record_audit_event("Reservation", reservation, "reverse_no_show", reason)
+
+	return {"reservation": doc.name, "status": doc.status, "deposit_status": doc.deposit_status}
+
+
+def expire_stale_holds():
+	"""Scheduled: expire Room Holds past their expires_at and release the
+	inventory of any still-tentative reservations that relied on them.
+
+	Idempotent — safe to run repeatedly. Registered as an hourly scheduler event.
+	"""
+	now = now_datetime()
+	stale = frappe.get_all(
+		"Room Hold",
+		filters={"status": "Active", "expires_at": ["<", now]},
+		fields=["name", "reservation"],
+	)
+	expired_reservations = set()
+	for hold in stale:
+		frappe.db.set_value("Room Hold", hold.name, "status", "Expired")
+		if hold.reservation:
+			expired_reservations.add(hold.reservation)
+
+	released = 0
+	for reservation in expired_reservations:
+		status = frappe.db.get_value("Reservation", reservation, "status")
+		# Only expire reservations still in a tentative state with no remaining
+		# active hold — never touch Confirmed / Checked In / paid bookings.
+		if status in {"Hold", "Quoted", "Draft"} and not _reservation_active_holds(reservation):
+			doc = frappe.get_doc("Reservation", reservation)
+			doc.status = "Expired"
+			for row in doc.rooms:
+				if row.status == "Held":
+					row.status = "Cancelled"
+			doc.save(ignore_permissions=True)
+			released += 1
+
+	frappe.db.commit()
+	return {"holds_expired": len(stale), "reservations_expired": released}
 
 
 @frappe.whitelist()

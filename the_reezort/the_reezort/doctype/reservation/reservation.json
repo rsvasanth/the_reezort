@@ -6,38 +6,249 @@
  "doctype": "DocType",
  "document_type": "Document",
  "engine": "InnoDB",
- "field_order": ["naming_series", "resort_property", "status", "booking_source", "source_reference", "stay_section", "arrival_date", "departure_date", "nights", "currency", "rooms", "guests_section", "guests", "profile_section", "booker_guest_profile", "staying_guest_profile", "erpnext_customer", "billing_section", "bill_to_type", "bill_to_customer", "deposit_policy", "deposit_status", "total_estimated_amount", "notes_section", "special_requests", "internal_notes", "lifecycle_section", "hold_expires_at", "confirmed_at", "cancelled_at"],
+ "field_order": [
+  "naming_series",
+  "resort_property",
+  "status",
+  "booking_source",
+  "source_reference",
+  "stay_section",
+  "arrival_date",
+  "departure_date",
+  "nights",
+  "currency",
+  "rooms",
+  "guests_section",
+  "guests",
+  "profile_section",
+  "booker_guest_profile",
+  "staying_guest_profile",
+  "erpnext_customer",
+  "billing_section",
+  "bill_to_type",
+  "bill_to_customer",
+  "deposit_policy",
+  "deposit_status",
+  "total_estimated_amount",
+  "notes_section",
+  "special_requests",
+  "internal_notes",
+  "lifecycle_section",
+  "hold_expires_at",
+  "confirmed_at",
+  "cancelled_at",
+  "no_show_at",
+  "no_show_by",
+  "no_show_reason"
+ ],
  "fields": [
-  {"default": "RZ-RES-.YYYY.-.#####", "fieldname": "naming_series", "fieldtype": "Select", "label": "Series", "options": "RZ-RES-.YYYY.-.#####", "reqd": 1},
-  {"fieldname": "resort_property", "fieldtype": "Link", "in_list_view": 1, "label": "Resort Property", "options": "Resort Property", "reqd": 1},
-  {"default": "Draft", "fieldname": "status", "fieldtype": "Select", "in_list_view": 1, "label": "Status", "options": "Draft\nQuoted\nHold\nDeposit Pending\nConfirmed\nModified\nWaitlisted\nCancelled\nNo Show Pending\nNo Show\nChecked In\nCompleted", "reqd": 1},
-  {"default": "Direct", "fieldname": "booking_source", "fieldtype": "Select", "in_list_view": 1, "label": "Booking Source", "options": "Direct\nStaff\nCorporate\nTravel Agent\nOTA\nEvent\nWalk In", "reqd": 1},
-  {"fieldname": "source_reference", "fieldtype": "Data", "label": "Source Reference"},
-  {"fieldname": "stay_section", "fieldtype": "Section Break", "label": "Stay"},
-  {"fieldname": "arrival_date", "fieldtype": "Date", "in_list_view": 1, "label": "Arrival Date", "reqd": 1},
-  {"fieldname": "departure_date", "fieldtype": "Date", "in_list_view": 1, "label": "Departure Date", "reqd": 1},
-  {"fieldname": "nights", "fieldtype": "Int", "label": "Nights", "read_only": 1},
-  {"fieldname": "currency", "fieldtype": "Link", "label": "Currency", "options": "Currency"},
-  {"fieldname": "rooms", "fieldtype": "Table", "label": "Rooms", "options": "Reservation Room", "reqd": 1},
-  {"fieldname": "guests_section", "fieldtype": "Section Break", "label": "Guests"},
-  {"fieldname": "guests", "fieldtype": "Table", "label": "Guests", "options": "Reservation Guest"},
-  {"fieldname": "profile_section", "fieldtype": "Section Break", "label": "Profiles"},
-  {"fieldname": "booker_guest_profile", "fieldtype": "Link", "label": "Booker Guest Profile", "options": "Guest Profile"},
-  {"fieldname": "staying_guest_profile", "fieldtype": "Link", "label": "Staying Guest Profile", "options": "Guest Profile"},
-  {"fieldname": "erpnext_customer", "fieldtype": "Link", "label": "ERPNext Customer", "options": "Customer"},
-  {"fieldname": "billing_section", "fieldtype": "Section Break", "label": "Billing"},
-  {"default": "Guest", "fieldname": "bill_to_type", "fieldtype": "Select", "label": "Bill To Type", "options": "Guest\nBooker\nCorporate\nTravel Agent\nEvent\nComplimentary"},
-  {"fieldname": "bill_to_customer", "fieldtype": "Link", "label": "Bill To Customer", "options": "Customer"},
-  {"default": "Partial", "fieldname": "deposit_policy", "fieldtype": "Select", "label": "Deposit Policy", "options": "None\nPartial\nFull\nCorporate Credit\nVoucher\nManual Approval"},
-  {"default": "Pending", "fieldname": "deposit_status", "fieldtype": "Select", "label": "Deposit Status", "options": "Not Required\nPending\nPartially Paid\nPaid\nFailed\nWaived\nRefunded\nForfeited"},
-  {"default": "0", "fieldname": "total_estimated_amount", "fieldtype": "Currency", "in_list_view": 1, "label": "Total Estimated Amount", "read_only": 1},
-  {"fieldname": "notes_section", "fieldtype": "Section Break", "label": "Notes"},
-  {"fieldname": "special_requests", "fieldtype": "Text", "label": "Special Requests"},
-  {"fieldname": "internal_notes", "fieldtype": "Text", "label": "Internal Notes"},
-  {"fieldname": "lifecycle_section", "fieldtype": "Section Break", "label": "Lifecycle"},
-  {"fieldname": "hold_expires_at", "fieldtype": "Datetime", "label": "Hold Expires At"},
-  {"fieldname": "confirmed_at", "fieldtype": "Datetime", "label": "Confirmed At", "read_only": 1},
-  {"fieldname": "cancelled_at", "fieldtype": "Datetime", "label": "Cancelled At", "read_only": 1}
+  {
+   "default": "RZ-RES-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "RZ-RES-.YYYY.-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "resort_property",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Resort Property",
+   "options": "Resort Property",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Draft\nQuoted\nHold\nDeposit Pending\nConfirmed\nModified\nWaitlisted\nCancelled\nNo Show Pending\nNo Show\nChecked In\nCompleted\nExpired",
+   "reqd": 1
+  },
+  {
+   "default": "Direct",
+   "fieldname": "booking_source",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Booking Source",
+   "options": "Direct\nStaff\nCorporate\nTravel Agent\nOTA\nEvent\nWalk In",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_reference",
+   "fieldtype": "Data",
+   "label": "Source Reference"
+  },
+  {
+   "fieldname": "stay_section",
+   "fieldtype": "Section Break",
+   "label": "Stay"
+  },
+  {
+   "fieldname": "arrival_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Arrival Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "departure_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Departure Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "nights",
+   "fieldtype": "Int",
+   "label": "Nights",
+   "read_only": 1
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "rooms",
+   "fieldtype": "Table",
+   "label": "Rooms",
+   "options": "Reservation Room",
+   "reqd": 1
+  },
+  {
+   "fieldname": "guests_section",
+   "fieldtype": "Section Break",
+   "label": "Guests"
+  },
+  {
+   "fieldname": "guests",
+   "fieldtype": "Table",
+   "label": "Guests",
+   "options": "Reservation Guest"
+  },
+  {
+   "fieldname": "profile_section",
+   "fieldtype": "Section Break",
+   "label": "Profiles"
+  },
+  {
+   "fieldname": "booker_guest_profile",
+   "fieldtype": "Link",
+   "label": "Booker Guest Profile",
+   "options": "Guest Profile"
+  },
+  {
+   "fieldname": "staying_guest_profile",
+   "fieldtype": "Link",
+   "label": "Staying Guest Profile",
+   "options": "Guest Profile"
+  },
+  {
+   "fieldname": "erpnext_customer",
+   "fieldtype": "Link",
+   "label": "ERPNext Customer",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "billing_section",
+   "fieldtype": "Section Break",
+   "label": "Billing"
+  },
+  {
+   "default": "Guest",
+   "fieldname": "bill_to_type",
+   "fieldtype": "Select",
+   "label": "Bill To Type",
+   "options": "Guest\nBooker\nCorporate\nTravel Agent\nEvent\nComplimentary"
+  },
+  {
+   "fieldname": "bill_to_customer",
+   "fieldtype": "Link",
+   "label": "Bill To Customer",
+   "options": "Customer"
+  },
+  {
+   "default": "Partial",
+   "fieldname": "deposit_policy",
+   "fieldtype": "Select",
+   "label": "Deposit Policy",
+   "options": "None\nPartial\nFull\nCorporate Credit\nVoucher\nManual Approval"
+  },
+  {
+   "default": "Pending",
+   "fieldname": "deposit_status",
+   "fieldtype": "Select",
+   "label": "Deposit Status",
+   "options": "Not Required\nPending\nPartially Paid\nPaid\nFailed\nWaived\nRefunded\nForfeited"
+  },
+  {
+   "default": "0",
+   "fieldname": "total_estimated_amount",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Total Estimated Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "special_requests",
+   "fieldtype": "Text",
+   "label": "Special Requests"
+  },
+  {
+   "fieldname": "internal_notes",
+   "fieldtype": "Text",
+   "label": "Internal Notes"
+  },
+  {
+   "fieldname": "lifecycle_section",
+   "fieldtype": "Section Break",
+   "label": "Lifecycle"
+  },
+  {
+   "fieldname": "hold_expires_at",
+   "fieldtype": "Datetime",
+   "label": "Hold Expires At"
+  },
+  {
+   "fieldname": "confirmed_at",
+   "fieldtype": "Datetime",
+   "label": "Confirmed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cancelled_at",
+   "fieldtype": "Datetime",
+   "label": "Cancelled At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "no_show_at",
+   "fieldtype": "Datetime",
+   "label": "No-Show At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "no_show_by",
+   "fieldtype": "Link",
+   "label": "No-Show By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "no_show_reason",
+   "fieldtype": "Small Text",
+   "label": "No-Show Reason",
+   "read_only": 1
+  }
  ],
  "links": [],
  "modified": "2026-06-29 00:00:00.000000",
@@ -46,7 +257,18 @@
  "name": "Reservation",
  "owner": "Administrator",
  "permissions": [
-  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1}
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
  ],
  "sort_field": "arrival_date",
  "sort_order": "DESC",

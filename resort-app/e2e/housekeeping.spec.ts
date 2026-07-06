@@ -53,20 +53,43 @@ test.describe("Housekeeping", () => {
 		await expect(card.getByRole("button", { name: "Assign" })).toBeVisible();
 		await expect(card.getByText("Departure Cleaning")).toBeVisible();
 
-		// Assign → Assigned → [Start]
+		// Assign → dropdown menu → pick an assignee → Assigned → [Start]
 		await card.getByRole("button", { name: "Assign" }).click();
+		await page.getByRole("menuitem", { name: "Assigned — pick later" }).click();
 		await expect(card.getByRole("button", { name: "Start" })).toBeVisible();
 
 		// Start → In Progress → [Pause] [Complete]
 		await card.getByRole("button", { name: "Start" }).click();
 		await expect(card.getByRole("button", { name: "Complete" })).toBeVisible();
 
-		// Complete → Inspection Required → [Inspect]
+		// Complete → sheet (notes + optional after-cleaning photos) → submit
+		// → Inspection Required → [Inspect]
 		await card.getByRole("button", { name: "Complete" }).click();
+		const completeSheet = page.getByTestId("complete-task-sheet");
+		await expect(completeSheet).toBeVisible();
+		await completeSheet.getByTestId("complete-task-submit").click();
 		await expect(card.getByRole("button", { name: "Inspect" })).toBeVisible();
 
-		// Inspect (Passed) closes the task → card returns to [Create Task]
+		// Inspect → sheet; a Passed outcome requires at least one room-ready photo.
 		await card.getByRole("button", { name: "Inspect" }).click();
+		const inspectionSheet = page.getByTestId("inspection-sheet");
+		await expect(inspectionSheet).toBeVisible();
+		await expect(inspectionSheet.getByTestId("inspection-submit")).toBeDisabled();
+		await inspectionSheet.locator('input[type="file"]').setInputFiles({
+			name: "room-ready.png",
+			mimeType: "image/png",
+			buffer: TINY_PNG,
+		});
+		await expect(inspectionSheet.locator("img").first()).toBeVisible();
+
+		// Passed inspection closes the task → card returns to [Create Task]
+		await inspectionSheet.getByTestId("inspection-submit").click();
 		await expect(card.getByRole("button", { name: "Create Task" })).toBeVisible();
 	});
 });
+
+// Smallest valid 1x1 transparent PNG — used as the room-ready photo upload.
+const TINY_PNG = Buffer.from(
+	"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+	"base64"
+);

@@ -32,6 +32,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Field } from "@/components/workspace/field";
 import { SignaturePad } from "@/components/workspace/signature-pad";
 import { KpiStrip, RecordHeader, WorkspacePage } from "@/components/workspace/workspace";
+import { RoomReadinessCard } from "@/components/housekeeping/room-readiness-card";
 import ConditionCaptureScreen from "@/app/condition/ConditionCaptureScreen";
 
 import { uploadConditionPhoto } from "@/lib/condition-api";
@@ -532,6 +533,7 @@ function RoomStep({
 		return (
 			<StepCard>
 				<Badge className="w-fit gap-1"><Check className="size-3.5" /> Assigned: {assigned}</Badge>
+				<RoomReadinessCard room={assigned} />
 				<div className="flex justify-end"><Button onClick={onDone}>Continue</Button></div>
 			</StepCard>
 		);
@@ -566,6 +568,7 @@ function RoomStep({
 					})}
 				</div>
 			)}
+			{room ? <RoomReadinessCard room={room} /> : null}
 			<div className="flex justify-end">
 				<Button onClick={onDone} disabled={!room} data-testid="room-continue"><DoorOpen className="size-4" /> Assign &amp; continue</Button>
 			</div>

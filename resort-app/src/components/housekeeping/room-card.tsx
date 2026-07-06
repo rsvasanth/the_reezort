@@ -29,6 +29,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { CompleteTaskSheet } from "@/components/housekeeping/complete-task-sheet";
+import { InspectionSheet } from "@/components/housekeeping/inspection-sheet";
 import { LinenSheet } from "@/components/housekeeping/linen-sheet";
 import { RoomThumb } from "@/components/property/room-thumb";
 import {
@@ -43,16 +45,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 import {
 	assignTask,
-	completeTask,
-	createInspection,
 	createTask,
 	listHousekeepers,
 	pauseTask,
-	recordInspection,
 	startTask,
 	FolioApiError,
 } from "@/lib/housekeeping-api";
-import type { HousekeeperOption, HousekeepingRoom, InspectionOutcome } from "@/lib/housekeeping-api";
+import type { HousekeeperOption, HousekeepingRoom } from "@/lib/housekeeping-api";
 
 import {
 	formatDueAt,
@@ -75,6 +74,8 @@ type Props = {
 export function RoomCard({ room, isMock, onMutated }: Props) {
 	const [busy, setBusy] = useState(false);
 	const [linenOpen, setLinenOpen] = useState(false);
+	const [completeOpen, setCompleteOpen] = useState(false);
+	const [inspectOpen, setInspectOpen] = useState(false);
 
 	const hkStyle = housekeepingStatusBadge(room.housekeeping_status);
 	const occStyle = occupancyStatusBadge(room.occupancy_status);
@@ -130,38 +131,8 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 		await runMutation("Pause task", () => pauseTask(task.id), "Task paused");
 	}
 
-	async function handleComplete() {
-		if (!task) return;
-		await runMutation("Complete task", () => completeTask(task.id, null), "Task completed");
-	}
-
-	async function handleInspect() {
-		if (!task) return;
-		setBusy(true);
-		try {
-			// Create inspection then immediately record as Passed (default happy path;
-			// a future InspectionSheet can collect outcome/notes properly).
-			const envelope = await createInspection(task.id);
-			if (!envelope.ok || !envelope.data) {
-				throw new Error("Create inspection returned no data");
-			}
-			const inspectionId = envelope.data.inspection;
-			const outcome: InspectionOutcome = "Passed";
-			await recordInspection(inspectionId, outcome, null, null);
-			toast.success("Inspection recorded — Passed", { description: `Room ${room.room_number}` });
-			onMutated();
-		} catch (err) {
-			const msg =
-				err instanceof FolioApiError && err.blockers.length > 0
-					? err.blockers.map((b) => b.message).join("; ")
-					: err instanceof Error
-						? err.message
-						: "Inspect failed";
-			toast.error("Inspect failed", { description: msg });
-		} finally {
-			setBusy(false);
-		}
-	}
+	// Complete and Inspect open sheets that collect notes + room photos
+	// (CompleteTaskSheet / InspectionSheet) instead of firing one-click calls.
 
 	const taskStatusStyle = task ? taskStatusBadge(task.status) : null;
 	const priorityStyle = task ? priorityBadge(task.priority) : null;
@@ -349,13 +320,9 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 								variant="outline"
 								className="h-7 text-xs"
 								disabled={busy}
-								onClick={handleComplete}
+								onClick={() => setCompleteOpen(true)}
 							>
-								{busy ? (
-									<RefreshCw className="mr-1 size-3 animate-spin" />
-								) : (
-									<CheckCircle className="mr-1 size-3" />
-								)}
+								<CheckCircle className="mr-1 size-3" />
 								Complete
 							</Button>
 						)}
@@ -365,13 +332,9 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 								variant="outline"
 								className="h-7 text-xs"
 								disabled={busy}
-								onClick={handleInspect}
+								onClick={() => setInspectOpen(true)}
 							>
-								{busy ? (
-									<RefreshCw className="mr-1 size-3 animate-spin" />
-								) : (
-									<ClipboardCheck className="mr-1 size-3" />
-								)}
+								<ClipboardCheck className="mr-1 size-3" />
 								Inspect
 							</Button>
 						)}
@@ -386,6 +349,24 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 				defaultPhase="Departure"
 				onPosted={onMutated}
 			/>
+			{task ? (
+				<>
+					<CompleteTaskSheet
+						open={completeOpen}
+						onOpenChange={setCompleteOpen}
+						task={task.id}
+						roomLabel={room.room_number}
+						onCompleted={onMutated}
+					/>
+					<InspectionSheet
+						open={inspectOpen}
+						onOpenChange={setInspectOpen}
+						task={task.id}
+						roomLabel={room.room_number}
+						onRecorded={onMutated}
+					/>
+				</>
+			) : null}
 		</Card>
 	);
 }

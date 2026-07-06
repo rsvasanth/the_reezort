@@ -126,8 +126,57 @@ export type TaskResult = {
 	task: OpenTask;
 };
 
+/** Mirrors _inspection_data in housekeeping/api.py. */
+export type InspectionData = {
+	name: string;
+	resort_property: string;
+	room: string;
+	housekeeping_task: string;
+	inspection_status: string;
+	inspector_user: string | null;
+	inspected_at: string | null;
+	rework_task: string | null;
+	exception_approval: string | null;
+	notes: string | null;
+	photos: TaskPhoto[];
+};
+
 export type InspectionResult = {
-	inspection: string;
+	inspection: InspectionData;
+};
+
+/** A room photo (Room Condition Photo child row) — image is a /files/… URL. */
+export type TaskPhoto = {
+	image: string;
+	caption?: string | null;
+	area?: string | null;
+};
+
+export type ReadinessPhotoSource = "Inspection" | "Cleaning" | "Checklist";
+
+export type ReadinessPhoto = TaskPhoto & {
+	source: ReadinessPhotoSource;
+};
+
+export type ReadinessInspection = {
+	name: string;
+	inspection_status: string;
+	inspector_user: string | null;
+	inspector_name: string | null;
+	inspected_at: string | null;
+	notes: string | null;
+	photos: TaskPhoto[];
+};
+
+export type RoomReadiness = {
+	room: string;
+	room_number: string | null;
+	room_name: string | null;
+	housekeeping_status: HousekeepingStatus;
+	occupancy_status: OccupancyStatus;
+	ready: boolean;
+	inspection: ReadinessInspection | null;
+	photos: ReadinessPhoto[];
 };
 
 // ---------- Create-task payload ----------
@@ -374,15 +423,17 @@ export async function pauseTask(task: string): Promise<FolioApiEnvelope<TaskResu
 }
 
 /**
- * Completes a task (status: → Completed). Optional completion_notes.
+ * Completes a task (status: → Completed). Optional completion_notes and
+ * completion photos (after-cleaning evidence, kept on the task).
  */
 export async function completeTask(
 	task: string,
-	completion_notes?: string | null
+	completion_notes?: string | null,
+	photos?: TaskPhoto[] | null
 ): Promise<FolioApiEnvelope<TaskResult>> {
 	return callHousekeeping<TaskResult>("the_reezort.housekeeping.api.complete_task", {
 		method: "POST",
-		body: { task, completion_notes: completion_notes ?? null },
+		body: { task, completion_notes: completion_notes ?? null, photos: photos ?? null },
 	});
 }
 
@@ -406,7 +457,8 @@ export async function recordInspection(
 	inspection: string,
 	outcome: InspectionOutcome,
 	notes?: string | null,
-	checklist_result?: Record<string, boolean> | null
+	checklist_result?: Record<string, boolean> | null,
+	photos?: TaskPhoto[] | null
 ): Promise<FolioApiEnvelope<InspectionResult>> {
 	return callHousekeeping<InspectionResult>(
 		"the_reezort.housekeeping.api.record_inspection",
@@ -417,7 +469,22 @@ export async function recordInspection(
 				outcome,
 				notes: notes ?? null,
 				checklist_result: checklist_result ?? null,
+				photos: photos ?? null,
 			},
 		}
+	);
+}
+
+/**
+ * Latest housekeeping readiness evidence for a room — the passed inspection
+ * (inspector, timestamp, notes) plus its photos and the cleaning task's
+ * completion photos. Shown to front desk during check-in room assignment.
+ */
+export async function getRoomReadiness(
+	room: string
+): Promise<FolioApiEnvelope<RoomReadiness>> {
+	return callHousekeeping<RoomReadiness>(
+		"the_reezort.housekeeping.api.get_room_readiness",
+		{ method: "GET", params: { room } }
 	);
 }

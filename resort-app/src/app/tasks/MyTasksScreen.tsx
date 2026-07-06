@@ -29,14 +29,13 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { KpiStrip, WorkspacePage } from "@/components/workspace/workspace";
+import { CompleteTaskSheet } from "@/components/housekeeping/complete-task-sheet";
+import { InspectionSheet } from "@/components/housekeeping/inspection-sheet";
 
 import {
-	completeTask,
-	createInspection,
 	FolioApiError,
 	listMyTasks,
 	pauseTask,
-	recordInspection,
 	startTask,
 	type TaskRow,
 } from "@/lib/housekeeping-api";
@@ -86,6 +85,8 @@ export default function MyTasksScreen() {
 	const [tasks, setTasks] = useState<TaskRow[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [busyTask, setBusyTask] = useState<string | null>(null);
+	const [completeFor, setCompleteFor] = useState<TaskRow | null>(null);
+	const [inspectFor, setInspectFor] = useState<TaskRow | null>(null);
 
 	const reload = useCallback(async () => {
 		setLoading(true);
@@ -165,21 +166,8 @@ export default function MyTasksScreen() {
 						busyTask={busyTask}
 						onStart={(t) => withBusy(t.name, "Started", () => startTask(t.name))}
 						onPause={(t) => withBusy(t.name, "Paused", () => pauseTask(t.name))}
-						onComplete={(t) => withBusy(t.name, "Completed", () => completeTask(t.name, null))}
-						onInspect={async (t) => {
-							setBusyTask(t.name);
-							try {
-								const env = await createInspection(t.name);
-								if (!env.ok || !env.data) throw new Error("Inspection create failed");
-								await recordInspection(env.data.inspection, "Passed", null, null);
-								toast.success("Inspection passed");
-								await reload();
-							} catch (err) {
-								toast.error("Inspect failed", { description: err instanceof Error ? err.message : undefined });
-							} finally {
-								setBusyTask(null);
-							}
-						}}
+						onComplete={(t) => setCompleteFor(t)}
+						onInspect={(t) => setInspectFor(t)}
 					/>
 				</TabsContent>
 
@@ -187,6 +175,25 @@ export default function MyTasksScreen() {
 					<TaskTable tasks={tasks} loading={loading} scope="history" busyTask={null} />
 				</TabsContent>
 			</Tabs>
+
+			{completeFor ? (
+				<CompleteTaskSheet
+					open
+					onOpenChange={(open) => { if (!open) setCompleteFor(null); }}
+					task={completeFor.name}
+					roomLabel={completeFor.room_number ?? completeFor.room ?? "—"}
+					onCompleted={() => { setCompleteFor(null); void reload(); }}
+				/>
+			) : null}
+			{inspectFor ? (
+				<InspectionSheet
+					open
+					onOpenChange={(open) => { if (!open) setInspectFor(null); }}
+					task={inspectFor.name}
+					roomLabel={inspectFor.room_number ?? inspectFor.room ?? "—"}
+					onRecorded={() => { setInspectFor(null); void reload(); }}
+				/>
+			) : null}
 		</WorkspacePage>
 	);
 }

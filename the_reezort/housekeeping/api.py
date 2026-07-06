@@ -68,6 +68,10 @@ def _task_data(task_doc):
 	}
 
 
+def _photo_row_data(row):
+	return {"image": row.image, "caption": row.caption, "area": row.area}
+
+
 def _inspection_data(inspection_doc):
 	return {
 		"name": inspection_doc.name,
@@ -80,6 +84,7 @@ def _inspection_data(inspection_doc):
 		"rework_task": inspection_doc.rework_task,
 		"exception_approval": inspection_doc.exception_approval,
 		"notes": inspection_doc.notes,
+		"photos": [_photo_row_data(row) for row in (inspection_doc.get("photos") or [])],
 	}
 
 
@@ -230,6 +235,27 @@ def _checklist_items(checklist):
 	return _as_list(checklist.get("items") or checklist.get("result_items"))
 
 
+def _append_photo_rows(doc, photos):
+	"""Normalize photo payload entries (bare file URLs or {image|photo|file_url,
+	caption, area} dicts) into Room Condition Photo child rows on `doc.photos`.
+	Entries carrying an item_label belong to the checklist mapping, not here."""
+	appended = 0
+	for entry in _as_list(photos):
+		if isinstance(entry, str):
+			image, caption, area = entry, None, None
+		elif isinstance(entry, dict) and not entry.get("item_label"):
+			image = entry.get("image") or entry.get("photo") or entry.get("file_url")
+			caption = entry.get("caption")
+			area = entry.get("area")
+		else:
+			continue
+		if not image:
+			continue
+		doc.append("photos", {"image": image, "caption": caption, "area": area})
+		appended += 1
+	return appended
+
+
 def _validate_and_save_checklist_result(task_doc, checklist=None, notes=None, photos=None, exception_approval=None):
 	template_name = task_doc.get("checklist_template")
 	checklist_payload = _as_dict(checklist)
@@ -316,6 +342,10 @@ def complete_task(task, checklist=None, notes=None, photos=None, exception_appro
 		photos=photos,
 		exception_approval=exception_approval,
 	)
+
+	# Photos without a checklist item_label are completion evidence — keep them
+	# on the task itself so templateless tasks don't silently drop them.
+	_append_photo_rows(task_doc, photos)
 
 	task_doc.task_status = "Completed"
 	task_doc.completed_at = now()
@@ -488,7 +518,7 @@ def _has_open_blocking_maintenance(room):
 
 
 @frappe.whitelist()
-def record_inspection(inspection, outcome, notes=None, checklist_result=None):
+def record_inspection(inspection, outcome, notes=None, checklist_result=None, photos=None):
 	_require_permission("Room Inspection", "write")
 	if outcome not in INSPECTION_OUTCOMES:
 		frappe.throw(_("Unsupported inspection outcome: {0}").format(outcome))
@@ -500,6 +530,7 @@ def record_inspection(inspection, outcome, notes=None, checklist_result=None):
 
 	inspection_doc.notes = notes
 	inspection_doc.inspected_at = now()
+	_append_photo_rows(inspection_doc, photos)
 	if checklist_result:
 		frappe.db.set_value("Housekeeping Checklist Result", checklist_result, "room_inspection", inspection_doc.name)
 
@@ -550,6 +581,71 @@ def record_inspection(inspection, outcome, notes=None, checklist_result=None):
 	return _envelope(
 		{"inspection": _inspection_data(inspection_doc), "rework_task": _task_data(rework_task)},
 		next_actions=["assign_task"],
+	)
+
+
+# ---------- room readiness (front desk check-in) ----------
+
+READY_INSPECTION_STATUSES = ("Passed", "Accepted With Exception")
+
+
+@frappe.whitelist()
+def get_room_readiness(room):
+	"""Latest housekeeping readiness evidence for a room — shown to front desk
+	at check-in. Gated on Room read (front-office roles have it) because Room
+	Inspection itself is housekeeping-scoped."""
+	_require_permission("Room", "read")
+	room_doc = frappe.db.get_value(
+		"Room",
+		room,
+		["name", "room_number", "room_name", "housekeeping_status", "occupancy_status"],
+		as_dict=True,
+	)
+	if not room_doc:
+		frappe.throw(_("Room {0} not found.").format(room))
+
+	inspection_name = frappe.db.get_value(
+		"Room Inspection",
+		{"room": room, "inspection_status": ["in", READY_INSPECTION_STATUSES]},
+		"name",
+		order_by="inspected_at desc, creation desc",
+	)
+
+	inspection = None
+	photos = []
+	if inspection_name:
+		inspection_doc = frappe.get_doc("Room Inspection", inspection_name)
+		inspection = _inspection_data(inspection_doc)
+		inspection["inspector_name"] = frappe.db.get_value("User", inspection_doc.inspector_user, "full_name")
+		photos = [dict(_photo_row_data(row), source="Inspection") for row in (inspection_doc.get("photos") or [])]
+
+		if inspection_doc.housekeeping_task:
+			task_doc = frappe.get_doc("Housekeeping Task", inspection_doc.housekeeping_task)
+			photos += [dict(_photo_row_data(row), source="Cleaning") for row in (task_doc.get("photos") or [])]
+			result_names = frappe.get_all(
+				"Housekeeping Checklist Result",
+				filters={"housekeeping_task": task_doc.name},
+				pluck="name",
+			)
+			for result_name in result_names:
+				result_doc = frappe.get_doc("Housekeeping Checklist Result", result_name)
+				for item in result_doc.get("result_items") or []:
+					if item.photo:
+						photos.append(
+							{"image": item.photo, "caption": item.item_label, "area": item.section, "source": "Checklist"}
+						)
+
+	return _envelope(
+		{
+			"room": room_doc.name,
+			"room_number": room_doc.room_number,
+			"room_name": room_doc.room_name,
+			"housekeeping_status": room_doc.housekeeping_status,
+			"occupancy_status": room_doc.occupancy_status,
+			"ready": room_doc.housekeeping_status in ("Inspected", "Clean"),
+			"inspection": inspection,
+			"photos": photos,
+		}
 	)
 
 

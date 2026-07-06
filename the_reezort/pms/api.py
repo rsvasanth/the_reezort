@@ -46,31 +46,49 @@ def _primary_guest_name(reservation_doc):
 	return "Guest"
 
 
+# A room is ready to receive a guest only once housekeeping has cleared it.
+# A just-departed room is Vacant + Dirty; it must not be re-assigned (or re-enter
+# sellable inventory) until cleaned, unless the property policy allows it.
+READY_HOUSEKEEPING_STATUSES = ("Clean", "Inspected")
+
+
+def _allocation_housekeeping_filter(property_name):
+	"""housekeeping_status filter for allocation, honoring the property's
+	allow_dirty_room_allocation policy. Returns None when no filter applies."""
+	if frappe.db.get_value("Resort Property", property_name, "allow_dirty_room_allocation"):
+		return None
+	return ["in", list(READY_HOUSEKEEPING_STATUSES)]
+
+
 def _resolve_vacant_room(property_name, room_type):
-	return frappe.db.get_value(
-		"Room",
-		{
-			"resort_property": property_name,
-			"room_type": room_type,
-			"sellable_status": "Sellable",
-			"occupancy_status": "Vacant",
-			"is_active": 1,
-		},
-		"name",
-	)
+	filters = {
+		"resort_property": property_name,
+		"room_type": room_type,
+		"sellable_status": "Sellable",
+		"occupancy_status": "Vacant",
+		"is_active": 1,
+	}
+	hk = _allocation_housekeeping_filter(property_name)
+	if hk:
+		filters["housekeeping_status"] = hk
+	return frappe.db.get_value("Room", filters, "name")
 
 
 def _available_rooms(property_name, room_type):
-	"""All vacant, sellable rooms of a type — the assignment picker's options."""
+	"""All vacant, sellable, housekeeping-ready rooms of a type — the picker's options."""
+	filters = {
+		"resort_property": property_name,
+		"room_type": room_type,
+		"sellable_status": "Sellable",
+		"occupancy_status": "Vacant",
+		"is_active": 1,
+	}
+	hk = _allocation_housekeeping_filter(property_name)
+	if hk:
+		filters["housekeeping_status"] = hk
 	return frappe.get_all(
 		"Room",
-		filters={
-			"resort_property": property_name,
-			"room_type": room_type,
-			"sellable_status": "Sellable",
-			"occupancy_status": "Vacant",
-			"is_active": 1,
-		},
+		filters=filters,
 		fields=["name", "room_number", "room_name", "housekeeping_status"],
 		order_by="room_number asc",
 	)

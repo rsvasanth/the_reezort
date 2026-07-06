@@ -462,9 +462,25 @@ def _create_rework_task(inspection_doc):
 	return rework
 
 
+# An open High/Urgent maintenance ticket keeps a room out of sellable service —
+# it must not pass inspection until the work is Resolved or Closed.
+BLOCKING_MAINTENANCE_STATES = ("Reported", "Assigned", "In Progress")
+BLOCKING_MAINTENANCE_PRIORITIES = ("High", "Urgent")
+
+
 def _has_open_blocking_maintenance(room):
-	# TODO: Replace this placeholder once the Maintenance module owns blocking maintenance documents.
-	return False
+	if not room or not frappe.db.exists("DocType", "Maintenance Ticket"):
+		return False
+	return bool(
+		frappe.db.exists(
+			"Maintenance Ticket",
+			{
+				"room": room,
+				"state": ["in", BLOCKING_MAINTENANCE_STATES],
+				"priority": ["in", BLOCKING_MAINTENANCE_PRIORITIES],
+			},
+		)
+	)
 
 
 @frappe.whitelist()

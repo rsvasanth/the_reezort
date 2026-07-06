@@ -349,7 +349,15 @@ export function IrdOrderSheet({
 					</div>
 
 					{/* Items */}
-					{items === null ? (
+					{outlets !== null && outlets.length === 0 ? (
+						<div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+							No F&amp;B outlets are configured yet.
+						</div>
+					) : !outlet ? (
+						<div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+							Choose an outlet to load its menu.
+						</div>
+					) : items === null ? (
 						<div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
 							<Loader2 className="size-4 animate-spin" /> Loading menu…
 						</div>

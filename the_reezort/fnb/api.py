@@ -51,17 +51,31 @@ def _folio_of(stay_name: str) -> str | None:
 
 @frappe.whitelist()
 def list_outlets(resort_property: str | None = None) -> dict:
-	"""Active F&B outlets on a property — for the sheet's outlet select."""
+	"""Active F&B outlets for the sheet's outlet select.
+
+	Prefer the guest's own property, but fall back to ALL active outlets when that
+	property has none configured — F&B outlets serve the whole resort, and an
+	order posts to the guest's folio regardless of which property the outlet sits
+	under. Without the fallback the order sheet would hang with an empty select.
+	"""
+	fields = ["name", "outlet_name", "outlet_code", "outlet_type", "is_default", "default_service_charge_pct"]
 	_require_login()
-	filters = {"is_active": 1}
+
+	rows = []
 	if resort_property:
-		filters["resort_property"] = resort_property
-	rows = frappe.get_all(
-		"FnB Outlet",
-		filters=filters,
-		fields=["name", "outlet_name", "outlet_code", "outlet_type", "is_default", "default_service_charge_pct"],
-		order_by="is_default desc, outlet_name asc",
-	)
+		rows = frappe.get_all(
+			"FnB Outlet",
+			filters={"is_active": 1, "resort_property": resort_property},
+			fields=fields,
+			order_by="is_default desc, outlet_name asc",
+		)
+	if not rows:
+		rows = frappe.get_all(
+			"FnB Outlet",
+			filters={"is_active": 1},
+			fields=fields,
+			order_by="is_default desc, outlet_name asc",
+		)
 	return _envelope({"outlets": rows})
 
 

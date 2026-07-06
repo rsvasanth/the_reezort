@@ -124,6 +124,29 @@ def _ensure_erpnext_item_for_menu(menu_item_name: str) -> str:
 	return code
 
 
+SERVICE_CHARGE_ITEM_CODE = "FNB-SERVICE-CHARGE"
+
+
+def _ensure_service_charge_item() -> str:
+	"""ERPNext service item used to bill the outlet service charge on the invoice
+	so it is captured as revenue and taxed like any other line."""
+	if not frappe.db.exists("Item", SERVICE_CHARGE_ITEM_CODE):
+		frappe.get_doc(
+			{
+				"doctype": "Item",
+				"item_code": SERVICE_CHARGE_ITEM_CODE,
+				"item_name": "F&B Service Charge",
+				"item_group": frappe.db.get_value("Item Group", {"parent_item_group": "All Item Groups"}, "name")
+				or "Services",
+				"stock_uom": "Nos",
+				"is_stock_item": 0,
+				"is_sales_item": 1,
+				"is_purchase_item": 0,
+			}
+		).insert(ignore_permissions=True)
+	return SERVICE_CHARGE_ITEM_CODE
+
+
 def _property_currency(resort_property: str) -> str | None:
 	company = frappe.db.get_value("Resort Property", resort_property, "company") or frappe.db.get_single_value(
 		"Global Defaults", "default_company"
@@ -426,13 +449,20 @@ def open_walk_in_order(
 	return _envelope({"order": _order_dict(doc), "reused": False})
 
 
+# Orders that can still accept new item rounds (multi-round service). Once the
+# bill is being settled (Bill Pending / Settled) or cancelled, no new items.
+ADDABLE_STATES = {"Draft", "Sent to Kitchen", "Preparing", "Ready", "Served"}
+
+
 @frappe.whitelist()
 def add_items(order: str, items: list[dict] | str) -> dict:
-	"""Add items to a Draft order. Fresh items only — no updates to existing rows.
-	Rejects on non-Draft state; use POS UI to void + re-open instead."""
+	"""Add a fresh round of items to an open order. New rows land as Draft-line
+	items to be fired with the next send_to_kitchen; existing rows are untouched.
+	Allowed while the order is still open (through Served) — supports multi-round
+	dining. Blocked once the bill is being settled or cancelled."""
 	_require_login()
 	doc = _order_or_throw(order)
-	if doc.state != "Draft":
+	if doc.state not in ADDABLE_STATES:
 		frappe.throw(_("Cannot add items to order {0} in state {1}.").format(order, doc.state))
 
 	raw_items = items
@@ -486,25 +516,33 @@ def add_items(order: str, items: list[dict] | str) -> dict:
 
 @frappe.whitelist()
 def send_to_kitchen(order: str) -> dict:
-	"""Draft → Sent to Kitchen. Assigns KOT number, snapshots kitchen_section,
-	timestamps every item, notifies Restaurant + (indirectly) kitchen staff."""
+	"""Fire the unsent (Draft-line) items to the kitchen with a fresh KOT number.
+
+	First round: Draft → Sent to Kitchen. Later rounds (order already past Draft
+	after add_items): the order keeps its current state and only the new items
+	are fired under a new KOT — this is how multi-round dining works."""
 	_require_login()
 	doc = _order_or_throw(order)
-	_assert_transition(doc, "Sent to Kitchen")
 
-	if not doc.items:
-		frappe.throw(_("Order {0} has no items — nothing to send.").format(order))
+	unsent = [item for item in doc.items if item.line_status == "Draft"]
+	if not unsent:
+		frappe.throw(_("Order {0} has no new items to send.").format(order))
 
-	doc.state = "Sent to Kitchen"
+	first_round = doc.state == "Draft"
+	if first_round:
+		_assert_transition(doc, "Sent to Kitchen")
+		doc.state = "Sent to Kitchen"
+	elif doc.state not in ADDABLE_STATES:
+		frappe.throw(_("Order {0} in state {1} cannot receive another round.").format(order, doc.state))
+
 	doc.sent_to_kitchen_at = now_datetime()
 	doc.kot_number = _next_kot_number(doc.outlet)
 	doc.kitchen_section = _kitchen_section_for(
-		[{"menu_item": i.menu_item} for i in doc.items]
+		[{"menu_item": i.menu_item} for i in unsent]
 	)
-	for item in doc.items:
-		if item.line_status == "Draft":
-			item.line_status = "Sent"
-			item.sent_at = now_datetime()
+	for item in unsent:
+		item.line_status = "Sent"
+		item.sent_at = now_datetime()
 
 	doc.flags.ignore_permissions = True
 	doc.save()
@@ -512,7 +550,7 @@ def send_to_kitchen(order: str) -> dict:
 		"Restaurant Order",
 		doc.name,
 		"restaurant.send_to_kitchen",
-		details={"kot": doc.kot_number, "section": doc.kitchen_section, "item_count": len(doc.items)},
+		details={"kot": doc.kot_number, "section": doc.kitchen_section, "item_count": len(unsent), "round": not first_round},
 	)
 
 	# Fire notification to Restaurant role — Kitchen sub-role can be added later.
@@ -522,9 +560,9 @@ def send_to_kitchen(order: str) -> dict:
 		notify_role(
 			role="Restaurant",
 			subject=_("KOT {0} sent · {1}").format(doc.kot_number, doc.outlet),
-			body=_("{0} items → {1}").format(len(doc.items), doc.kitchen_section or "kitchen"),
+			body=_("{0} items → {1}").format(len(unsent), doc.kitchen_section or "kitchen"),
 			link=f"#/restaurant/kitchen?order={doc.name}",
-			dedupe_key=f"pos-sent:{doc.name}",
+			dedupe_key=f"pos-sent:{doc.name}:{doc.kot_number}",
 		)
 	except Exception:
 		pass
@@ -646,29 +684,54 @@ def close_walk_in(order: str, payments: list[dict] | str | None = None) -> dict:
 				}
 			)
 
+		# Service charge is billed as its own invoice line so it is real revenue
+		# and taxed with everything else (Slice 5 gap: it was previously dropped).
+		if flt(doc.service_charge_amount) > 0:
+			invoice_lines.append(
+				{
+					"item_code": _ensure_service_charge_item(),
+					"qty": 1,
+					"rate": flt(doc.service_charge_amount),
+					"description": _("Service charge ({0}%)").format(flt(doc.service_charge_pct)),
+				}
+			)
+
+		# Prefer the outlet's own tax template so GST/service-mode rules apply;
+		# fall back to the company default inside build_and_submit_sales_invoice.
+		outlet_template = frappe.db.get_value("FnB Outlet", doc.outlet, "default_tax_template")
+
 		sales_invoice = build_and_submit_sales_invoice(
 			company=company,
 			customer=walk_in_customer,
 			currency=doc.currency or "INR",
 			lines=invoice_lines,
+			taxes_template=outlet_template,
 			remarks=_("Restaurant Order {0} · {1}").format(doc.name, doc.outlet),
 		)
 
-		payment_entry_name = None
-		if payments:
-			payment = payments[0]
-			# Cap PE amount at SI grand_total. Order.grand_total may include
-			# service charge which isn't carried on the SI in Slice 4 (Slice 5 adds
-			# service charge as an SI Adjustment line); paying more than the SI
-			# outstanding is rejected by ERPNext.
-			si_grand_total = flt(sales_invoice.grand_total)
-			requested = flt(payment.get("amount")) or si_grand_total
-			payment_entry_name = create_payment_entry_for_invoice(
+		# Multi-payment: settle across every supplied payment row (cash / card /
+		# UPI / wallet / mixed), never dropping any but the first. Cumulative
+		# payment is capped at the invoice's grand total.
+		payment_entries = []
+		# Pay against the SI's true payable (rounded_total), never the raw grand
+		# total — ERPNext rejects allocating more than the rounded outstanding.
+		remaining = flt(sales_invoice.rounded_total) or flt(sales_invoice.grand_total)
+		for payment in payments:
+			if remaining <= 0:
+				break
+			requested = flt(payment.get("amount")) or remaining
+			pay_amount = min(requested, remaining)
+			if pay_amount <= 0:
+				continue
+			pe = create_payment_entry_for_invoice(
 				sales_invoice=sales_invoice.name,
-				amount=min(requested, si_grand_total),
+				amount=pay_amount,
 				mode_of_payment=payment.get("mode_of_payment") or "Cash",
-				reference_no=sales_invoice.name,
+				reference_no=payment.get("reference_no") or sales_invoice.name,
 			)
+			payment_entries.append(pe)
+			remaining -= pay_amount
+		payment_entry_name = payment_entries[0] if payment_entries else None
 
 	# Raw-material consumption via BOM — Slice 2. Runs inside the same _as_admin
 	# block so it has Stock Entry / GL Entry rights. Failures don't block invoice
@@ -715,10 +778,129 @@ def close_walk_in(order: str, payments: list[dict] | str | None = None) -> dict:
 			"order": _order_dict(doc),
 			"sales_invoice": sales_invoice.name,
 			"payment_entry": payment_entry_name,
+			"payment_entries": payment_entries,
 			"stock_entry": consumption_result.get("stock_entry"),
 			"consumption_dropped": consumption_result.get("dropped_items", []),
 		}
 	)
+
+
+@frappe.whitelist()
+def post_order_to_room(order: str, stay: str) -> dict:
+	"""Charge an in-house guest's dining order to their Guest Folio instead of
+	settling it at the POS (Workflow 3 · Charge to Room).
+
+	Validates an active checked-in stay with an open folio, posts one folio
+	charge line per item (carrying the ERPNext item so folio settlement applies
+	GST) plus a service-charge line, and marks the order Settled + room-posted.
+	Idempotent per order.
+	"""
+	_require_login()
+	doc = _order_or_throw(order)
+
+	if doc.erpnext_sales_invoice or doc.guest_folio:
+		return _envelope({"order": _order_dict(doc), "guest_folio": doc.guest_folio, "reused": True})
+	if doc.state not in {"Served", "Bill Pending", "Ready"}:
+		frappe.throw(_("Order {0} must be Ready/Served/Bill Pending to charge to room.").format(order))
+	if not doc.items:
+		frappe.throw(_("Order {0} has no items to post.").format(order))
+
+	stay_row = frappe.db.get_value(
+		"Stay", stay, ["name", "stay_status", "resort_property", "customer"], as_dict=True
+	)
+	if not stay_row:
+		frappe.throw(_("Unknown stay: {0}").format(stay))
+	if stay_row.stay_status != "In House":
+		frappe.throw(_("Room posting requires an active checked-in stay (stay is {0}).").format(stay_row.stay_status))
+
+	from the_reezort.billing.api import get_or_create_folio
+
+	folio = get_or_create_folio(stay=stay, customer=stay_row.customer)["data"]["folio"]["name"]
+	folio_status = frappe.db.get_value("Guest Folio", folio, "folio_status")
+	if folio_status in {"Settled", "Closed", "Cancelled", "Transferred"}:
+		frappe.throw(_("Cannot charge to room — folio {0} is {1}.").format(folio, folio_status))
+
+	posted_lines = []
+	with _as_admin():
+		for item in doc.items:
+			erp_item = frappe.db.get_value(
+				"Menu Item", item.menu_item, "erpnext_item"
+			) or _ensure_erpnext_item_for_menu(item.menu_item)
+			line = frappe.get_doc({
+				"doctype": "Folio Line",
+				"guest_folio": folio,
+				"line_type": "Charge",
+				"source_module": "Restaurant",
+				"source_doctype": "Restaurant Order",
+				"source_name": doc.name,
+				"source_row_id": item.name,
+				"idempotency_key": f"fnb-order:{doc.name}:{item.name}",
+				"service_date": today(),
+				"item_code": erp_item,
+				"description": f"{item.quantity} × {item.item_name} · {doc.outlet}",
+				"qty": item.quantity,
+				"rate": flt(item.rate),
+				"amount": flt(item.quantity) * flt(item.rate),
+				"tax_treatment": "Standard",
+			})
+			line.insert(ignore_permissions=True)
+			posted_lines.append(line.name)
+
+		if flt(doc.service_charge_amount) > 0:
+			sc = frappe.get_doc({
+				"doctype": "Folio Line",
+				"guest_folio": folio,
+				"line_type": "Charge",
+				"source_module": "Restaurant",
+				"source_doctype": "Restaurant Order",
+				"source_name": doc.name,
+				"idempotency_key": f"fnb-order-svc:{doc.name}",
+				"service_date": today(),
+				"item_code": _ensure_service_charge_item(),
+				"description": _("Service charge ({0}%) · {1}").format(flt(doc.service_charge_pct), doc.outlet),
+				"qty": 1,
+				"rate": flt(doc.service_charge_amount),
+				"amount": flt(doc.service_charge_amount),
+				"tax_treatment": "Standard",
+			})
+			sc.insert(ignore_permissions=True)
+			posted_lines.append(sc.name)
+
+	doc.guest_folio = folio
+	doc.state = "Settled"
+	doc.settled_at = now_datetime()
+	doc.flags.ignore_permissions = True
+	doc.save()
+
+	# Stock still moves for a room-posted order — same consumption path as a walk-in.
+	company = frappe.db.get_value("Resort Property", doc.resort_property, "company")
+	with _as_admin():
+		from the_reezort.fnb.consumption import consume_for_order
+		from the_reezort.fnb.warehouse_seed import warehouse_for_outlet
+
+		warehouse = warehouse_for_outlet(doc.outlet, company=company)
+		if warehouse:
+			consume_for_order(
+				warehouse=warehouse,
+				order_items=[
+					{"menu_item": i.menu_item, "quantity": i.quantity, "item_name": i.item_name}
+					for i in doc.items
+				],
+				remarks=f"F&B room-post {doc.name} · folio {folio}",
+				company=company,
+			)
+
+	record_audit_event(
+		"Restaurant Order", doc.name, "restaurant.post_order_to_room",
+		details={"stay": stay, "guest_folio": folio, "folio_lines": posted_lines},
+	)
+
+	return _envelope({
+		"order": _order_dict(doc),
+		"guest_folio": folio,
+		"stay": stay,
+		"folio_lines": posted_lines,
+	})
 
 
 @frappe.whitelist()

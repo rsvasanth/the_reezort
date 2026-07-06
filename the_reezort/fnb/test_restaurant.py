@@ -148,14 +148,19 @@ class TestRestaurantPos(FrappeTestCase):
 		# grand_total = subtotal + service + tax; both should be > subtotal (18% GST default)
 		self.assertGreater(result_order["grand_total"], expected_subtotal)
 
-	def test_add_items_rejects_on_non_draft_state(self):
+	def test_add_items_allowed_after_kitchen_send_but_not_when_settling(self):
+		# Multi-round dining: a second round can be added after the first is fired.
 		table = self._any_table()
 		order = open_walk_in_order(self.outlet, table)["data"]["order"]
 		items = self._first_two_items()
 		add_items(order["name"], [{"menu_item": items[0].name, "quantity": 1}])
 		send_to_kitchen(order["name"])
+		# Now in "Sent to Kitchen" — a further round is allowed.
+		add_items(order["name"], [{"menu_item": items[1].name, "quantity": 1}])
+		# But once the bill is being settled, no more items.
+		frappe.db.set_value("Restaurant Order", order["name"], "state", "Bill Pending")
 		with self.assertRaises(frappe.ValidationError):
-			add_items(order["name"], [{"menu_item": items[1].name, "quantity": 1}])
+			add_items(order["name"], [{"menu_item": items[0].name, "quantity": 1}])
 
 	def test_add_items_rejects_wrong_outlet_item(self):
 		# Create an item in another outlet.

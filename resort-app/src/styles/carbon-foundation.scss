@@ -20,6 +20,8 @@
 @use '@carbon/react/scss/components/popover';
 @use '@carbon/react/scss/components/tooltip';
 @use '@carbon/react/scss/components/tabs';
+@use '@carbon/react/scss/components/select';
+@use '@carbon/react/scss/components/content-switcher';
 
 :root {
   @include theme.theme(themes.$g10);

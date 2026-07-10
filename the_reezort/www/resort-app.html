@@ -15,8 +15,8 @@
 			DO NOT bake a per-session value here directly (e.g. via
 			{{ frappe.session.csrf_token }}) — this file gets cached and served
 			to other sessions verbatim (frappe/website/utils.py:cache_html write
-			gate reads context.no_cache, which the_reezort/www/resort-app.py's
-			get_context() never set, so writes were allowed; see that fix too).
+			gate reads context.no_cache, which the_reezort/www/resort_app.py's
+			get_context() must actually be invoked to set; see that fix too).
 			Frappe's own csrf_token HTML-comment placeholder below is the
 			correct, cache-safe mechanism: frappe/website/page_renderers/
 			base_template_page.py:add_csrf_token() string-replaces it with a
@@ -24,6 +24,16 @@
 			stale-cached page always gets the CURRENT session's real token.
 			readCsrfToken() in the API clients reads window.frappe.csrf_token.
 		-->
+		<script>
+			// add_csrf_token() emits `frappe.csrf_token = "...";` assuming a
+			// global `frappe` already exists (true on Frappe's desk/website
+			// base templates, which load frappe-web.bundle.js first) — this
+			// SPA's HTML never loads that bundle, so the assignment threw
+			// ReferenceError: frappe is not defined and window.frappe was
+			// silently never created (readCsrfToken()'s fallback chain then
+			// resolved to "", 403ing every write endpoint). Pre-declare it.
+			window.frappe = window.frappe || {};
+		</script>
 		<!-- csrf_token -->
 		<script>
 			// TODO: load boot data here (context file is created in `www` directory)

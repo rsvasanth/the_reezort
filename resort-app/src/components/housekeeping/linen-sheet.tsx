@@ -243,7 +243,7 @@ export function LinenSheet({
 									<motion.div
 										key={i.name}
 										variants={staggerItem}
-										className={`grid grid-cols-[minmax(0,1.6fr)_60px_70px_70px_70px] gap-2 border-b px-3 py-1.5 text-sm last:border-b-0 ${belowPar ? "bg-amber-50 dark:bg-amber-950/20" : ""}`}
+										className={`grid grid-cols-[minmax(0,1.6fr)_60px_70px_70px_70px] gap-2 border-b px-3 py-1.5 text-sm last:border-b-0 ${belowPar ? "bg-[#fcf4d6] dark:bg-[#1c1500]/20" : ""}`}
 										data-testid={`linen-row-${i.item_code_short}`}
 									>
 										<span className="truncate">
@@ -285,7 +285,7 @@ export function LinenSheet({
 					)}
 
 					{summary.short > 0 || summary.damaged > 0 || summary.missing > 0 ? (
-						<div className="flex items-center gap-1 text-xs text-amber-700" data-testid="linen-summary">
+						<div className="flex items-center gap-1 text-xs text-[#684e00]" data-testid="linen-summary">
 							<AlertTriangle className="size-3" />
 							{summary.short} below par · {summary.damaged} damaged · {summary.missing} missing
 						</div>

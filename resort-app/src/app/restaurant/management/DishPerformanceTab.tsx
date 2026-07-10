@@ -47,7 +47,7 @@ const RANGES = [
 ] as const;
 
 function marginTint(pct: number): string {
-	if (pct >= 60) return "text-emerald-600 dark:text-emerald-300";
+	if (pct >= 60) return "text-[#198038] dark:text-[#6fdc8c]";
 	if (pct >= 35) return "text-foreground";
 	return "text-destructive";
 }
@@ -174,7 +174,7 @@ export default function DishPerformanceTab({ outlet }: { outlet: string }) {
 						<Card>
 							<CardContent className="p-5">
 								<h2 className="mb-1 flex items-center gap-2 font-display text-base font-normal">
-									<Snowflake className="size-4 text-sky-500" /> Slow movers
+									<Snowflake className="size-4 text-[#4589ff]" /> Slow movers
 								</h2>
 								<p className="mb-3 text-[11px] text-muted-foreground">
 									Available dishes with no sales in this window.

@@ -189,7 +189,7 @@ function Stepper({ step, setStep, ctx }: { step: number; setStep: (n: number) =>
 								active
 									? "border-foreground bg-foreground text-background"
 									: done
-										? "border-emerald-600/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+										? "border-[#198038]/40 bg-[#24a148]/10 text-[#0e6027] dark:text-[#6fdc8c]"
 										: "border-border text-muted-foreground hover:text-foreground"
 							}`}
 							data-testid={`checkin-step-${s.key}`}
@@ -395,9 +395,9 @@ function NameMatchChip({ hint, hasInput }: { hint: { score: number; status: Name
 	if (!hasInput) return <span className="text-xs text-muted-foreground">Enter the name as printed on the ID</span>;
 	const tone =
 		hint.status === "match"
-			? "border-emerald-600/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+			? "border-[#198038]/40 bg-[#24a148]/10 text-[#0e6027] dark:text-[#6fdc8c]"
 			: hint.status === "review"
-				? "border-amber-600/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+				? "border-[#8e6a00]/40 bg-[#b28600]/10 text-[#684e00] dark:text-[#f1c21b]"
 				: "border-destructive/40 bg-destructive/10 text-destructive";
 	const label = hint.status === "match" ? "Matches reservation" : hint.status === "review" ? "Partial match — check" : "Does not match";
 	return (
@@ -757,7 +757,7 @@ function FinalizeStep({
 			<ul className="flex flex-col gap-2 text-sm">
 				{checks.map((c) => (
 					<li key={c.label} className="flex items-center gap-2">
-						<span className={`flex size-5 items-center justify-center rounded-full ${c.ok ? "bg-emerald-500/15 text-emerald-600" : "bg-muted text-muted-foreground"}`}>
+						<span className={`flex size-5 items-center justify-center rounded-full ${c.ok ? "bg-[#24a148]/15 text-[#198038]" : "bg-muted text-muted-foreground"}`}>
 							<Check className="size-3.5" />
 						</span>
 						<span className={c.ok ? "" : "text-muted-foreground"}>{c.label}</span>

@@ -150,8 +150,8 @@ export function ReportIssueSheet({
 
 				<div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
 					{similar ? (
-						<div className="flex flex-col gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
-							<div className="flex items-start gap-2 text-amber-700 dark:text-amber-300">
+						<div className="flex flex-col gap-2 rounded-lg border border-[#b28600]/40 bg-[#b28600]/10 p-3 text-sm">
+							<div className="flex items-start gap-2 text-[#684e00] dark:text-[#f1c21b]">
 								<AlertTriangle className="mt-0.5 size-4 shrink-0" />
 								<span>A similar open ticket already exists for this room and category.</span>
 							</div>

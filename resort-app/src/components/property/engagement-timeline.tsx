@@ -25,14 +25,14 @@ import { staggerContainer, staggerItem } from "@/lib/motion";
 import type { TimelineEvent, TimelineEventKind } from "@/lib/timeline-api";
 
 const KIND_META: Record<TimelineEventKind, { label: string; color: string; Icon: typeof BedDouble }> = {
-	reservation: { label: "Bookings", color: "bg-blue-500", Icon: FileText },
-	stay: { label: "Stays", color: "bg-indigo-500", Icon: BedDouble },
-	folio: { label: "Folios", color: "bg-violet-500", Icon: Receipt },
-	payment: { label: "Payments", color: "bg-emerald-500", Icon: CreditCard },
-	housekeeping: { label: "Housekeeping", color: "bg-cyan-500", Icon: Brush },
-	condition: { label: "Condition", color: "bg-amber-500", Icon: ClipboardList },
-	move: { label: "Room moves", color: "bg-rose-500", Icon: Move },
-	ticket: { label: "Service", color: "bg-orange-500", Icon: Wrench },
+	reservation: { label: "Bookings", color: "bg-[#4589ff]", Icon: FileText },
+	stay: { label: "Stays", color: "bg-[#8a3ffc]", Icon: BedDouble },
+	folio: { label: "Folios", color: "bg-[#ee5396]", Icon: Receipt },
+	payment: { label: "Payments", color: "bg-[#24a148]", Icon: CreditCard },
+	housekeeping: { label: "Housekeeping", color: "bg-[#1192e8]", Icon: Brush },
+	condition: { label: "Condition", color: "bg-[#b28600]", Icon: ClipboardList },
+	move: { label: "Room moves", color: "bg-[#fa4d56]", Icon: Move },
+	ticket: { label: "Service", color: "bg-[#eb6200]", Icon: Wrench },
 };
 
 function formatWhen(iso: string | null): string {

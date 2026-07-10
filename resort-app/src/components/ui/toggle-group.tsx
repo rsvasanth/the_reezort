@@ -1,59 +1,59 @@
 import * as React from "react"
-import * as ToggleGroupPrimitive from "@radix-ui/react-toggle-group"
-import { type VariantProps } from "class-variance-authority"
+import { ContentSwitcher, Switch } from "@carbon/react"
 
-import { cn } from "@/lib/utils"
-import { toggleVariants } from "@/components/ui/toggle"
+interface ToggleGroupItemProps {
+  value: string
+  disabled?: boolean
+  className?: string
+  children?: React.ReactNode
+}
+// Only used as a data-carrying marker read by ToggleGroup below — this
+// adapter supports single-select only, matching every current call site.
+const ToggleGroupItem = (_props: ToggleGroupItemProps) => null
 
-const ToggleGroupContext = React.createContext<
-  VariantProps<typeof toggleVariants>
->({
-  size: "default",
-  variant: "default",
-})
+interface ToggleGroupProps {
+  type?: "single"
+  value?: string
+  onValueChange?: (value: string) => void
+  variant?: string
+  size?: string
+  className?: string
+  children?: React.ReactNode
+}
 
-const ToggleGroup = React.forwardRef<
-  React.ElementRef<typeof ToggleGroupPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root> &
-    VariantProps<typeof toggleVariants>
->(({ className, variant, size, children, ...props }, ref) => (
-  <ToggleGroupPrimitive.Root
-    ref={ref}
-    className={cn("flex items-center justify-center gap-1", className)}
-    {...props}
-  >
-    <ToggleGroupContext.Provider value={{ variant, size }}>
-      {children}
-    </ToggleGroupContext.Provider>
-  </ToggleGroupPrimitive.Root>
-))
+function ToggleGroup({ value, onValueChange, className, children }: ToggleGroupProps) {
+  const items: { value: string; children: React.ReactNode; disabled?: boolean }[] = []
 
-ToggleGroup.displayName = ToggleGroupPrimitive.Root.displayName
+  React.Children.forEach(children, (child) => {
+    if (React.isValidElement(child) && child.type === ToggleGroupItem) {
+      const p = child.props as ToggleGroupItemProps
+      items.push({ value: p.value, children: p.children, disabled: p.disabled })
+    }
+  })
 
-const ToggleGroupItem = React.forwardRef<
-  React.ElementRef<typeof ToggleGroupPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item> &
-    VariantProps<typeof toggleVariants>
->(({ className, children, variant, size, ...props }, ref) => {
-  const context = React.useContext(ToggleGroupContext)
+  const selectedIndex = Math.max(
+    0,
+    items.findIndex((item) => item.value === value)
+  )
 
   return (
-    <ToggleGroupPrimitive.Item
-      ref={ref}
-      className={cn(
-        toggleVariants({
-          variant: context.variant || variant,
-          size: context.size || size,
-        }),
-        className
-      )}
-      {...props}
+    <ContentSwitcher
+      className={className}
+      selectedIndex={selectedIndex}
+      onChange={(params) => {
+        if (params.name !== undefined) onValueChange?.(String(params.name))
+      }}
     >
-      {children}
-    </ToggleGroupPrimitive.Item>
+      {items.map((item) => (
+        <Switch
+          key={item.value}
+          name={item.value}
+          text={typeof item.children === "string" ? item.children : String(item.children)}
+          disabled={item.disabled}
+        />
+      ))}
+    </ContentSwitcher>
   )
-})
-
-ToggleGroupItem.displayName = ToggleGroupPrimitive.Item.displayName
+}
 
 export { ToggleGroup, ToggleGroupItem }

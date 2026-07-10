@@ -56,7 +56,7 @@ function statusBadge(status: LeaveRow["status"]) {
 	if (status === "Approved") return <Badge variant="secondary">Approved</Badge>;
 	if (status === "Rejected") return <Badge variant="destructive">Rejected</Badge>;
 	if (status === "Cancelled") return <Badge variant="outline">Cancelled</Badge>;
-	return <Badge variant="outline" className="border-amber-500 text-amber-700">Pending</Badge>;
+	return <Badge variant="outline" className="border-[#b28600] text-[#684e00]">Pending</Badge>;
 }
 
 export default function LeavesTab() {
@@ -229,7 +229,7 @@ export default function LeavesTab() {
 														onClick={() => onDecide(r.name, "Approve")}
 														data-testid={`approve-leave-${r.name}`}
 													>
-														<Check className="size-4 text-green-600" />
+														<Check className="size-4 text-[#198038]" />
 													</Button>
 													<Button
 														variant="ghost"
@@ -238,7 +238,7 @@ export default function LeavesTab() {
 														onClick={() => onDecide(r.name, "Reject")}
 														data-testid={`reject-leave-${r.name}`}
 													>
-														<X className="size-4 text-red-600" />
+														<X className="size-4 text-[#da1e28]" />
 													</Button>
 												</div>
 											</TableCell>

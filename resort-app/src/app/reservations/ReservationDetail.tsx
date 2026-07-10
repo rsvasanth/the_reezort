@@ -305,9 +305,9 @@ function DepositGatePanel({
 
 function Stat({ label, value, accent }: { label: string; value: string; accent?: "good" | "warn" | "danger" }) {
 	const tone = accent === "good"
-		? "text-emerald-700 dark:text-emerald-300"
+		? "text-[#0e6027] dark:text-[#6fdc8c]"
 		: accent === "warn"
-			? "text-amber-700 dark:text-amber-300"
+			? "text-[#684e00] dark:text-[#f1c21b]"
 			: accent === "danger"
 				? "text-destructive"
 				: "";

@@ -172,8 +172,8 @@ export function OtaReviewSheet({ name, open, onOpenChange, onActioned }: Props) 
 					) : (
 						<>
 							{similar.length ? (
-								<div className={`flex flex-col gap-1.5 rounded-lg border p-3 text-sm ${hardDupe ? "border-destructive/40 bg-destructive/10" : "border-amber-500/40 bg-amber-500/10"}`}>
-									<div className={`flex items-start gap-2 ${hardDupe ? "text-destructive" : "text-amber-700 dark:text-amber-300"}`}>
+								<div className={`flex flex-col gap-1.5 rounded-lg border p-3 text-sm ${hardDupe ? "border-destructive/40 bg-destructive/10" : "border-[#b28600]/40 bg-[#b28600]/10"}`}>
+									<div className={`flex items-start gap-2 ${hardDupe ? "text-destructive" : "text-[#684e00] dark:text-[#f1c21b]"}`}>
 										<AlertTriangle className="mt-0.5 size-4 shrink-0" />
 										<span>
 											{hardDupe

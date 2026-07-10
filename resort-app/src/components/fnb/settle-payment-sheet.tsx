@@ -267,7 +267,7 @@ export function SettlePaymentSheet({
 								<span className="text-muted-foreground">
 									Paid {formatINR(paid)}
 									{Math.abs(balance) > 0.009 ? (
-										<span className={balance > 0 ? "text-destructive ml-2" : "ml-2 text-emerald-600"}>
+										<span className={balance > 0 ? "text-destructive ml-2" : "ml-2 text-[#198038] dark:text-[#42be65]"}>
 											· {balance > 0 ? "balance" : "change"} {formatINR(Math.abs(balance))}
 										</span>
 									) : null}

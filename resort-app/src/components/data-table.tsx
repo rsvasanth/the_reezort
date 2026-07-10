@@ -200,7 +200,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
         className="flex gap-1 px-1.5 text-muted-foreground [&_svg]:size-3"
       >
         {row.original.status === "Done" ? (
-          <CheckCircle2Icon className="text-green-500 dark:text-green-400" />
+          <CheckCircle2Icon className="text-[#24a148] dark:text-[#42be65]" />
         ) : (
           <LoaderIcon />
         )}
@@ -569,7 +569,7 @@ export function DataTable({
               >
                 <SelectTrigger className="w-20" id="rows-per-page">
                   <SelectValue
-                    placeholder={table.getState().pagination.pageSize}
+                    placeholder={`${table.getState().pagination.pageSize}`}
                   />
                 </SelectTrigger>
                 <SelectContent side="top">

@@ -52,11 +52,11 @@ export function RoomReadinessCard({ room }: { room: string }) {
 		<div className="rounded-lg border bg-muted/30 p-3" data-testid="room-readiness">
 			<div className="flex flex-wrap items-center gap-2">
 				{readiness.ready ? (
-					<Badge className="gap-1 border-emerald-600/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" variant="outline">
+					<Badge className="gap-1 border-[#198038]/40 bg-[#24a148]/10 text-[#0e6027] dark:text-[#6fdc8c]" variant="outline">
 						<ShieldCheck className="size-3.5" /> {readiness.housekeeping_status}
 					</Badge>
 				) : (
-					<Badge className="gap-1 border-amber-600/40 bg-amber-500/10 text-amber-700 dark:text-amber-300" variant="outline">
+					<Badge className="gap-1 border-[#8e6a00]/40 bg-[#b28600]/10 text-[#684e00] dark:text-[#f1c21b]" variant="outline">
 						<ShieldAlert className="size-3.5" /> {readiness.housekeeping_status}
 					</Badge>
 				)}

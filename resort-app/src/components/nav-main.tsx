@@ -11,12 +11,25 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { useHashRoute } from "@/hooks/use-hash-route"
 
 export type NavItem = {
   title: string
   url: string
   icon?: LucideIcon
   status?: "live" | "soon"
+}
+
+// Whether a nav item's URL matches the current hash route. Matches the exact
+// hash and sub-routes (e.g. "#/analytics" is active on "#/analytics/revenue").
+function isItemActive(itemUrl: string, currentHash: string): boolean {
+  const hashIndex = itemUrl.indexOf("#")
+  if (hashIndex === -1) {
+    // Bare /resort-app URL items (none today) — active only on empty hash.
+    return !currentHash || currentHash === "#" || currentHash === "#/"
+  }
+  const itemHash = itemUrl.slice(hashIndex)
+  return currentHash === itemHash || currentHash.startsWith(`${itemHash}/`)
 }
 
 export function NavMain({
@@ -28,6 +41,7 @@ export function NavMain({
   items: NavItem[]
   className?: string
 }) {
+  const currentHash = useHashRoute()
   return (
     <SidebarGroup className={className}>
       {label ? <SidebarGroupLabel>{label}</SidebarGroupLabel> : null}
@@ -48,7 +62,10 @@ export function NavMain({
                   </Badge>
                 </SidebarMenuButton>
               ) : (
-                <SidebarMenuButton asChild tooltip={item.title}>
+                // No tooltip: the full label is always visible (this sidebar
+                // has no icon-only mode), so a native title tooltip just
+                // renders a redundant floating box that reads as a glitch.
+                <SidebarMenuButton asChild isActive={isItemActive(item.url, currentHash)}>
                   <a href={item.url}>
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>

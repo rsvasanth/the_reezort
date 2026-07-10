@@ -16,6 +16,14 @@ export default defineConfig({
 			'@': path.resolve(__dirname, 'src')
 		}
 	},
+	css: {
+		preprocessorOptions: {
+			scss: {
+				loadPaths: ['node_modules'],
+				silenceDeprecations: ['import', 'global-builtin', 'color-functions'],
+			}
+		}
+	},
 	build: {
 		outDir: '../the_reezort/public/resort-app',
 		emptyOutDir: true,

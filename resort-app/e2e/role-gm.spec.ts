@@ -303,9 +303,10 @@ test.describe("General Manager", () => {
 		// exact: true avoids matching the "Daily revenue" h2 (substring match).
 		await expect(page.getByRole("heading", { name: "Revenue", exact: true })).toBeVisible({ timeout: 15000 });
 
-		// Primary action: open the range picker and select 'Last 7 days' (no mutation).
-		await page.getByTestId("range-picker").click();
-		await page.getByRole("option", { name: "Last 7 days" }).click();
+		// Primary action: change the date range (no mutation). range-picker is a
+		// native <select> (Carbon's Select renders one) — selectOption(), not
+		// click-then-click-option, which only applies to ARIA listboxes.
+		await page.getByTestId("range-picker").selectOption({ label: "Last 7 days" });
 
 		const failures = tracker.collect();
 		expect(

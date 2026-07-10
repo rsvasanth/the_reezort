@@ -103,14 +103,23 @@ test.describe("Front Desk", () => {
 		expect(apiErrors, apiErrorMessage(apiErrors)).toHaveLength(0);
 	});
 
-	test("Billing — overview renders and Payments tab is clickable", async ({ page }) => {
+	test("Billing — sidebar link leads to a permission-denied screen (Front Desk is not a finance role)", async ({ page }) => {
 		const apiErrors = collectApiErrors(page);
 		await page.goto("/resort-app#/billing");
 		// h1 renders before the getBillingOverview() API call resolves.
 		await expect(page.getByRole("heading", { name: "Billing" })).toBeVisible();
-		// Primary action: switch to the Payments tab (read-only navigation).
-		await page.getByTestId("tab-payments").click();
-		expect(apiErrors, apiErrorMessage(apiErrors)).toHaveLength(0);
+		// the_reezort.billing.overview.get_billing_overview intentionally gates
+		// to FINANCE_ROLES (System Manager, Accounts Manager/User, Resort
+		// Manager) — Front Desk is not one, so BillingOverviewScreen renders
+		// its denied card instead of the invoices/payments tabs. This is the
+		// one 403 this test expects; anything else is still a real failure.
+		await expect(
+			page.getByText("You do not have permission to view billing. Ask finance or a manager.")
+		).toBeVisible();
+		const unexpected = apiErrors.filter(
+			(e) => !e.url.includes("the_reezort.billing.overview.get_billing_overview")
+		);
+		expect(unexpected, apiErrorMessage(unexpected)).toHaveLength(0);
 	});
 
 	test("Cashier close — screen renders and shift type combobox is present", async ({ page }) => {

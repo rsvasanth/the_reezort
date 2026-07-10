@@ -1,0 +1,21 @@
+// Carbon design tokens only — no reset, no font-face, no component CSS.
+// The app keeps its own Tailwind reset and IBM Plex loading; this file just
+// emits the official --cds-* custom properties so real @carbon/react
+// components (introduced module-by-module from here on) render themed
+// instead of falling back to Carbon's default White theme.
+@use '@carbon/react/scss/config' with (
+  $css--font-face: false,
+  $css--reset: false,
+  $css--body: false,
+  $css--default-type: false
+);
+@use '@carbon/react/scss/theme' as theme;
+@use '@carbon/react/scss/themes' as themes;
+
+:root {
+  @include theme.theme(themes.$g10);
+}
+
+.dark {
+  @include theme.theme(themes.$g100);
+}

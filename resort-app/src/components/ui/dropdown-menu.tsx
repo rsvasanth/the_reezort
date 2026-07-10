@@ -81,6 +81,12 @@ function DropdownMenu({
       open={open}
       onRequestClose={() => setOpen(false)}
       align={(ALIGN_MAP[contentProps.align ?? "center"] ?? "bottom") as "bottom" | "bottom-start" | "bottom-end"}
+      // autoAlign switches Carbon's Popover from position:absolute (clipped by
+      // any ancestor's overflow:hidden — e.g. every card-wrapped trigger, like
+      // room-card.tsx's staff-assignment menu) to position:fixed, which uses
+      // the viewport as its containing block and so isn't clipped. It also
+      // flips placement when the menu wouldn't fit — a reasonable default.
+      autoAlign
     >
       {clonedTrigger}
       <PopoverContent>

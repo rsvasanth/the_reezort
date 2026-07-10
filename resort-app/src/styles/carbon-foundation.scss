@@ -1,4 +1,4 @@
-// Carbon design tokens only — no reset, no font-face, no component CSS.
+// Carbon design tokens only — no reset, no font-face, no full component CSS.
 // The app keeps its own Tailwind reset and IBM Plex loading; this file just
 // emits the official --cds-* custom properties so real @carbon/react
 // components (introduced module-by-module from here on) render themed
@@ -11,6 +11,14 @@
 );
 @use '@carbon/react/scss/theme' as theme;
 @use '@carbon/react/scss/themes' as themes;
+
+// Component CSS for the @carbon/react components currently swapped in
+// (src/components/ui/*.tsx). Add one @use line here per component as it
+// gets swapped in Phase 2+ — keeps the bundle scoped to what's actually
+// used instead of pulling in all ~180 Carbon components at once.
+@use '@carbon/react/scss/components/checkbox';
+@use '@carbon/react/scss/components/popover';
+@use '@carbon/react/scss/components/tooltip';
 
 :root {
   @include theme.theme(themes.$g10);

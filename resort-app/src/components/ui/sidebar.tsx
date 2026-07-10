@@ -188,7 +188,12 @@ const SidebarHeader = React.forwardRef<HTMLDivElement, React.ComponentProps<"div
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("flex flex-col gap-2 border-b p-2", className)}
+      // h-12 to mirror SiteHeader exactly — the brand row and the content
+      // header must share one height so their bottom borders form a single
+      // continuous line. (Was flex-col + p-2 with no fixed height: shadcn-era
+      // padding stacked on Carbon's own spacing made this row taller than the
+      // 48px header, visibly misaligning the two columns.)
+      className={cn("flex h-12 shrink-0 items-center border-b px-2", className)}
       style={{ borderColor: "var(--cds-border-subtle, #e0e0e0)" }}
       {...props}
     />

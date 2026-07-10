@@ -23,6 +23,7 @@
 @use '@carbon/react/scss/components/select';
 @use '@carbon/react/scss/components/content-switcher';
 @use '@carbon/react/scss/components/notification';
+@use '@carbon/react/scss/components/ui-shell';
 
 :root {
   @include theme.theme(themes.$g10);

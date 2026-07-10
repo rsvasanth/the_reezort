@@ -194,10 +194,16 @@ export function deriveJourney(
 
 	const done = [open, checkedOut, settled, closed];
 	const labels = ["Open", "Checked out", "Settled", "Closed"];
+	// A milestone that hasn't happened must not read as achieved: the current
+	// (bold, highlighted) step used to show the milestone's past-tense label —
+	// an unsettled folio rendered a bold "Settled", which reads as "this folio
+	// is settled" while the rail correctly shows money still owed. Current
+	// steps get forward-looking labels instead.
+	const currentLabels = ["Open", "In house", "Awaiting settlement", "Awaiting close"];
 	const currentIndex = done.indexOf(false);
 
 	return labels.map((label, i) => ({
-		label,
+		label: i === currentIndex ? currentLabels[i] : label,
 		state: done[i] ? "done" : i === currentIndex ? "current" : "todo",
 	}));
 }

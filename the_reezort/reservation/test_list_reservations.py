@@ -8,7 +8,7 @@ from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, today
 
 from the_reezort.property.api import seed_demo_property
-from the_reezort.reservation.api import create_quote_or_hold, list_reservations
+from the_reezort.reservation.api import confirm_reservation, create_quote_or_hold, list_reservations
 
 
 class TestListReservations(FrappeTestCase):
@@ -89,6 +89,29 @@ class TestListReservations(FrappeTestCase):
 			& set(r["reservation"] for r in page_two["reservations"]),
 			set(),
 		)
+
+	def test_guest_and_room_type_resolve_via_batched_lookup(self):
+		"""Regression guard (2026-07-10 audit): list_reservations batches its
+		per-row guest-name/room-type/room-type-image lookups instead of
+		querying per row — assert the batched result still resolves correctly."""
+		reservation = self._hold()
+		frappe.db.set_value("Reservation", reservation, "deposit_policy", "None")
+		# _get_or_create_guest_profile reuses an existing profile by email OR
+		# phone match — both must be per-reservation-unique so this test can't
+		# collide with stray profiles left over from other test/dev-site activity.
+		unique_email = f"{reservation.lower()}@example.com"
+		unique_phone = f"+91{abs(hash(reservation)) % 10**10:010d}"
+		confirm_reservation(
+			reservation=reservation,
+			booker={"full_name": "Priya Nair", "email": unique_email, "phone": unique_phone},
+			guests=[{"guest_name": "Priya Nair", "is_primary_guest": True}],
+			guarantee={"method": "Manual Approval"},
+			accepted_terms=True,
+		)
+
+		row = list_reservations(resort_property=self.property, status="all", search=reservation)["reservations"][0]
+		self.assertEqual(row["guest"], "Priya Nair")
+		self.assertEqual(row["room_type"], self.room_type)
 
 	def test_search_matches_reservation_name_beyond_first_page(self):
 		reservation = self._hold()

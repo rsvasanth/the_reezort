@@ -655,24 +655,47 @@ OPEN_TASK_STATUSES = ("Queued", "Assigned", "In Progress", "Paused", "Inspection
 CLOSED_TASK_STATUSES = ("Completed", "Cancelled", "Skipped")
 
 
-def _task_row(row):
-	room_name = frappe.db.get_value("Room", row.room, "room_name") if row.room else None
-	return {
-		"name": row.name,
-		"room": row.room,
-		"room_number": frappe.db.get_value("Room", row.room, "room_number") if row.room else None,
-		"room_name": room_name,
-		"task_type": row.task_type,
-		"task_status": row.task_status,
-		"priority": row.priority,
-		"assigned_user": row.assigned_user,
-		"assigned_employee": row.assigned_employee,
-		"assignee_name": frappe.db.get_value("User", row.assigned_user, "full_name") if row.assigned_user else None,
-		"start_time": row.start_time,
-		"completed_at": row.completed_at,
-		"due_at": row.due_at,
-		"stay": row.stay,
+def _task_rows(rows):
+	"""Batch-resolve room + assignee display fields for a list of task rows —
+	a handful of queries total instead of up to 3 queries per row (2026-07-10
+	audit: list_my_tasks/list_tasks were issuing 2 Room lookups + 1 User lookup
+	per row, ~600 extra queries at their 200/500 row limits)."""
+	room_names = list({row.room for row in rows if row.room})
+	room_by_name = {
+		room.name: room
+		for room in (
+			frappe.get_all("Room", filters={"name": ["in", room_names]}, fields=["name", "room_name", "room_number"])
+			if room_names
+			else []
+		)
 	}
+	user_names = list({row.assigned_user for row in rows if row.assigned_user})
+	full_name_by_user = {
+		u.name: u.full_name
+		for u in (frappe.get_all("User", filters={"name": ["in", user_names]}, fields=["name", "full_name"]) if user_names else [])
+	}
+	out = []
+	for row in rows:
+		room = room_by_name.get(row.room)
+		out.append(
+			{
+				"name": row.name,
+				"room": row.room,
+				"room_number": room.room_number if room else None,
+				"room_name": room.room_name if room else None,
+				"task_type": row.task_type,
+				"task_status": row.task_status,
+				"priority": row.priority,
+				"assigned_user": row.assigned_user,
+				"assigned_employee": row.assigned_employee,
+				"assignee_name": full_name_by_user.get(row.assigned_user) if row.assigned_user else None,
+				"start_time": row.start_time,
+				"completed_at": row.completed_at,
+				"due_at": row.due_at,
+				"stay": row.stay,
+			}
+		)
+	return out
 
 
 @frappe.whitelist()
@@ -696,7 +719,7 @@ def list_my_tasks(scope="open", limit=200):
 		order_by=order,
 		limit=int(limit),
 	)
-	return _envelope({"tasks": [_task_row(r) for r in rows], "scope": scope})
+	return _envelope({"tasks": _task_rows(rows), "scope": scope})
 
 
 @frappe.whitelist()
@@ -728,4 +751,4 @@ def list_tasks(status=None, task_type=None, assigned_user=None, days=14, limit=5
 		order_by="creation desc",
 		limit=int(limit),
 	)
-	return _envelope({"tasks": [_task_row(r) for r in rows]})
+	return _envelope({"tasks": _task_rows(rows)})

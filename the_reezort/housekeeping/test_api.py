@@ -6,6 +6,8 @@ from the_reezort.housekeeping.api import (
 	complete_task,
 	create_task,
 	get_housekeeping_board,
+	list_my_tasks,
+	list_tasks,
 	pause_task,
 	start_task,
 )
@@ -169,3 +171,32 @@ class TestHousekeepingAPI(FrappeTestCase):
 
 		self.assertEqual(paused["task_status"], "Paused")
 		self.assertEqual(resumed["task_status"], "In Progress")
+
+	def test_list_my_tasks_resolves_room_and_assignee_fields(self):
+		"""Regression guard (2026-07-10 audit): list_my_tasks/list_tasks batch
+		their room + assignee lookups instead of querying per row — assert the
+		batched result still resolves the same fields _task_row used to."""
+		_property_doc, room = self.make_inventory_setup("MYTASKS")
+		task = create_task(self.task_payload("MYTASKS", room))["data"]["task"]
+		assign_task(task["name"], assigned_user="Administrator")
+
+		rows = list_my_tasks(scope="open")["data"]["tasks"]
+		row = next(r for r in rows if r["name"] == task["name"])
+		self.assertEqual(row["room"], room.name)
+		self.assertEqual(row["room_number"], room.room_number)
+		self.assertEqual(row["assigned_user"], "Administrator")
+		self.assertTrue(row["assignee_name"])
+
+	def test_list_tasks_resolves_room_and_assignee_fields_across_rows(self):
+		_property_doc, room_a = self.make_inventory_setup("ALLTASKSA")
+		_property_doc_b, room_b = self.make_inventory_setup("ALLTASKSB")
+		task_a = create_task(self.task_payload("ALLTASKSA", room_a))["data"]["task"]
+		task_b = create_task(self.task_payload("ALLTASKSB", room_b))["data"]["task"]
+		assign_task(task_a["name"], assigned_user="Administrator")
+
+		rows = {r["name"]: r for r in list_tasks(days=1)["data"]["tasks"]}
+		self.assertEqual(rows[task_a["name"]]["room_number"], room_a.room_number)
+		self.assertEqual(rows[task_a["name"]]["assignee_name"], "Administrator")
+		self.assertEqual(rows[task_b["name"]]["room_number"], room_b.room_number)
+		self.assertIsNone(rows[task_b["name"]]["assigned_user"])
+		self.assertIsNone(rows[task_b["name"]]["assignee_name"])

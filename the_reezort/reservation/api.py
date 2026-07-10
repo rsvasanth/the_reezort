@@ -1082,21 +1082,56 @@ def list_reservations(
 	page_length = max(int(page_length or 50), 1)
 	total_count = frappe.db.count("Reservation", filters=conditions)
 
-	out = []
-	for r in frappe.get_all(
+	rows = frappe.get_all(
 		"Reservation",
 		filters=conditions,
 		fields=["name", "status", "arrival_date", "departure_date", "staying_guest_profile", "hold_expires_at", "total_estimated_amount", "currency"],
 		order_by="creation desc",
 		limit_start=(page - 1) * page_length,
 		limit_page_length=page_length,
-	):
-		guest = frappe.db.get_value("Guest Profile", r.staying_guest_profile, "guest_full_name") if r.staying_guest_profile else None
+	)
+
+	# Batch the per-row lookups (guest name, room type, room type image) into a
+	# handful of queries instead of up to 4 queries per row (2026-07-10 audit —
+	# was up to ~200 extra queries on a 50-row page).
+	reservation_names = [r.name for r in rows]
+	profile_names = [r.staying_guest_profile for r in rows if r.staying_guest_profile]
+	guest_by_profile = {
+		p.name: p.guest_full_name
+		for p in (
+			frappe.get_all("Guest Profile", filters={"name": ["in", profile_names]}, fields=["name", "guest_full_name"])
+			if profile_names
+			else []
+		)
+	}
+	guest_by_reservation = {}
+	if reservation_names:
+		for g in frappe.get_all(
+			"Reservation Guest", filters={"parent": ["in", reservation_names]}, fields=["parent", "guest_name"]
+		):
+			guest_by_reservation.setdefault(g.parent, g.guest_name)
+	room_type_by_reservation = {}
+	if reservation_names:
+		for rr in frappe.get_all(
+			"Reservation Room", filters={"parent": ["in", reservation_names]}, fields=["parent", "room_type"]
+		):
+			room_type_by_reservation.setdefault(rr.parent, rr.room_type)
+	room_type_names = list({rt for rt in room_type_by_reservation.values() if rt})
+	image_by_room_type = {
+		rt.name: rt.image
+		for rt in (
+			frappe.get_all("Room Type", filters={"name": ["in", room_type_names]}, fields=["name", "image"])
+			if room_type_names
+			else []
+		)
+	}
+
+	out = []
+	for r in rows:
+		guest = guest_by_profile.get(r.staying_guest_profile) if r.staying_guest_profile else None
 		if not guest:
-			g = frappe.get_all("Reservation Guest", filters={"parent": r.name}, fields=["guest_name"], limit=1)
-			guest = (g[0].guest_name if g and g[0].guest_name else "—")
-		rt = frappe.get_all("Reservation Room", filters={"parent": r.name}, fields=["room_type"], limit=1)
-		room_type = rt[0].room_type if rt else None
+			guest = guest_by_reservation.get(r.name) or "—"
+		room_type = room_type_by_reservation.get(r.name)
 		out.append(
 			{
 				"reservation": r.name,
@@ -1105,7 +1140,7 @@ def list_reservations(
 				"arrival_date": str(r.arrival_date) if r.arrival_date else None,
 				"departure_date": str(r.departure_date) if r.departure_date else None,
 				"room_type": room_type,
-				"room_type_image": frappe.db.get_value("Room Type", room_type, "image") if room_type else None,
+				"room_type_image": image_by_room_type.get(room_type) if room_type else None,
 				"total_estimated_amount": r.total_estimated_amount,
 				"currency": r.currency,
 			}

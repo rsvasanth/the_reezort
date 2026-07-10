@@ -429,7 +429,7 @@ function AssignMenu({
 					Assign
 				</Button>
 			</DropdownMenuTrigger>
-			<DropdownMenuContent align="start" className="w-64">
+			<DropdownMenuContent align="start" className="w-64" avoidClipping>
 				<DropdownMenuLabel>Assign to</DropdownMenuLabel>
 				<DropdownMenuSeparator />
 				{staff === null ? (

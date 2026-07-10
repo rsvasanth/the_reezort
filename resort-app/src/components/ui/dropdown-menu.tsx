@@ -23,6 +23,18 @@ interface DropdownMenuContentProps
   align?: "start" | "center" | "end"
   side?: "top" | "right" | "bottom" | "left"
   sideOffset?: number
+  /**
+   * Set when the trigger sits inside an ancestor with overflow:hidden (e.g. a
+   * Card) that would otherwise clip the menu — switches Carbon's Popover to
+   * position:fixed so it escapes that clipping. Opt-in, not the default:
+   * fixed positioning also enables floating-ui's flip middleware, whose
+   * fallback order tries right/left placements before top ones — for an
+   * edge-of-viewport trigger with lots of room to one side (e.g. the sidebar
+   * footer's account menu) that picks a placement that visually overlaps the
+   * main content pane instead of the originally-intended static placement.
+   * Only set this where a real clipping bug is confirmed.
+   */
+  avoidClipping?: boolean
 }
 const DropdownMenuContent = ({ children }: DropdownMenuContentProps) => (
   <>{children}</>
@@ -81,12 +93,11 @@ function DropdownMenu({
       open={open}
       onRequestClose={() => setOpen(false)}
       align={(ALIGN_MAP[contentProps.align ?? "center"] ?? "bottom") as "bottom" | "bottom-start" | "bottom-end"}
-      // autoAlign switches Carbon's Popover from position:absolute (clipped by
-      // any ancestor's overflow:hidden — e.g. every card-wrapped trigger, like
-      // room-card.tsx's staff-assignment menu) to position:fixed, which uses
-      // the viewport as its containing block and so isn't clipped. It also
-      // flips placement when the menu wouldn't fit — a reasonable default.
-      autoAlign
+      // See DropdownMenuContentProps.avoidClipping — only escape-clip for
+      // consumers that opt in, so edge-of-viewport triggers (e.g. the sidebar
+      // footer's account menu) keep their working static placement instead of
+      // floating-ui's flip picking a placement that overlaps the content pane.
+      autoAlign={contentProps.avoidClipping}
     >
       {clonedTrigger}
       <PopoverContent>

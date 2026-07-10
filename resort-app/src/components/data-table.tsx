@@ -305,7 +305,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
             <span className="sr-only">Open menu</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-32">
+        <DropdownMenuContent align="end" className="w-32" avoidClipping>
           <DropdownMenuItem>Edit</DropdownMenuItem>
           <DropdownMenuItem>Assign owner</DropdownMenuItem>
           <DropdownMenuItem>Escalate</DropdownMenuItem>
@@ -466,7 +466,7 @@ export function DataTable({
                 <ChevronDownIcon />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-56" avoidClipping>
               {table
                 .getAllColumns()
                 .filter(

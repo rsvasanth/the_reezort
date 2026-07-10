@@ -5,8 +5,17 @@ no_cache = 1
 
 
 def get_context():
+	# The module-level `no_cache = 1` above only gates frappe.website.utils
+	# .can_cache()'s READ path (whether an existing cache entry may be
+	# served) via a site-wide/global check — it is never consulted for the
+	# WRITE path. cache_html_decorator's write gate reads context.no_cache
+	# off the dict THIS function returns, which was never set, so Frappe was
+	# writing this page into the website_page cache regardless of the module
+	# flag: one request's csrf_token got baked in and served to every
+	# session until the next `bench clear-website-cache`. Set it explicitly.
 	csrf_token = frappe.sessions.get_csrf_token()
 	context = frappe._dict()
+	context.no_cache = 1
 	context.boot = get_boot()
 	context.boot.csrf_token = csrf_token
 	return context

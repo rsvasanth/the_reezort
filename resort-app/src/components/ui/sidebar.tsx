@@ -279,8 +279,10 @@ const SidebarMenuButton = React.forwardRef<
     // instead of a floating tooltip.
     tooltip?: string
   }
->(({ asChild = false, isActive = false, size = "default", tooltip, className, ...props }, ref) => {
+>(({ asChild = false, isActive = false, size = "default", tooltip, className, onPointerDown, onFocus, ...props }, ref) => {
   const Comp = asChild ? Slot : "button"
+  const preFocusScrollTop = React.useRef<number | null>(null)
+
   return (
     <Comp
       ref={ref}
@@ -293,6 +295,31 @@ const SidebarMenuButton = React.forwardRef<
         "data-[active=true]:bg-[var(--cds-layer-selected,#e0e0e0)] data-[active=true]:font-medium",
         className
       )}
+      onPointerDown={(e) => {
+        // Clicking (not Tab-ing to) a link focuses it, and the browser's
+        // native focus handling scrollIntoView's it inside the nearest
+        // scrollable ancestor regardless — with the manager role's full
+        // 16+ item Operations list, clicking anything near the bottom
+        // (e.g. "Analytics") snaps the whole list down, hiding everything
+        // above it. `preventDefault` on mousedown doesn't stop this (it's
+        // not mousedown-default-action driven — a direct .focus() call
+        // triggers the same scroll), so instead: remember the scroll
+        // position right before the browser moves it, and restore it in
+        // the focus handler below. Keyboard Tab focus doesn't fire
+        // pointerdown first, so this doesn't touch that path — scrolling
+        // a keyboard-focused item into view is still correct there.
+        const container = e.currentTarget.closest<HTMLElement>('[class*="overflow-y-auto"]')
+        preFocusScrollTop.current = container?.scrollTop ?? null
+        onPointerDown?.(e)
+      }}
+      onFocus={(e) => {
+        if (preFocusScrollTop.current !== null) {
+          const container = e.currentTarget.closest<HTMLElement>('[class*="overflow-y-auto"]')
+          if (container) container.scrollTop = preFocusScrollTop.current
+          preFocusScrollTop.current = null
+        }
+        onFocus?.(e)
+      }}
       {...props}
     />
   )

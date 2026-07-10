@@ -19,6 +19,7 @@ interface TabsTriggerProps {
   value: string
   disabled?: boolean
   className?: string
+  "data-testid"?: string
   children?: React.ReactNode
 }
 const TabsTrigger = (_props: TabsTriggerProps) => null
@@ -116,7 +117,11 @@ function Tabs({
       data-testid={listNode?.props["data-testid"]}
     >
       {triggers.map((t) => (
-        <Tab key={t.props.value} disabled={t.props.disabled}>
+        <Tab
+          key={t.props.value}
+          disabled={t.props.disabled}
+          data-testid={t.props["data-testid"]}
+        >
           {t.props.children}
         </Tab>
       ))}

@@ -1,55 +1,118 @@
-"use client"
-
 import * as React from "react"
-import * as TabsPrimitive from "@radix-ui/react-tabs"
+import {
+  Tabs as CarbonTabs,
+  TabList,
+  Tab,
+  TabPanels,
+  TabPanel,
+} from "@carbon/react"
 
-import { cn } from "@/lib/utils"
+interface TabsListProps {
+  className?: string
+  "data-testid"?: string
+  "aria-label"?: string
+  children?: React.ReactNode
+}
+const TabsList = (_props: TabsListProps) => null
 
-const Tabs = TabsPrimitive.Root
+interface TabsTriggerProps {
+  value: string
+  disabled?: boolean
+  className?: string
+  children?: React.ReactNode
+}
+const TabsTrigger = (_props: TabsTriggerProps) => null
 
-const TabsList = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.List>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.List
-    ref={ref}
-    className={cn(
-      "inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground",
-      className
-    )}
-    {...props}
-  />
-))
-TabsList.displayName = TabsPrimitive.List.displayName
+interface TabsContentProps {
+  value: string
+  className?: string
+  children?: React.ReactNode
+}
+const TabsContent = (_props: TabsContentProps) => null
 
-const TabsTrigger = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.Trigger>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.Trigger
-    ref={ref}
-    className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow",
-      className
-    )}
-    {...props}
-  />
-))
-TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
+interface TabsProps {
+  value?: string
+  defaultValue?: string
+  onValueChange?: (value: string) => void
+  className?: string
+  children?: React.ReactNode
+}
 
-const TabsContent = React.forwardRef<
-  React.ElementRef<typeof TabsPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
->(({ className, ...props }, ref) => (
-  <TabsPrimitive.Content
-    ref={ref}
-    className={cn(
-      "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-      className
-    )}
-    {...props}
-  />
-))
-TabsContent.displayName = TabsPrimitive.Content.displayName
+function Tabs({
+  value: controlledValue,
+  defaultValue,
+  onValueChange,
+  className,
+  children,
+}: TabsProps) {
+  let listNode: React.ReactElement<TabsListProps> | null = null
+  const contentNodes: React.ReactElement<TabsContentProps>[] = []
+
+  React.Children.forEach(children, (child) => {
+    if (!React.isValidElement(child)) return
+    if (child.type === TabsList) {
+      listNode = child as React.ReactElement<TabsListProps>
+    } else if (child.type === TabsContent) {
+      contentNodes.push(child as React.ReactElement<TabsContentProps>)
+    }
+  })
+
+  const triggers: React.ReactElement<TabsTriggerProps>[] = []
+  if (listNode) {
+    React.Children.forEach((listNode as React.ReactElement<TabsListProps>).props.children, (trigger) => {
+      if (React.isValidElement(trigger) && trigger.type === TabsTrigger) {
+        triggers.push(trigger as React.ReactElement<TabsTriggerProps>)
+      }
+    })
+  }
+
+  const order = triggers.map((t) => t.props.value)
+  const [uncontrolled, setUncontrolled] = React.useState(
+    defaultValue ?? order[0]
+  )
+  const value = controlledValue ?? uncontrolled
+  const selectedIndex = Math.max(0, order.indexOf(value ?? order[0]))
+
+  const handleChange = (state: { selectedIndex: number }) => {
+    const nextValue = order[state.selectedIndex]
+    if (nextValue === undefined) return
+    if (controlledValue === undefined) setUncontrolled(nextValue)
+    onValueChange?.(nextValue)
+  }
+
+  const contentByValue = new Map(
+    contentNodes.map((c) => [c.props.value, c.props])
+  )
+
+  return (
+    <div className={className}>
+    <CarbonTabs
+      selectedIndex={selectedIndex}
+      onChange={handleChange}
+    >
+      <TabList
+        aria-label={(listNode as React.ReactElement<TabsListProps> | null)?.props["aria-label"] ?? "Tabs"}
+        data-testid={(listNode as React.ReactElement<TabsListProps> | null)?.props["data-testid"]}
+      >
+        {triggers.map((t) => (
+          <Tab key={t.props.value} disabled={t.props.disabled}>
+            {t.props.children}
+          </Tab>
+        ))}
+      </TabList>
+      <TabPanels>
+        {order.map((v) => {
+          const content = contentByValue.get(v)
+          return (
+            <TabPanel key={v} className={content?.className}>
+              {v === value ? content?.children : null}
+            </TabPanel>
+          )
+        })}
+      </TabPanels>
+    </CarbonTabs>
+    </div>
+  )
+}
 
 export { Tabs, TabsList, TabsTrigger, TabsContent }

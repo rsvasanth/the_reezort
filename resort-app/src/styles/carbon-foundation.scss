@@ -19,6 +19,7 @@
 @use '@carbon/react/scss/components/checkbox';
 @use '@carbon/react/scss/components/popover';
 @use '@carbon/react/scss/components/tooltip';
+@use '@carbon/react/scss/components/tabs';
 
 :root {
   @include theme.theme(themes.$g10);

@@ -1,30 +1,50 @@
-"use client"
+import * as React from "react"
+import { ToastNotification } from "@carbon/react"
+import { subscribeToasts, dismissToast, type ToastItem } from "@/lib/toast-store"
 
-import { useTheme } from "next-themes"
-import { Toaster as Sonner } from "sonner"
+interface ToasterProps {
+  position?: "top-right" | "top-left" | "bottom-right" | "bottom-left"
+  // sonner-specific props kept for call-site compatibility; Carbon's
+  // ToastNotification always shows a close button and kind-based color.
+  richColors?: boolean
+  closeButton?: boolean
+}
 
-type ToasterProps = React.ComponentProps<typeof Sonner>
+const POSITION_STYLE: Record<NonNullable<ToasterProps["position"]>, React.CSSProperties> = {
+  "top-right": { top: 16, right: 16 },
+  "top-left": { top: 16, left: 16 },
+  "bottom-right": { bottom: 16, right: 16 },
+  "bottom-left": { bottom: 16, left: 16 },
+}
 
-const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+const Toaster = ({ position = "top-right" }: ToasterProps) => {
+  const [items, setItems] = React.useState<ToastItem[]>([])
+
+  React.useEffect(() => subscribeToasts(setItems), [])
 
   return (
-    <Sonner
-      theme={theme as ToasterProps["theme"]}
-      className="toaster group"
-      toastOptions={{
-        classNames: {
-          toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
-          description: "group-[.toast]:text-muted-foreground",
-          actionButton:
-            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-          cancelButton:
-            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
-        },
+    <div
+      style={{
+        position: "fixed",
+        zIndex: 9999,
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        ...POSITION_STYLE[position],
       }}
-      {...props}
-    />
+    >
+      {items.map((item) => (
+        <ToastNotification
+          key={item.id}
+          kind={item.kind}
+          title={item.title}
+          subtitle={item.subtitle}
+          timeout={item.timeout}
+          lowContrast
+          onClose={() => dismissToast(item.id)}
+        />
+      ))}
+    </div>
   )
 }
 

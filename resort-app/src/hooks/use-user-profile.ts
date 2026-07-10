@@ -65,6 +65,17 @@ export function allowedSidebarTitles(profile: UserProfile | null): Set<string> |
 	return allowed;
 }
 
+// Module-level cache: every screen renders its own AppShell, so the sidebar
+// (and this hook) REMOUNTS on every hash navigation. Without a cache each
+// navigation refetched the profile from scratch, and while the fetch was in
+// flight the hook returned the role-less "Staff" fallback below — which
+// allowedSidebarTitles() collapses to a single "Executive cockpit" item. Net
+// effect: on every nav click the whole sidebar visibly collapsed/hung until
+// the profile round-trip finished (or forever, if it failed). The cache makes
+// remounts render the full sidebar instantly; a background refetch keeps it
+// fresh.
+let cachedProfile: UserProfile | null = null;
+
 /**
  * Loads the logged-in user's profile (name + roles) from
  * the_reezort.account.api.get_current_user_profile. Falls back to the bare
@@ -72,7 +83,9 @@ export function allowedSidebarTitles(profile: UserProfile | null): Set<string> |
  * always renders something sensible.
  */
 export function useUserProfile(fallbackUser?: string | null): UserProfile | null {
-	const [profile, setProfile] = useState<UserProfile | null>(null);
+	const [profile, setProfile] = useState<UserProfile | null>(
+		cachedProfile && (!fallbackUser || cachedProfile.user === fallbackUser) ? cachedProfile : null,
+	);
 
 	useEffect(() => {
 		let active = true;
@@ -86,13 +99,14 @@ export function useUserProfile(fallbackUser?: string | null): UserProfile | null
 				if (!active) return;
 				const data = payload?.message?.data;
 				if (data?.user) {
-					setProfile({
+					cachedProfile = {
 						user: data.user,
 						fullName: data.full_name || data.user,
 						primaryRole: data.primary_role || "Staff",
 						roles: Array.isArray(data.roles) ? data.roles : [],
 						isSystemManager: Boolean(data.is_system_manager),
-					});
+					};
+					setProfile(cachedProfile);
 				}
 			})
 			.catch(() => {});

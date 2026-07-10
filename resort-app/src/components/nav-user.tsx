@@ -83,6 +83,11 @@ export function NavUser({
             side="top"
             align="start"
             sideOffset={4}
+            // Carbon's SideNav has overflow:hidden — without the fixed-position
+            // escape the menu is clipped at the sidebar's right edge. Safe to
+            // combine with side="top": there's always room above, so autoAlign
+            // keeps the requested placement instead of flipping.
+            avoidClipping
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">

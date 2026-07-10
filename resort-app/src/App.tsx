@@ -217,6 +217,10 @@ function AuthGate() {
 		return <LoginScreen />;
 	}
 
+	if (route.kind === "cockpit") {
+		return <Workspace />;
+	}
+
 	if (route.kind === "folio") {
 		return <FolioWorkspace folioName={route.name} />;
 	}

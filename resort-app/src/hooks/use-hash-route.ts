@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
  * Read window.location.hash and subscribe to hashchange events.
  *
  * Hash routes (no router library):
+ *   #/cockpit             → executive cockpit (dashboard), reachable regardless of role
  *   #/folio/<name>        → folio workspace
  *   #/housekeeping        → housekeeping board
  *   #/setup               → property setup wizard
@@ -32,6 +33,7 @@ export function useHashRoute(): string {
 
 export type ParsedRoute =
 	| { kind: "dashboard" }
+	| { kind: "cockpit" }
 	| { kind: "folio"; name: string | null }
 	| { kind: "housekeeping" }
 	| { kind: "setup" }
@@ -64,6 +66,8 @@ export type ParsedRoute =
 export function parseHashRoute(hash: string): ParsedRoute {
 	const path = hash.startsWith("#") ? hash.slice(1) : hash;
 	if (!path || path === "/") return { kind: "dashboard" };
+
+	if (path === "/cockpit") return { kind: "cockpit" };
 
 	const folioMatch = path.match(/^\/folio(?:\/(.*))?$/);
 	if (folioMatch) {

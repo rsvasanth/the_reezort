@@ -324,6 +324,32 @@ class TestRestaurantPos(FrappeTestCase):
 		# And after the elevated block ends, session.user should be restored.
 		self.assertEqual(frappe.session.user, "Administrator")
 
+	def test_open_walk_in_order_blocked_for_unprivileged_role(self):
+		"""Security regression guard (2026-07-10 audit): every Restaurant endpoint
+		used to only check frappe.session.user != "Guest" — any authenticated
+		staff login (e.g. Housekeeping) could open/settle POS orders. Endpoints
+		must now enforce doctype-level RBAC via frappe.has_permission."""
+		test_user = "housekeeping.pos.test@thereezort.com"
+		if not frappe.db.exists("User", test_user):
+			frappe.get_doc(
+				{
+					"doctype": "User",
+					"email": test_user,
+					"first_name": "Test",
+					"send_welcome_email": 0,
+					"roles": [{"role": "Housekeeping"}],
+				}
+			).insert(ignore_permissions=True)
+
+		table = self._any_table()
+		original = frappe.session.user
+		try:
+			frappe.set_user(test_user)
+			with self.assertRaises(frappe.PermissionError):
+				open_walk_in_order(self.outlet, table)
+		finally:
+			frappe.set_user(original)
+
 	def test_cancel_served_order(self):
 		"""Comp'd meal / walkout / dispute path — a manager can void a Served
 		order without ever settling. Regression guard for a T02 order stuck

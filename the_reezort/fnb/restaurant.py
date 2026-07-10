@@ -82,9 +82,15 @@ OPEN_STATES = {"Draft", "Sent to Kitchen", "Preparing", "Ready", "Served", "Bill
 # ---------- helpers ----------
 
 
-def _require_login():
+def _require_permission(doctype, permission_type="read"):
 	if frappe.session.user == "Guest":
 		frappe.throw(_("Login required."), frappe.PermissionError)
+
+	if not frappe.has_permission(doctype, permission_type):
+		frappe.throw(
+			_("You do not have {0} permission for {1}.").format(permission_type, doctype),
+			frappe.PermissionError,
+		)
 
 
 def _ensure_erpnext_item_for_menu(menu_item_name: str) -> str:
@@ -305,7 +311,7 @@ def list_tables(outlet: str) -> dict:
 	  - "Serving"          → open order in state Ready / Served
 	  - "Bill Pending"     → open order in state Bill Pending
 	"""
-	_require_login()
+	_require_permission("Restaurant Table", "read")
 	_outlet_or_throw(outlet)
 
 	tables = frappe.get_all(
@@ -375,7 +381,7 @@ def open_walk_in_order(
 	opened_at: str | None = None,
 ) -> dict:
 	"""Create a Draft Restaurant Order. Idempotent per (outlet, table, waiter, opened_at)."""
-	_require_login()
+	_require_permission("Restaurant Order", "create")
 	outlet_row = _outlet_or_throw(outlet)
 
 	if table:
@@ -463,7 +469,7 @@ def add_items(order: str, items: list[dict] | str) -> dict:
 	items to be fired with the next send_to_kitchen; existing rows are untouched.
 	Allowed while the order is still open (through Served) — supports multi-round
 	dining. Blocked once the bill is being settled or cancelled."""
-	_require_login()
+	_require_permission("Restaurant Order", "write")
 	doc = _order_or_throw(order)
 	if doc.state not in ADDABLE_STATES:
 		frappe.throw(_("Cannot add items to order {0} in state {1}.").format(order, doc.state))
@@ -524,7 +530,7 @@ def send_to_kitchen(order: str) -> dict:
 	First round: Draft → Sent to Kitchen. Later rounds (order already past Draft
 	after add_items): the order keeps its current state and only the new items
 	are fired under a new KOT — this is how multi-round dining works."""
-	_require_login()
+	_require_permission("Restaurant Order", "write")
 	doc = _order_or_throw(order)
 
 	unsent = [item for item in doc.items if item.line_status == "Draft"]
@@ -576,7 +582,7 @@ def send_to_kitchen(order: str) -> dict:
 @frappe.whitelist()
 def list_active_kots(outlet: str) -> dict:
 	"""KOT screen queue — every order currently in Sent to Kitchen / Preparing / Ready."""
-	_require_login()
+	_require_permission("Restaurant Order", "read")
 	_outlet_or_throw(outlet)
 	names = frappe.get_all(
 		"Restaurant Order",
@@ -595,7 +601,7 @@ def mark_kot_status(order: str, status: str) -> dict:
 	Also cascades to every item row so the POS-side sees per-item progress
 	(future spec ships per-item strike-off; for now everything moves together).
 	"""
-	_require_login()
+	_require_permission("Restaurant Order", "write")
 	doc = _order_or_throw(order)
 	_assert_transition(doc, status)
 
@@ -643,7 +649,7 @@ def close_walk_in(order: str, payments: list[dict] | str | None = None) -> dict:
 	Idempotent: short-circuits if erpnext_sales_invoice is already set.
 	Payments shape mirrors billing.settlement.settle_folio: [{mode_of_payment, amount}].
 	"""
-	_require_login()
+	_require_permission("Restaurant Order", "write")
 	doc = _order_or_throw(order)
 
 	# A Room-billed order settles to the guest's folio, not a POS Sales Invoice.
@@ -816,7 +822,7 @@ def create_room_service_order(
 	the SAME kitchen queue as POS table orders. Billing happens on close via
 	post_order_to_room (charge to folio), not here.
 	"""
-	_require_login()
+	_require_permission("Restaurant Order", "create")
 	stay_row = frappe.db.get_value(
 		"Stay", stay, ["name", "stay_status", "resort_property", "primary_guest_name"], as_dict=True
 	)
@@ -856,7 +862,7 @@ def create_room_service_order(
 @frappe.whitelist()
 def set_order_guest(order: str, guest_name: str | None = None, party_size: int | None = None) -> dict:
 	"""Attach / update the walk-in guest name (and optionally covers) on an order."""
-	_require_login()
+	_require_permission("Restaurant Order", "write")
 	doc = _order_or_throw(order)
 	if doc.state in {"Settled", "Cancelled"}:
 		frappe.throw(_("Order {0} is {1}; guest details are locked.").format(order, doc.state))
@@ -872,7 +878,7 @@ def set_order_guest(order: str, guest_name: str | None = None, party_size: int |
 @frappe.whitelist()
 def create_restaurant_razorpay_order(order: str) -> dict:
 	"""Create a Razorpay order for a walk-in's grand total (card / UPI at the POS)."""
-	_require_login()
+	_require_permission("Restaurant Order", "write")
 	doc = _order_or_throw(order)
 	if doc.state not in {"Served", "Bill Pending"}:
 		frappe.throw(_("Order {0} must be Served or Bill Pending to take payment.").format(order))
@@ -893,7 +899,7 @@ def create_restaurant_razorpay_order(order: str) -> dict:
 @frappe.whitelist()
 def capture_restaurant_payment(order: str, razorpay_order_id: str, razorpay_payment_id: str, razorpay_signature: str) -> dict:
 	"""Verify a Razorpay POS payment and settle the walk-in with it."""
-	_require_login()
+	_require_permission("Restaurant Order", "write")
 	from the_reezort.billing.razorpay_gateway import (
 		_authoritative_amount,
 		_ensure_razorpay_mode_of_payment,
@@ -916,7 +922,7 @@ def capture_restaurant_payment(order: str, razorpay_order_id: str, razorpay_paym
 def list_in_house_stays(search: str | None = None, limit: int = 20) -> dict:
 	"""In-house stays for the POS 'charge to room' picker — optional search over
 	guest name or room."""
-	_require_login()
+	_require_permission("Stay", "read")
 	filters = {"stay_status": "In House"}
 	rows = frappe.get_all(
 		"Stay",
@@ -947,7 +953,7 @@ def post_order_to_room(order: str, stay: str) -> dict:
 	GST) plus a service-charge line, and marks the order Settled + room-posted.
 	Idempotent per order.
 	"""
-	_require_login()
+	_require_permission("Restaurant Order", "write")
 	doc = _order_or_throw(order)
 
 	if doc.erpnext_sales_invoice or doc.guest_folio:
@@ -1058,7 +1064,7 @@ def post_order_to_room(order: str, stay: str) -> dict:
 @frappe.whitelist()
 def cancel_order(order: str, reason: str | None = None) -> dict:
 	"""Cancel an open order. Kitchen-side cancellations before Settled."""
-	_require_login()
+	_require_permission("Restaurant Order", "write")
 	doc = _order_or_throw(order)
 	prior_state = doc.state
 	_assert_transition(doc, "Cancelled")
@@ -1083,14 +1089,14 @@ def cancel_order(order: str, reason: str | None = None) -> dict:
 
 @frappe.whitelist()
 def get_order(order: str) -> dict:
-	_require_login()
+	_require_permission("Restaurant Order", "read")
 	return _envelope({"order": _order_dict(_order_or_throw(order))})
 
 
 @frappe.whitelist()
 def list_orders_by_state(outlet: str, states: list[str] | str | None = None, limit: int = 50) -> dict:
 	"""Generic filter for the Restaurant workspace's tabs."""
-	_require_login()
+	_require_permission("Restaurant Order", "read")
 	_outlet_or_throw(outlet)
 	if isinstance(states, str):
 		states = json.loads(states)

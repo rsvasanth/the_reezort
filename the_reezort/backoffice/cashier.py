@@ -29,9 +29,15 @@ def _envelope(data, warnings=None, blockers=None, next_actions=None):
 	}
 
 
-def _require_login():
+def _require_permission(doctype, permission_type="read"):
 	if frappe.session.user == "Guest":
 		frappe.throw(_("Login required."), frappe.PermissionError)
+
+	if not frappe.has_permission(doctype, permission_type):
+		frappe.throw(
+			_("You do not have {0} permission for {1}.").format(permission_type, doctype),
+			frappe.PermissionError,
+		)
 
 
 def _default_company():
@@ -87,7 +93,7 @@ def _seed_payment_rows(doc, totals):
 def get_cashier_close_context(close_type, opening_time=None, closing_time=None, company=None):
 	"""Preview the expected payment totals for a prospective shift window, before
 	a Cashier Close is created. Drives the 'open shift' screen."""
-	_require_login()
+	_require_permission("Cashier Close", "read")
 	if close_type not in CLOSE_TYPES:
 		frappe.throw(_("Unknown close type: {0}").format(close_type))
 	company = company or _default_company()
@@ -109,7 +115,7 @@ def get_cashier_close_context(close_type, opening_time=None, closing_time=None, 
 def open_cashier_close(close_type, cash_float=0, outlet=None, company=None, shift_reference=None, cashier_user=None):
 	"""Open a cashier shift. Records the opening time (start of the reconciliation
 	window) and the cash float. Expected totals accrue until the shift is closed."""
-	_require_login()
+	_require_permission("Cashier Close", "create")
 	if close_type not in CLOSE_TYPES:
 		frappe.throw(_("Unknown close type: {0}").format(close_type))
 
@@ -138,7 +144,7 @@ def open_cashier_close(close_type, cash_float=0, outlet=None, company=None, shif
 def get_cashier_close(cashier_close):
 	"""Fetch a Cashier Close. While it is Open, the expected totals are refreshed
 	live so the cashier sees current collections before declaring."""
-	_require_login()
+	_require_permission("Cashier Close", "read")
 	doc = frappe.get_doc("Cashier Close", cashier_close)
 	if doc.close_status in ("Open", "Closing"):
 		totals = _collected_by_mode(doc.company, doc.opening_time, now_datetime())
@@ -162,7 +168,7 @@ def submit_cashier_close(cashier_close, declaration):
 	non-zero variance needs a reason; variance beyond the threshold needs manager
 	approval (status Submitted); otherwise the close is Approved outright.
 	"""
-	_require_login()
+	_require_permission("Cashier Close", "write")
 	if isinstance(declaration, str):
 		declaration = frappe.parse_json(declaration)
 	declaration = declaration or {}
@@ -229,7 +235,7 @@ def submit_cashier_close(cashier_close, declaration):
 @frappe.whitelist()
 def approve_cashier_close(cashier_close, decision, note=None):
 	"""Manager decision on an over-threshold Cashier Close. Blocks self-approval."""
-	_require_login()
+	_require_permission("Cashier Close", "write")
 	if not _is_cashier_manager():
 		frappe.throw(_("Only a manager can decide a cashier close."), frappe.PermissionError)
 	if decision not in ("Approve", "Reject"):
@@ -258,7 +264,7 @@ def approve_cashier_close(cashier_close, decision, note=None):
 
 @frappe.whitelist()
 def list_cashier_closes(company=None, close_status=None, limit=50):
-	_require_login()
+	_require_permission("Cashier Close", "read")
 	filters = {}
 	if company:
 		filters["company"] = company

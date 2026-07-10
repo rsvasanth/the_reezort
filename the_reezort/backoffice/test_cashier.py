@@ -103,6 +103,16 @@ class TestCashierClose(FrappeTestCase):
 		with self.assertRaises(frappe.PermissionError):
 			approve_cashier_close(close["name"], "Approve", note="nope")
 
+	def test_open_blocked_for_unprivileged_role(self):
+		"""Security regression guard (2026-07-10 audit): open/get/submit/list used
+		to only check frappe.session.user != "Guest" — any authenticated staff
+		login (e.g. Housekeeping) could open or list cashier shifts. Endpoints
+		must now enforce doctype-level RBAC via frappe.has_permission."""
+		clerk = _make_user("housekeeping_cashier_test@example.com", ["Housekeeping"])
+		frappe.set_user(clerk)
+		with self.assertRaises(frappe.PermissionError):
+			open_cashier_close(close_type="Front Desk", cash_float=0)
+
 	def test_list_includes_new_close(self):
 		close = self._open()
 		names = [c["name"] for c in list_cashier_closes()["data"]["closes"]]

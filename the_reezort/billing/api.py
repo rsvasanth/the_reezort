@@ -7,6 +7,9 @@ from frappe.utils import flt, today
 
 
 FINANCE_ROLES = {"Accounts User", "Accounts Manager", "Finance Manager", "System Manager"}
+# billing/deposits.py has its own CLOSED_FOLIO_STATUSES (the complementary
+# terminal set) — the two used to share this exact name with opposite
+# contents. Keep them separately named; don't reintroduce the collision.
 OPEN_FOLIO_STATUSES = {"Draft", "Open", "Under Review", "Ready for Settlement"}
 FOLIO_TOTAL_FIELDS = (
 	"total_charges",

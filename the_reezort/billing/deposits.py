@@ -13,7 +13,12 @@ from frappe.utils import flt, today
 
 from the_reezort.billing.api import _as_dict, _company_for_property, _envelope
 
-OPEN_FOLIO_STATUSES = ("Settled", "Closed", "Cancelled")
+# Terminal folio statuses — a deposit can't be taken once the folio is done.
+# (Named CLOSED, not OPEN: billing/api.py separately defines an
+# OPEN_FOLIO_STATUSES with the opposite meaning — the two modules used to
+# share this name with contradictory contents, a landmine for whoever edited
+# the wrong one next. See the 2026-07-10 audit.)
+CLOSED_FOLIO_STATUSES = ("Settled", "Closed", "Cancelled")
 
 
 def _require_permission(permission_type="write"):
@@ -65,7 +70,7 @@ def record_deposit(guest_folio, amount, mode_of_payment="Cash", reference_no=Non
 	"""Record an advance/deposit against an open folio."""
 	_require_permission("write")
 	folio = frappe.get_doc("Guest Folio", guest_folio)
-	if folio.folio_status in OPEN_FOLIO_STATUSES:
+	if folio.folio_status in CLOSED_FOLIO_STATUSES:
 		frappe.throw(_("Folio {0} is {1}; cannot add a deposit.").format(folio.name, folio.folio_status))
 
 	amount = flt(amount)

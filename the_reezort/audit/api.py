@@ -10,6 +10,8 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, now, today
 
+from the_reezort.utils import envelope as _envelope
+
 
 def record_audit_event(
 	source_doctype: str,
@@ -37,10 +39,6 @@ def record_audit_event(
 	except Exception:
 		frappe.log_error(title="Audit Event insert failed", message=frappe.get_traceback())
 		return None
-
-
-def _envelope(data, warnings=None, blockers=None, next_actions=None):
-	return {"ok": True, "data": data, "warnings": warnings or [], "blockers": blockers or [], "next_actions": next_actions or []}
 
 
 def _require_read():

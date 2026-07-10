@@ -11,6 +11,10 @@ import frappe
 from frappe import _
 from frappe.utils import add_to_date, now_datetime, time_diff_in_seconds
 
+from the_reezort.utils import as_dict as _as_dict
+from the_reezort.utils import envelope as _envelope
+from the_reezort.utils import require_permission as _require_permission_generic
+
 # Resolution SLA in minutes by priority.
 SLA_MINUTES = {"Low": 1440, "Normal": 480, "High": 120, "Urgent": 30}
 
@@ -19,30 +23,8 @@ OPEN_STATUSES = {"Open", "In Progress", "On Hold"}
 CATEGORIES = ["Guest Request", "Housekeeping", "Maintenance", "IT", "Concierge", "Complaint", "Other"]
 
 
-def _as_dict(value):
-	if isinstance(value, str):
-		return json.loads(value) if value else {}
-	return value or {}
-
-
-def _envelope(data, warnings=None, blockers=None, next_actions=None):
-	return {
-		"ok": True,
-		"data": data,
-		"warnings": warnings or [],
-		"blockers": blockers or [],
-		"next_actions": next_actions or [],
-	}
-
-
 def _require_permission(permission_type="read"):
-	if frappe.session.user == "Guest":
-		frappe.throw(_("Login required."), frappe.PermissionError)
-	if not frappe.has_permission("Service Ticket", permission_type):
-		frappe.throw(
-			_("You do not have {0} permission for service tickets.").format(permission_type),
-			frappe.PermissionError,
-		)
+	_require_permission_generic("Service Ticket", permission_type)
 
 
 def _sla_view(status, sla_due):

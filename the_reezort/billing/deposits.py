@@ -12,6 +12,7 @@ from frappe import _
 from frappe.utils import flt, today
 
 from the_reezort.billing.api import _as_dict, _company_for_property, _envelope
+from the_reezort.utils import require_permission as _require_permission_generic
 
 # Terminal folio statuses — a deposit can't be taken once the folio is done.
 # (Named CLOSED, not OPEN: billing/api.py separately defines an
@@ -22,10 +23,7 @@ CLOSED_FOLIO_STATUSES = ("Settled", "Closed", "Cancelled")
 
 
 def _require_permission(permission_type="write"):
-	if frappe.session.user == "Guest":
-		frappe.throw(_("Login required."), frappe.PermissionError)
-	if not frappe.has_permission("Guest Folio", permission_type):
-		frappe.throw(_("You do not have permission to record payments."), frappe.PermissionError)
+	_require_permission_generic("Guest Folio", permission_type)
 
 
 def _cash_account(company, mode_of_payment):

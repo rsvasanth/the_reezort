@@ -6,6 +6,10 @@ from the_reezort.permissions import system_manager_only
 from frappe import _
 from frappe.utils import getdate
 
+from the_reezort.utils import as_dict as _as_dict
+from the_reezort.utils import as_list as _as_list
+from the_reezort.utils import require_permission as _require_permission
+
 ROOM_FIELDS = [
 	"name",
 	"room_number",
@@ -29,27 +33,6 @@ BLOCKING_MAINTENANCE_STATUSES = ("Under Maintenance", "Out of Order", "Out of Se
 READY_HOUSEKEEPING_STATUSES = ("Clean", "Inspected")
 
 
-def _as_dict(value):
-	if isinstance(value, str):
-		return json.loads(value) if value else {}
-	return value or {}
-
-
-def _as_list(value):
-	if isinstance(value, str):
-		return json.loads(value) if value else []
-	return value or []
-
-
-def _require_permission(doctype: str, permission_type: str = "read"):
-	if frappe.session.user == "Guest":
-		frappe.throw(_("Login required."), frappe.PermissionError)
-
-	if not frappe.has_permission(doctype, permission_type):
-		frappe.throw(
-			_("You do not have {0} permission for {1}.").format(permission_type, doctype),
-			frappe.PermissionError,
-		)
 
 
 def _validate_date_range(start_date=None, end_date=None):

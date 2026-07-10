@@ -17,20 +17,12 @@ from frappe.utils import now, today, getdate, date_diff, flt, cint
 
 from the_reezort.billing.api import get_or_create_folio
 from the_reezort.reservation.api import _room_rate, ROOM_ITEM_BY_CODE
+from the_reezort.utils import as_dict as _as_dict
+from the_reezort.utils import as_list as _as_list
+from the_reezort.utils import require_permission as _require_permission
 
 CHECK_IN_ELIGIBLE_RESERVATION_STATUSES = {"Confirmed", "Modified", "Checked In"}
 ACTIVE_STAY_STATUSES = ("Draft", "Reserved", "Due In", "In House", "Due Out", "Checked Out")
-
-
-def _require_permission(doctype, permission_type="read"):
-	if frappe.session.user == "Guest":
-		frappe.throw(_("Login required."), frappe.PermissionError)
-
-	if not frappe.has_permission(doctype, permission_type):
-		frappe.throw(
-			_("You do not have {0} permission for {1}.").format(permission_type, doctype),
-			frappe.PermissionError,
-		)
 
 
 def _primary_guest_name(reservation_doc):
@@ -213,22 +205,6 @@ def _deposit_context(folio_name):
 	folio["deposits"] = deposits
 	folio["deposit_total"] = sum(flt(d.amount) for d in deposits)
 	return folio
-
-
-def _as_list(value):
-	if isinstance(value, str):
-		import json
-
-		return json.loads(value) if value else []
-	return value or []
-
-
-def _as_dict(value):
-	if isinstance(value, str):
-		import json
-
-		return json.loads(value) if value else {}
-	return value or {}
 
 
 def _post_accommodation_charge(stay_doc, folio_name):

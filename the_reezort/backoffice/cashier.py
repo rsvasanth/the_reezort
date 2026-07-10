@@ -14,30 +14,12 @@ import frappe
 from frappe import _
 from frappe.utils import flt, now_datetime
 
+from the_reezort.utils import envelope as _envelope
+from the_reezort.utils import require_permission as _require_permission
+
 CLOSE_TYPES = {"Front Desk", "F&B", "Event", "Night Audit", "Other"}
 DEFAULT_VARIANCE_THRESHOLD = 100.0
 CASHIER_MANAGER_ROLES = {"Accounts Manager", "Resort Manager", "System Manager"}
-
-
-def _envelope(data, warnings=None, blockers=None, next_actions=None):
-	return {
-		"ok": True,
-		"data": data,
-		"warnings": warnings or [],
-		"blockers": blockers or [],
-		"next_actions": next_actions or [],
-	}
-
-
-def _require_permission(doctype, permission_type="read"):
-	if frappe.session.user == "Guest":
-		frappe.throw(_("Login required."), frappe.PermissionError)
-
-	if not frappe.has_permission(doctype, permission_type):
-		frappe.throw(
-			_("You do not have {0} permission for {1}.").format(permission_type, doctype),
-			frappe.PermissionError,
-		)
 
 
 def _default_company():

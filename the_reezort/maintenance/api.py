@@ -41,6 +41,8 @@ from frappe.utils import add_to_date, flt, get_datetime, now_datetime
 
 from the_reezort.maintenance.sla_targets import sla_minutes
 from the_reezort.staff.api import _envelope
+from the_reezort.utils import as_dict as _as_dict
+from the_reezort.utils import require_permission as _require_permission_generic
 
 # State machine — forward transitions only.
 # Reported→Duplicate is a lateral escape when the reporter learns the issue
@@ -67,24 +69,8 @@ DEDUPE_WINDOW_HOURS = 2
 # ---------- helpers ----------
 
 
-def _require_login():
-	if frappe.session.user == "Guest":
-		frappe.throw(_("Login required."), frappe.PermissionError)
-
-
 def _require_permission(perm: str = "read"):
-	_require_login()
-	if not frappe.has_permission("Maintenance Ticket", perm):
-		frappe.throw(
-			_("You do not have {0} permission on maintenance tickets.").format(perm),
-			frappe.PermissionError,
-		)
-
-
-def _as_dict(value) -> dict:
-	if isinstance(value, str):
-		return json.loads(value) if value else {}
-	return value or {}
+	_require_permission_generic("Maintenance Ticket", perm)
 
 
 def _idempotency_key(resort_property: str, room: str | None, subject: str, raised_by: str) -> str:

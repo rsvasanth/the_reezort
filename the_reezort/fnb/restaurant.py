@@ -39,6 +39,7 @@ from frappe.utils import flt, get_datetime, now_datetime, today
 
 from the_reezort.audit.api import record_audit_event
 from the_reezort.staff.api import _envelope
+from the_reezort.utils import require_permission as _require_permission
 
 BACKDATE_HOURS = 24
 
@@ -80,17 +81,6 @@ OPEN_STATES = {"Draft", "Sent to Kitchen", "Preparing", "Ready", "Served", "Bill
 
 
 # ---------- helpers ----------
-
-
-def _require_permission(doctype, permission_type="read"):
-	if frappe.session.user == "Guest":
-		frappe.throw(_("Login required."), frappe.PermissionError)
-
-	if not frappe.has_permission(doctype, permission_type):
-		frappe.throw(
-			_("You do not have {0} permission for {1}.").format(permission_type, doctype),
-			frappe.PermissionError,
-		)
 
 
 def _ensure_erpnext_item_for_menu(menu_item_name: str) -> str:

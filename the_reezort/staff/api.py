@@ -13,6 +13,10 @@ import frappe
 from frappe import _
 from frappe.utils import validate_email_address
 
+from the_reezort.utils import as_dict as _as_dict
+from the_reezort.utils import as_list as _as_list
+from the_reezort.utils import envelope as _envelope
+
 # Roles a staff-admin may grant through this screen. Deliberately excludes
 # System Manager / Administrator and any system/privileged role.
 ASSIGNABLE_ROLES = [
@@ -32,28 +36,6 @@ STAFF_ADMIN_ROLES = {"System Manager", "Resort Manager"}
 
 # Never editable/disableable through this API.
 PROTECTED_USERS = {"Administrator", "Guest"}
-
-
-def _as_dict(value):
-	if isinstance(value, str):
-		return json.loads(value) if value else {}
-	return value or {}
-
-
-def _as_list(value):
-	if isinstance(value, str):
-		return json.loads(value) if value else []
-	return value or []
-
-
-def _envelope(data, warnings=None, blockers=None, next_actions=None):
-	return {
-		"ok": True,
-		"data": data,
-		"warnings": warnings or [],
-		"blockers": blockers or [],
-		"next_actions": next_actions or [],
-	}
 
 
 def _require_staff_admin():

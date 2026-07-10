@@ -24,15 +24,12 @@ from frappe import _
 from frappe.utils import flt, now
 
 from the_reezort.audit.api import record_audit_event
+from the_reezort.utils import envelope as _envelope
 
 
 class ApprovalRequired(frappe.ValidationError):
 	"""Raised when a gated endpoint needs manager approval before proceeding."""
 	pass
-
-
-def _envelope(data, warnings=None, blockers=None, next_actions=None):
-	return {"ok": True, "data": data, "warnings": warnings or [], "blockers": blockers or [], "next_actions": next_actions or []}
 
 
 def _require_login():

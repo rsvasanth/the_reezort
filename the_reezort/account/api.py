@@ -1,6 +1,8 @@
 import frappe
 from frappe import _
 
+from the_reezort.utils import envelope as _envelope
+
 
 GENERIC_ROLES = {
 	"All",
@@ -24,16 +26,6 @@ ROLE_PRIORITY = [
 	"Maintenance",
 	"System Manager",
 ]
-
-
-def _envelope(data, warnings=None, blockers=None, next_actions=None):
-	return {
-		"ok": True,
-		"data": data,
-		"warnings": warnings or [],
-		"blockers": blockers or [],
-		"next_actions": next_actions or [],
-	}
 
 
 def _meaningful_roles(roles):

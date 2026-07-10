@@ -17,15 +17,11 @@ from the_reezort.billing.erpnext_posting import (
 	create_payment_entry_for_invoice,
 )
 from the_reezort.billing.posting import run_posting
+from the_reezort.utils import as_list as _as_list
+from the_reezort.utils import envelope as _envelope
 
 CHARGEABLE_LINE_TYPES = {"Charge", "Adjustment"}
 UNPOSTED_LINE_STATUSES = {"Draft", "Open", "Routed"}
-
-
-def _as_list(value):
-	if isinstance(value, str):
-		return json.loads(value) if value else []
-	return value or []
 
 
 def _require_finance_permission():
@@ -33,16 +29,6 @@ def _require_finance_permission():
 		frappe.throw(_("Login required."), frappe.PermissionError)
 	if not frappe.has_permission("Sales Invoice", "create"):
 		frappe.throw(_("You do not have permission to post invoices."), frappe.PermissionError)
-
-
-def _envelope(data, warnings=None, blockers=None, next_actions=None):
-	return {
-		"ok": True,
-		"data": data,
-		"warnings": warnings or [],
-		"blockers": blockers or [],
-		"next_actions": next_actions or [],
-	}
 
 
 def _billable_charge_lines(guest_folio):

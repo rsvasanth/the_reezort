@@ -17,6 +17,9 @@ from the_reezort.billing.erpnext_posting import (
 	default_sales_taxes_template,
 )
 from the_reezort.billing.posting import run_posting
+from the_reezort.utils import as_dict as _as_dict
+from the_reezort.utils import as_list as _as_list
+from the_reezort.utils import envelope as _envelope
 
 DIRECT_BILL = "Direct Bill"
 FINANCE_OR_CASHIER_ROLES = {
@@ -28,28 +31,6 @@ FINANCE_OR_CASHIER_ROLES = {
 	"Restaurant",
 	"Resort Manager",
 }
-
-
-def _as_dict(value):
-	if isinstance(value, str):
-		return json.loads(value) if value else {}
-	return value or {}
-
-
-def _as_list(value):
-	if isinstance(value, str):
-		return json.loads(value) if value else []
-	return value or []
-
-
-def _envelope(data, warnings=None, blockers=None, next_actions=None):
-	return {
-		"ok": True,
-		"data": data,
-		"warnings": warnings or [],
-		"blockers": blockers or [],
-		"next_actions": next_actions or [],
-	}
 
 
 def _require_direct_bill_permission():

@@ -33,3 +33,13 @@
 .dark {
   @include theme.theme(themes.$g100);
 }
+
+// Carbon's SideNav reserves 3rem at the top (top: 3rem + reduced height) for
+// a fixed Carbon Header component. This app's header lives inside the content
+// column instead, so that offset just renders as a dead gap above the brand
+// and pushes the whole sidebar down. Pin the nav to the real top.
+.cds--side-nav {
+  top: 0;
+  height: 100%;
+  max-height: 100%;
+}

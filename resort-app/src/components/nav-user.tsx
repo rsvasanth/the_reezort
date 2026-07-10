@@ -17,7 +17,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar"
 
 export function NavUser({
@@ -30,7 +29,6 @@ export function NavUser({
     avatar: string
   }
 }) {
-  const { isMobile } = useSidebar()
   const { logout } = useFrappeAuth()
 
   async function handleLogout() {
@@ -73,13 +71,16 @@ export function NavUser({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
+            // "top": this trigger sits at the very bottom of the sidebar, so
+            // any downward/side placement extends past the viewport bottom
+            // and the menu is invisible — it must open upward.
             // "start" rather than "end": Carbon's Popover measures this
             // trigger's box via an inline-block wrapper, which collapses to
             // the button's own content width instead of the full-width
             // SidebarMenuButton — "end" alignment then anchors off that
             // wrong (narrower) right edge and renders off-screen. "start"
             // only depends on the (correct) left edge, so it isn't affected.
+            side="top"
             align="start"
             sideOffset={4}
           >

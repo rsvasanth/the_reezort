@@ -40,10 +40,12 @@ const DropdownMenuContent = ({ children }: DropdownMenuContentProps) => (
   <>{children}</>
 )
 
-const ALIGN_MAP: Record<string, string> = {
-  start: "bottom-start",
-  center: "bottom",
-  end: "bottom-end",
+// Map Radix-style (side, align) to a Carbon PopoverAlignment. side was
+// previously ignored (everything opened downward) — which rendered the
+// sidebar-footer account menu below the viewport, making it look dead.
+function carbonAlignment(side: string, align: string): string {
+  const suffix = align === "center" ? "" : `-${align}`
+  return `${side}${suffix}`
 }
 
 function DropdownMenu({
@@ -92,7 +94,7 @@ function DropdownMenu({
     <Popover
       open={open}
       onRequestClose={() => setOpen(false)}
-      align={(ALIGN_MAP[contentProps.align ?? "center"] ?? "bottom") as "bottom" | "bottom-start" | "bottom-end"}
+      align={carbonAlignment(contentProps.side ?? "bottom", contentProps.align ?? "center") as "bottom" | "bottom-start" | "bottom-end" | "top" | "top-start" | "top-end" | "left" | "left-start" | "left-end" | "right" | "right-start" | "right-end"}
       // See DropdownMenuContentProps.avoidClipping — only escape-clip for
       // consumers that opt in, so edge-of-viewport triggers (e.g. the sidebar
       // footer's account menu) keep their working static placement instead of

@@ -144,7 +144,7 @@ export function FolioSettlementRail({
 
 					{postingStatus && (
 						<div className="mt-4 flex items-center gap-2 text-[11px] text-muted-foreground">
-							<span className="size-1.5 shrink-0 rounded-full bg-emerald-500" />
+							<span className="size-1.5 shrink-0 rounded-full bg-[#24a148]" />
 							{postedCount} of {lines.length} lines posted · ERPNext {postingStatus.toLowerCase()} · totals from server
 						</div>
 					)}
@@ -167,7 +167,7 @@ export function FolioSettlementRail({
 											{formatServiceDate(line.service_date)} · {line.source_module}
 										</div>
 									</div>
-									<span className="whitespace-nowrap font-mono text-xs tabular-nums text-emerald-500">
+									<span className="whitespace-nowrap font-mono text-xs tabular-nums text-[#24a148]">
 										{formatCurrency(Math.abs(line.amount), currency)}
 									</span>
 								</div>

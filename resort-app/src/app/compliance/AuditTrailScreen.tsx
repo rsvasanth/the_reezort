@@ -173,7 +173,7 @@ function AuditRow({ event }: { event: AuditEvent }) {
 	return (
 		<motion.li className="relative mb-4 flex gap-3" variants={staggerItem} data-testid={`audit-${event.name}`}>
 			<span
-				className="absolute -left-[34px] flex size-6 items-center justify-center rounded-full bg-stone-500 text-white shadow ring-4 ring-background"
+				className="absolute -left-[34px] flex size-6 items-center justify-center rounded-full bg-[#878d96] text-white shadow ring-4 ring-background"
 				aria-hidden
 			>
 				<FileSearch className="size-3.5" />

@@ -190,7 +190,7 @@ export function MinibarSheet({
 							data-testid="minibar-consumed-at"
 						/>
 						{hoursBack > 24 ? (
-							<div className="mt-1 flex items-center gap-1 text-[11px] text-amber-700">
+							<div className="mt-1 flex items-center gap-1 text-[11px] text-[#684e00]">
 								<AlertTriangle className="size-3" />
 								Back-dating &gt; 24h will require manager approval.
 							</div>

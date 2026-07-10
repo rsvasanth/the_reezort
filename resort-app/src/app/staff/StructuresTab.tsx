@@ -113,7 +113,7 @@ export default function StructuresTab() {
 				<div>
 					<h2 className="text-lg font-medium">Salary structures</h2>
 					{unassigned > 0 ? (
-						<div className="mt-1 text-xs text-amber-700">
+						<div className="mt-1 text-xs text-[#684e00]">
 							{unassigned} employee{unassigned === 1 ? "" : "s"} without a structure — payroll will skip them.
 						</div>
 					) : null}
@@ -148,7 +148,7 @@ export default function StructuresTab() {
 									{r.assignment ? (
 										<span>{r.assignment.salary_structure}</span>
 									) : (
-										<Badge variant="outline" className="border-amber-500 text-amber-700">Unassigned</Badge>
+										<Badge variant="outline" className="border-[#b28600] text-[#684e00]">Unassigned</Badge>
 									)}
 								</TableCell>
 								<TableCell>{r.assignment ? formatINR(r.assignment.base) : "—"}</TableCell>

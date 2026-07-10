@@ -48,10 +48,10 @@ function formatINR(n: number | null | undefined): string {
 function stateBadge(state?: string) {
 	const s = state ?? "Pending";
 	if (s === "Approved") return <Badge variant="secondary">Approved</Badge>;
-	if (s === "Auto-Approved") return <Badge variant="outline" className="border-emerald-500 text-emerald-700">Auto</Badge>;
+	if (s === "Auto-Approved") return <Badge variant="outline" className="border-[#24a148] text-[#0e6027]">Auto</Badge>;
 	if (s === "Rejected") return <Badge variant="destructive">Rejected</Badge>;
 	if (s === "Cancelled") return <Badge variant="outline">Cancelled</Badge>;
-	return <Badge variant="outline" className="border-amber-500 text-amber-700">Pending</Badge>;
+	return <Badge variant="outline" className="border-[#b28600] text-[#684e00]">Pending</Badge>;
 }
 
 function deskUrl(doctype: string | null, name: string | null): string | null {
@@ -279,7 +279,7 @@ function RequestRow({
 									disabled={!!busy}
 									data-testid={`approve-${request.name}`}
 								>
-									{busy === "Approved" ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4 text-emerald-600" />}
+									{busy === "Approved" ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4 text-[#198038]" />}
 									Approve
 								</Button>
 								<Button
@@ -289,7 +289,7 @@ function RequestRow({
 									disabled={!!busy}
 									data-testid={`reject-${request.name}`}
 								>
-									{busy === "Rejected" ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4 text-red-600" />}
+									{busy === "Rejected" ? <Loader2 className="size-4 animate-spin" /> : <X className="size-4 text-[#da1e28]" />}
 									Reject
 								</Button>
 							</div>

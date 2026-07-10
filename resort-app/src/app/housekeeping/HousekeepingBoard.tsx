@@ -114,7 +114,7 @@ export default function HousekeepingBoard() {
 											: "Board error"}
 							</Badge>
 							{isMock && (
-								<Badge variant="secondary" className="text-amber-700 dark:text-amber-300">
+								<Badge variant="secondary" className="text-[#684e00] dark:text-[#f1c21b]">
 									Offline — showing demo data
 								</Badge>
 							)}
@@ -172,12 +172,12 @@ function BoardSummaryStrip({ rooms }: { rooms: HousekeepingRoom[] }) {
 
 	return (
 		<div className="flex flex-wrap gap-2 text-sm">
-			<SummaryChip label="Dirty" count={counts.dirty} className="bg-rose-600 text-white" />
-			<SummaryChip label="In Progress" count={counts.inProgress} className="bg-blue-600 text-white" />
-			<SummaryChip label="Pickup" count={counts.pickup} className="bg-violet-600 text-white" />
+			<SummaryChip label="Dirty" count={counts.dirty} className="bg-[#da1e28] text-white" />
+			<SummaryChip label="In Progress" count={counts.inProgress} className="bg-[#0f62fe] text-white" />
+			<SummaryChip label="Pickup" count={counts.pickup} className="bg-[#d02670] text-white" />
 			<SummaryChip label="Turndown" count={counts.turndown} />
-			<SummaryChip label="Clean" count={counts.clean} className="bg-emerald-600 text-white" />
-			<SummaryChip label="Inspected" count={counts.inspected} className="bg-teal-600 text-white" />
+			<SummaryChip label="Clean" count={counts.clean} className="bg-[#198038] text-white" />
+			<SummaryChip label="Inspected" count={counts.inspected} className="bg-[#007d79] text-white" />
 			{counts.oos > 0 && (
 				<SummaryChip label="OOS Cleaning" count={counts.oos} className="bg-destructive text-white" />
 			)}

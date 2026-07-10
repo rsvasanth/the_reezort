@@ -181,7 +181,7 @@ export function RoomInsightsPanel({ room }: { room: string }) {
 									<Badge
 										key={cond}
 										variant={cond === "Working" ? "secondary" : "outline"}
-										className={cond === "Working" ? "" : "border-amber-500 text-amber-700"}
+										className={cond === "Working" ? "" : "border-[#b28600] text-[#684e00]"}
 									>
 										{cond} · {count}
 									</Badge>
@@ -214,7 +214,7 @@ function KpiCard({
 				<div className="flex items-center gap-2 text-xs text-muted-foreground">
 					<Icon className="size-3.5" /> {label}
 				</div>
-				<div className={`text-2xl font-light ${accent === "warn" ? "text-amber-700" : "text-foreground"}`}>{value}</div>
+				<div className={`text-2xl font-light ${accent === "warn" ? "text-[#684e00]" : "text-foreground"}`}>{value}</div>
 				{sub ? <div className="text-xs text-muted-foreground">{sub}</div> : null}
 			</CardContent>
 		</Card>

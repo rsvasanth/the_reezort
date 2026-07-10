@@ -142,8 +142,27 @@ async function call<T>(path: string, method: "GET" | "POST", body?: Record<strin
 	return data;
 }
 
-export async function listReservations(): Promise<{ reservations: ReservationRow[] }> {
-	return call("the_reezort.reservation.api.list_reservations", "GET");
+export type ReservationListParams = {
+	resort_property?: string;
+	/** "all" for every status (incl. Checked In / Cancelled / Completed / No Show / Expired),
+	 * a comma-separated status list, or omitted for the default active-pipeline scope. */
+	status?: string;
+	search?: string;
+	arrival_from?: string;
+	arrival_to?: string;
+	page?: number;
+	page_length?: number;
+};
+
+export type ReservationListResult = {
+	reservations: ReservationRow[];
+	total_count: number;
+	page: number;
+	page_length: number;
+};
+
+export async function listReservations(params?: ReservationListParams): Promise<ReservationListResult> {
+	return call("the_reezort.reservation.api.list_reservations", "GET", params as Record<string, unknown> | undefined);
 }
 
 export async function getReservation(reservation: string): Promise<ReservationDetail> {

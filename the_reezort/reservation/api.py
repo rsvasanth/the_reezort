@@ -16,6 +16,16 @@ ROOM_ITEM_BY_CODE = {
 	"STE": "ROOM-STE",
 	"VIL": "ROOM-VIL",
 }
+# Default scope for list_reservations — unchanged from the original "booking
+# pipeline" behavior so existing callers don't shift. "Checked In" and every
+# terminal status are deliberately excluded here; pass status="all" (or an
+# explicit list) to see them.
+PIPELINE_RESERVATION_STATUSES = ("Draft", "Quoted", "Hold", "Deposit Pending", "Confirmed", "Modified")
+ALL_RESERVATION_STATUSES = (
+	"Draft", "Quoted", "Hold", "Deposit Pending", "Confirmed", "Modified",
+	"Waitlisted", "Cancelled", "No Show Pending", "No Show", "Checked In",
+	"Completed", "Expired",
+)
 
 
 def _as_dict(value):
@@ -1008,20 +1018,78 @@ def get_reservation(reservation):
 
 
 @frappe.whitelist()
-def list_reservations(resort_property=None):
-	"""Active reservations for the Reservations board (booking pipeline)."""
+def list_reservations(
+	resort_property=None,
+	status=None,
+	search=None,
+	arrival_from=None,
+	arrival_to=None,
+	page=1,
+	page_length=50,
+):
+	"""Reservations for the Reservations screen.
+
+	Defaults to the active booking-pipeline statuses (unchanged from the
+	original behavior). Pass status="all" to include every status (Checked In,
+	Cancelled, Completed, No Show, Expired, ...), or an explicit list/CSV of
+	statuses. `search` matches reservation name, the staying guest's profile
+	name, or any Reservation Guest row's name — server-side, so it isn't
+	limited to whatever page happens to be loaded. Real offset pagination via
+	page/page_length; response includes total_count instead of silently
+	truncating at a fixed limit.
+	"""
 	_require_permission("Reservation", "read")
-	filters = {"status": ["in", ["Draft", "Quoted", "Hold", "Deposit Pending", "Confirmed", "Modified"]]}
+
+	if not status:
+		status_filter = list(PIPELINE_RESERVATION_STATUSES)
+	elif status == "all":
+		status_filter = list(ALL_RESERVATION_STATUSES)
+	else:
+		status_filter = _as_list(status) if isinstance(status, str) and status.strip().startswith("[") else (
+			status if isinstance(status, list) else [s.strip() for s in status.split(",") if s.strip()]
+		)
+
+	conditions = [["status", "in", status_filter]]
 	if resort_property:
-		filters["resort_property"] = resort_property
+		conditions.append(["resort_property", "=", resort_property])
+	if arrival_from:
+		conditions.append(["arrival_date", ">=", getdate(arrival_from)])
+	if arrival_to:
+		conditions.append(["arrival_date", "<=", getdate(arrival_to)])
+
+	if search:
+		search_like = f"%{search}%"
+		name_matches = {r.name for r in frappe.get_all("Reservation", filters=[["name", "like", search_like]])}
+		profile_matches = [
+			p.name for p in frappe.get_all("Guest Profile", filters=[["guest_full_name", "like", search_like]])
+		]
+		if profile_matches:
+			name_matches |= {
+				r.name
+				for r in frappe.get_all(
+					"Reservation", filters=[["staying_guest_profile", "in", profile_matches]]
+				)
+			}
+		name_matches |= {
+			g.parent
+			for g in frappe.get_all("Reservation Guest", filters=[["guest_name", "like", search_like]])
+		}
+		if not name_matches:
+			return {"reservations": [], "total_count": 0, "page": int(page), "page_length": int(page_length)}
+		conditions.append(["name", "in", list(name_matches)])
+
+	page = max(int(page or 1), 1)
+	page_length = max(int(page_length or 50), 1)
+	total_count = frappe.db.count("Reservation", filters=conditions)
 
 	out = []
 	for r in frappe.get_all(
 		"Reservation",
-		filters=filters,
+		filters=conditions,
 		fields=["name", "status", "arrival_date", "departure_date", "staying_guest_profile", "hold_expires_at", "total_estimated_amount", "currency"],
 		order_by="creation desc",
-		limit=50,
+		limit_start=(page - 1) * page_length,
+		limit_page_length=page_length,
 	):
 		guest = frappe.db.get_value("Guest Profile", r.staying_guest_profile, "guest_full_name") if r.staying_guest_profile else None
 		if not guest:
@@ -1042,7 +1110,7 @@ def list_reservations(resort_property=None):
 				"currency": r.currency,
 			}
 		)
-	return {"reservations": out}
+	return {"reservations": out, "total_count": total_count, "page": page, "page_length": page_length}
 
 
 # ---------- occupancy timeline (Gantt view for Front Desk) ----------

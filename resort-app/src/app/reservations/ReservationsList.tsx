@@ -1,16 +1,29 @@
 /**
  * Reservations list — rich operational list. Click a row → full reservation workspace.
  * "New booking" → full-page booking flow. (Cancel is the only quick inline action.)
+ *
+ * Defaults to the active booking pipeline (Draft…Modified). Switch "Show" to
+ * "All (incl. checked-in & history)" to see Checked In / Cancelled / Completed /
+ * No Show / Expired reservations — those are excluded by default so the front
+ * desk board stays focused on what still needs action, but they must remain
+ * reachable via search/filter here (2026-07-10 audit fix).
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Plus, Search, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Plus, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { RoomThumb } from "@/components/property/room-thumb";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import {
 	Table,
 	TableBody,
@@ -36,45 +49,75 @@ const STATUS_VARIANT: Record<string, "secondary" | "outline" | "destructive"> = 
 	Hold: "outline",
 	Quoted: "outline",
 	"Deposit Pending": "outline",
+	Modified: "secondary",
+	"Checked In": "secondary",
+	Completed: "outline",
 	Cancelled: "destructive",
+	"No Show": "destructive",
+	"No Show Pending": "destructive",
+	Expired: "destructive",
+	Waitlisted: "outline",
 };
+
+const PAGE_LENGTH = 25;
 
 export default function ReservationsList() {
 	const [rows, setRows] = useState<ReservationRow[]>([]);
+	const [totalCount, setTotalCount] = useState(0);
 	const [loading, setLoading] = useState(true);
-	const [query, setQuery] = useState("");
+	const [searchInput, setSearchInput] = useState("");
+	const [search, setSearch] = useState("");
+	const [scope, setScope] = useState<"active" | "all">("active");
+	const [page, setPage] = useState(1);
 	const [busy, setBusy] = useState<string | null>(null);
 
+	// Debounce the search box → server-side search (spans every reservation,
+	// not just whatever page happens to be loaded).
+	useEffect(() => {
+		const t = setTimeout(() => setSearch(searchInput.trim()), 350);
+		return () => clearTimeout(t);
+	}, [searchInput]);
+
+	// Any filter change resets to page 1.
+	useEffect(() => {
+		setPage(1);
+	}, [search, scope]);
+
 	const reload = useCallback(async () => {
+		setLoading(true);
 		try {
-			setRows((await listReservations()).reservations);
+			const result = await listReservations({
+				status: scope === "all" ? "all" : undefined,
+				search: search || undefined,
+				page,
+				page_length: PAGE_LENGTH,
+			});
+			setRows(result.reservations);
+			setTotalCount(result.total_count);
 		} catch (error) {
 			const detail = error instanceof FolioApiError ? error.message : String(error);
 			toast.error("Could not load reservations", { description: detail });
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [scope, search, page]);
 
 	useEffect(() => {
 		reload();
 	}, [reload]);
 
-	const filtered = useMemo(() => {
-		const q = query.trim().toLowerCase();
-		if (!q) return rows;
-		return rows.filter((r) => `${r.guest} ${r.reservation} ${r.room_type ?? ""}`.toLowerCase().includes(q));
-	}, [rows, query]);
+	const totalPages = Math.max(Math.ceil(totalCount / PAGE_LENGTH), 1);
+	const rangeStart = totalCount === 0 ? 0 : (page - 1) * PAGE_LENGTH + 1;
+	const rangeEnd = Math.min(page * PAGE_LENGTH, totalCount);
 
-	const kpis = useMemo(() => {
-		const by = (s: string) => rows.filter((r) => r.status === s).length;
-		return [
-			{ label: "Total", value: rows.length },
-			{ label: "Confirmed", value: by("Confirmed") },
-			{ label: "On hold", value: by("Hold") },
-			{ label: "Quoted", value: by("Quoted") },
-		];
-	}, [rows]);
+	const kpis = useMemo(
+		() => [
+			{ label: "Matching", value: totalCount },
+			{ label: "This page", value: rows.length },
+			{ label: "Page", value: `${page} / ${totalPages}` },
+		],
+		[totalCount, rows.length, page, totalPages],
+	);
 
 	async function cancel(reservation: string) {
 		setBusy(reservation);
@@ -103,17 +146,29 @@ export default function ReservationsList() {
 		>
 			<KpiStrip items={kpis} />
 
-			<div className="flex items-center gap-2">
+			<div className="flex flex-wrap items-center gap-2">
 				<div className="relative w-72 max-w-full">
 					<Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
 					<Input
 						className="pl-8"
-						placeholder="Search guest, code, room type…"
-						value={query}
-						onChange={(e) => setQuery(e.target.value)}
+						placeholder="Search guest name or reservation code…"
+						value={searchInput}
+						onChange={(e) => setSearchInput(e.target.value)}
+						data-testid="reservations-search"
 					/>
 				</div>
-				<span className="text-sm text-muted-foreground">{filtered.length} of {rows.length}</span>
+				<Select value={scope} onValueChange={(v) => setScope(v as "active" | "all")}>
+					<SelectTrigger className="w-64" data-testid="reservations-scope">
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="active">Active pipeline (default)</SelectItem>
+						<SelectItem value="all">All (incl. checked-in &amp; history)</SelectItem>
+					</SelectContent>
+				</Select>
+				<span className="text-sm text-muted-foreground">
+					{totalCount === 0 ? "0 results" : `${rangeStart}–${rangeEnd} of ${totalCount}`}
+				</span>
 			</div>
 
 			<div className="rounded-lg border">
@@ -132,10 +187,10 @@ export default function ReservationsList() {
 					<TableBody>
 						{loading ? (
 							<TableRow><TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground"><Loader2 className="mx-auto size-4 animate-spin" /></TableCell></TableRow>
-						) : filtered.length === 0 ? (
-							<TableRow><TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">No reservations.</TableCell></TableRow>
+						) : rows.length === 0 ? (
+							<TableRow><TableCell colSpan={7} className="py-8 text-center text-sm text-muted-foreground">No reservations match.</TableCell></TableRow>
 						) : (
-							filtered.map((r) => (
+							rows.map((r) => (
 								<TableRow
 									key={r.reservation}
 									data-testid={`res-${r.reservation}`}
@@ -175,6 +230,30 @@ export default function ReservationsList() {
 					</TableBody>
 				</Table>
 			</div>
+
+			{totalCount > PAGE_LENGTH ? (
+				<div className="flex items-center justify-end gap-2">
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={page <= 1 || loading}
+						onClick={() => setPage((p) => Math.max(p - 1, 1))}
+						data-testid="reservations-prev-page"
+					>
+						<ChevronLeft className="size-4" /> Prev
+					</Button>
+					<span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={page >= totalPages || loading}
+						onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+						data-testid="reservations-next-page"
+					>
+						Next <ChevronRight className="size-4" />
+					</Button>
+				</div>
+			) : null}
 		</WorkspacePage>
 	);
 }

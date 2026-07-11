@@ -85,6 +85,25 @@ import {
 	type ServiceLocation,
 	type ServiceLocationType,
 } from "@/lib/service-location-api";
+import {
+	getRoomTypeInventoryView,
+	type RoomTypeInventoryRow,
+} from "@/lib/room-inventory-view-api";
+import {
+	listEventSpaces,
+	createEventSpace,
+	setEventSpaceActive,
+	listActivityAreas,
+	createActivityArea,
+	setActivityAreaActive,
+	listSpaRooms,
+	createSpaRoom,
+	setSpaRoomActive,
+	type EventSpace,
+	type ActivityArea,
+	type ActivityAreaType,
+	type SpaRoom,
+} from "@/lib/spaces-api";
 
 function rupees(n?: number): string {
 	return `₹${Number(n ?? 0).toLocaleString("en-IN")}`;
@@ -237,8 +256,10 @@ export default function PropertyManagementScreen() {
 								<TabsTrigger value="types">Room types</TabsTrigger>
 								<TabsTrigger value="equipment">Equipment catalog</TabsTrigger>
 								<TabsTrigger value="pricing" data-testid="tab-pricing">Pricing</TabsTrigger>
+								<TabsTrigger value="inventory" data-testid="tab-inventory">Inventory</TabsTrigger>
 								<TabsTrigger value="blocks" data-testid="tab-blocks">Blocks</TabsTrigger>
 								<TabsTrigger value="locations" data-testid="tab-locations">Locations</TabsTrigger>
+								<TabsTrigger value="spaces" data-testid="tab-spaces">Spaces</TabsTrigger>
 								<TabsTrigger value="settings" data-testid="tab-settings">Settings</TabsTrigger>
 							</TabsList>
 
@@ -257,6 +278,9 @@ export default function PropertyManagementScreen() {
 							<TabsContent value="pricing" className="mt-4">
 								<PricingTab resortProperty={tree.resort_property} />
 							</TabsContent>
+							<TabsContent value="inventory" className="mt-4">
+								<InventoryTab resortProperty={tree.resort_property} />
+							</TabsContent>
 							<TabsContent value="blocks" className="mt-4">
 								<BlocksTab
 									resortProperty={tree.resort_property}
@@ -266,6 +290,13 @@ export default function PropertyManagementScreen() {
 							</TabsContent>
 							<TabsContent value="locations" className="mt-4">
 								<LocationsTab
+									resortProperty={tree.resort_property}
+									buildings={tree.buildings}
+									floors={tree.floors}
+								/>
+							</TabsContent>
+							<TabsContent value="spaces" className="mt-4">
+								<SpacesTab
 									resortProperty={tree.resort_property}
 									buildings={tree.buildings}
 									floors={tree.floors}
@@ -1235,5 +1266,349 @@ function LocationsTab({
 				</DialogContent>
 			</Dialog>
 		</div>
+	);
+}
+
+// ---------- Inventory tab (room-type availability breakdown) ----------
+
+function InventoryTab({ resortProperty }: { resortProperty: string }) {
+	const [rows, setRows] = useState<RoomTypeInventoryRow[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [startDate, setStartDate] = useState("");
+	const [endDate, setEndDate] = useState("");
+
+	const load = useCallback(async () => {
+		setLoading(true);
+		try {
+			const result = await getRoomTypeInventoryView(
+				resortProperty,
+				startDate || undefined,
+				endDate || undefined,
+			);
+			setRows(result.inventory);
+		} catch (error) {
+			reportError(error, "Could not load inventory view");
+		} finally {
+			setLoading(false);
+		}
+	}, [resortProperty, startDate, endDate]);
+
+	useEffect(() => { load(); }, [load]);
+
+	const showRange = Boolean(startDate && endDate);
+
+	return (
+		<Card>
+			<CardContent className="flex flex-col gap-4 py-4" data-testid="inventory-tab">
+				<div className="flex flex-wrap items-end gap-3">
+					<div className="flex flex-col gap-1">
+						<Label className="text-xs text-muted-foreground">From</Label>
+						<Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" data-testid="inventory-from" />
+					</div>
+					<div className="flex flex-col gap-1">
+						<Label className="text-xs text-muted-foreground">To</Label>
+						<Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-40" data-testid="inventory-to" />
+					</div>
+					{showRange ? (
+						<Button variant="ghost" size="sm" onClick={() => { setStartDate(""); setEndDate(""); }}>
+							Clear range
+						</Button>
+					) : null}
+				</div>
+
+				{loading ? (
+					<div className="flex items-center gap-2 text-sm text-muted-foreground">
+						<Loader2 className="size-4 animate-spin" /> Loading…
+					</div>
+				) : (
+					<div className="overflow-x-auto">
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead>Room type</TableHead>
+									<TableHead className="text-right">Total</TableHead>
+									<TableHead className="text-right">Active</TableHead>
+									<TableHead className="text-right">Sellable</TableHead>
+									<TableHead className="text-right">Out of order</TableHead>
+									<TableHead className="text-right">Out of service</TableHead>
+									<TableHead className="text-right">Dirty</TableHead>
+									{showRange ? <TableHead className="text-right">Available (range)</TableHead> : null}
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{rows.length === 0 ? (
+									<TableRow>
+										<TableCell colSpan={showRange ? 8 : 7} className="text-sm text-muted-foreground">No room types.</TableCell>
+									</TableRow>
+								) : (
+									rows.map((r) => (
+										<TableRow key={r.room_type}>
+											<TableCell className="font-medium">{r.room_type_name}</TableCell>
+											<TableCell className="text-right">{r.total_rooms}</TableCell>
+											<TableCell className="text-right">{r.active_rooms}</TableCell>
+											<TableCell className="text-right">{r.sellable_rooms}</TableCell>
+											<TableCell className="text-right">{r.out_of_order}</TableCell>
+											<TableCell className="text-right">{r.out_of_service}</TableCell>
+											<TableCell className="text-right">{r.dirty}</TableCell>
+											{showRange ? <TableCell className="text-right font-medium">{r.available_for_range ?? "—"}</TableCell> : null}
+										</TableRow>
+									))
+								)}
+							</TableBody>
+						</Table>
+					</div>
+				)}
+			</CardContent>
+		</Card>
+	);
+}
+
+// ---------- Spaces tab (Event Space / Activity Area / Spa Room) ----------
+
+const AREA_TYPES: ActivityAreaType[] = ["Spa Room", "Wellness", "Activity", "Pool", "Cabana", "Facility", "Other"];
+
+function SpacesTab({
+	resortProperty,
+	buildings,
+	floors,
+}: {
+	resortProperty: string;
+	buildings: { name: string; building_name: string }[];
+	floors: { name: string; floor_label: string; building: string }[];
+}) {
+	const [eventSpaces, setEventSpaces] = useState<EventSpace[]>([]);
+	const [areas, setAreas] = useState<ActivityArea[]>([]);
+	const [spaRooms, setSpaRooms] = useState<SpaRoom[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [dialog, setDialog] = useState<null | "event" | "area" | "spa">(null);
+	const [saving, setSaving] = useState(false);
+	const [ev, setEv] = useState({ space_name: "", space_code: "", building: "", floor: "", capacity: "" });
+	const [ar, setAr] = useState({ area_name: "", area_code: "", area_type: "Spa Room" as ActivityAreaType, capacity: "" });
+	const [sp, setSp] = useState({ spa_room_name: "", spa_room_code: "", capacity: "", default_duration_buffer: "" });
+
+	const load = useCallback(async () => {
+		setLoading(true);
+		try {
+			const [e, a, s] = await Promise.all([
+				listEventSpaces(resortProperty),
+				listActivityAreas(resortProperty),
+				listSpaRooms(resortProperty),
+			]);
+			setEventSpaces(e.event_spaces);
+			setAreas(a.activity_areas);
+			setSpaRooms(s.spa_rooms);
+		} catch (error) {
+			reportError(error, "Could not load spaces");
+		} finally {
+			setLoading(false);
+		}
+	}, [resortProperty]);
+
+	useEffect(() => { load(); }, [load]);
+
+	const propertyFloors = useMemo(
+		() => (ev.building ? floors.filter((f) => f.building === ev.building) : floors),
+		[floors, ev.building],
+	);
+
+	async function saveEvent() {
+		setSaving(true);
+		try {
+			await createEventSpace({
+				resort_property: resortProperty,
+				space_name: ev.space_name,
+				space_code: ev.space_code,
+				building: ev.building || undefined,
+				floor: ev.floor || undefined,
+				capacity: ev.capacity ? Number(ev.capacity) : undefined,
+			});
+			toast.success("Event space created");
+			setDialog(null);
+			setEv({ space_name: "", space_code: "", building: "", floor: "", capacity: "" });
+			await load();
+		} catch (error) {
+			reportError(error, "Could not create event space");
+		} finally {
+			setSaving(false);
+		}
+	}
+
+	async function saveArea() {
+		setSaving(true);
+		try {
+			await createActivityArea({
+				resort_property: resortProperty,
+				area_name: ar.area_name,
+				area_code: ar.area_code,
+				area_type: ar.area_type,
+				capacity: ar.capacity ? Number(ar.capacity) : undefined,
+			});
+			toast.success("Activity area created");
+			setDialog(null);
+			setAr({ area_name: "", area_code: "", area_type: "Spa Room", capacity: "" });
+			await load();
+		} catch (error) {
+			reportError(error, "Could not create activity area");
+		} finally {
+			setSaving(false);
+		}
+	}
+
+	async function saveSpa() {
+		setSaving(true);
+		try {
+			await createSpaRoom({
+				resort_property: resortProperty,
+				spa_room_name: sp.spa_room_name,
+				spa_room_code: sp.spa_room_code,
+				capacity: sp.capacity ? Number(sp.capacity) : undefined,
+				default_duration_buffer: sp.default_duration_buffer ? Number(sp.default_duration_buffer) : undefined,
+			});
+			toast.success("Spa room created");
+			setDialog(null);
+			setSp({ spa_room_name: "", spa_room_code: "", capacity: "", default_duration_buffer: "" });
+			await load();
+		} catch (error) {
+			reportError(error, "Could not create spa room");
+		} finally {
+			setSaving(false);
+		}
+	}
+
+	if (loading) {
+		return <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" /> Loading…</div>;
+	}
+
+	return (
+		<div className="flex flex-col gap-6" data-testid="spaces-tab">
+			<SpaceSection
+				title="Event spaces"
+				addLabel="Add event space"
+				onAdd={() => setDialog("event")}
+				rows={eventSpaces.map((s) => ({ name: s.name, label: s.space_name, meta: s.space_code, status: s.operating_status, active: s.is_active }))}
+				onToggle={(name, active) => setEventSpaceActive(name, active).then(load).catch((e) => reportError(e, "Could not update"))}
+			/>
+			<SpaceSection
+				title="Activity areas"
+				addLabel="Add activity area"
+				onAdd={() => setDialog("area")}
+				rows={areas.map((a) => ({ name: a.name, label: a.area_name, meta: `${a.area_type} · ${a.area_code}`, status: a.operating_status, active: a.is_active }))}
+				onToggle={(name, active) => setActivityAreaActive(name, active).then(load).catch((e) => reportError(e, "Could not update"))}
+			/>
+			<SpaceSection
+				title="Spa rooms"
+				addLabel="Add spa room"
+				onAdd={() => setDialog("spa")}
+				rows={spaRooms.map((s) => ({ name: s.name, label: s.spa_room_name, meta: s.spa_room_code, status: s.operating_status, active: s.is_active }))}
+				onToggle={(name, active) => setSpaRoomActive(name, active).then(load).catch((e) => reportError(e, "Could not update"))}
+			/>
+
+			<Dialog open={dialog === "event"} onOpenChange={(o) => { if (!o) setDialog(null); }}>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader><DialogTitle>Add event space</DialogTitle></DialogHeader>
+					<div className="grid gap-3">
+						<Field label="Name"><Input value={ev.space_name} onChange={(e) => setEv({ ...ev, space_name: e.target.value })} /></Field>
+						<Field label="Code"><Input value={ev.space_code} onChange={(e) => setEv({ ...ev, space_code: e.target.value })} /></Field>
+						<Field label="Building">
+							<Select value={ev.building} onValueChange={(v) => setEv({ ...ev, building: v, floor: "" })}>
+								<SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+								<SelectContent>{buildings.map((b) => <SelectItem key={b.name} value={b.name}>{b.building_name}</SelectItem>)}</SelectContent>
+							</Select>
+						</Field>
+						<Field label="Floor">
+							<Select value={ev.floor} onValueChange={(v) => setEv({ ...ev, floor: v })}>
+								<SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+								<SelectContent>{propertyFloors.map((f) => <SelectItem key={f.name} value={f.name}>{f.floor_label}</SelectItem>)}</SelectContent>
+							</Select>
+						</Field>
+						<Field label="Capacity"><Input type="number" value={ev.capacity} onChange={(e) => setEv({ ...ev, capacity: e.target.value })} /></Field>
+					</div>
+					<DialogFooter>
+						<DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+						<Button onClick={saveEvent} disabled={saving || !ev.space_name || !ev.space_code}>{saving ? <Loader2 className="size-4 animate-spin" /> : null} Create</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={dialog === "area"} onOpenChange={(o) => { if (!o) setDialog(null); }}>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader><DialogTitle>Add activity area</DialogTitle></DialogHeader>
+					<div className="grid gap-3">
+						<Field label="Name"><Input value={ar.area_name} onChange={(e) => setAr({ ...ar, area_name: e.target.value })} /></Field>
+						<Field label="Code"><Input value={ar.area_code} onChange={(e) => setAr({ ...ar, area_code: e.target.value })} /></Field>
+						<Field label="Type">
+							<Select value={ar.area_type} onValueChange={(v) => setAr({ ...ar, area_type: v as ActivityAreaType })}>
+								<SelectTrigger><SelectValue /></SelectTrigger>
+								<SelectContent>{AREA_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+							</Select>
+						</Field>
+						<Field label="Capacity"><Input type="number" value={ar.capacity} onChange={(e) => setAr({ ...ar, capacity: e.target.value })} /></Field>
+					</div>
+					<DialogFooter>
+						<DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+						<Button onClick={saveArea} disabled={saving || !ar.area_name || !ar.area_code}>{saving ? <Loader2 className="size-4 animate-spin" /> : null} Create</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={dialog === "spa"} onOpenChange={(o) => { if (!o) setDialog(null); }}>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader><DialogTitle>Add spa room</DialogTitle></DialogHeader>
+					<div className="grid gap-3">
+						<Field label="Name"><Input value={sp.spa_room_name} onChange={(e) => setSp({ ...sp, spa_room_name: e.target.value })} /></Field>
+						<Field label="Code"><Input value={sp.spa_room_code} onChange={(e) => setSp({ ...sp, spa_room_code: e.target.value })} /></Field>
+						<Field label="Capacity"><Input type="number" value={sp.capacity} onChange={(e) => setSp({ ...sp, capacity: e.target.value })} /></Field>
+						<Field label="Turnover buffer (min)"><Input type="number" value={sp.default_duration_buffer} onChange={(e) => setSp({ ...sp, default_duration_buffer: e.target.value })} /></Field>
+					</div>
+					<DialogFooter>
+						<DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+						<Button onClick={saveSpa} disabled={saving || !sp.spa_room_name || !sp.spa_room_code}>{saving ? <Loader2 className="size-4 animate-spin" /> : null} Create</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+		</div>
+	);
+}
+
+function SpaceSection({
+	title,
+	addLabel,
+	onAdd,
+	rows,
+	onToggle,
+}: {
+	title: string;
+	addLabel: string;
+	onAdd: () => void;
+	rows: { name: string; label: string; meta: string; status: string; active: number }[];
+	onToggle: (name: string, active: boolean) => void;
+}) {
+	return (
+		<Card>
+			<CardContent className="flex flex-col gap-3 py-4">
+				<div className="flex items-center justify-between">
+					<h3 className="text-sm font-semibold">{title}</h3>
+					<Button variant="outline" size="sm" onClick={onAdd}><Plus className="size-4" /> {addLabel}</Button>
+				</div>
+				{rows.length === 0 ? (
+					<p className="text-sm text-muted-foreground">None yet.</p>
+				) : (
+					<div className="flex flex-col divide-y">
+						{rows.map((r) => (
+							<div key={r.name} className="flex flex-wrap items-center justify-between gap-2 py-2">
+								<div className="flex flex-col">
+									<span className="text-sm font-medium">{r.label}{r.active ? "" : " (inactive)"}</span>
+									<span className="text-xs text-muted-foreground">{r.meta} · {r.status}</span>
+								</div>
+								<div className="flex items-center gap-2">
+									<span className="text-xs text-muted-foreground">Active</span>
+									<Switch checked={Boolean(r.active)} onCheckedChange={(v) => onToggle(r.name, v)} aria-label={`Toggle ${r.label}`} />
+								</div>
+							</div>
+						))}
+					</div>
+				)}
+			</CardContent>
+		</Card>
 	);
 }

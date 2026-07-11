@@ -254,7 +254,7 @@ EMPLOYEES = [
 	("Saanvi Sharma", "Management", "General Manager"),
 ]
 
-RESORT_ROLES = ["Front Desk", "Housekeeping", "Restaurant", "Reservation Agent", "Concierge", "Maintenance", "Resort Manager"]
+RESORT_ROLES = ["Front Desk", "Housekeeping", "Housekeeping Supervisor", "Housekeeping Attendant", "Restaurant", "Reservation Agent", "Revenue Manager", "Concierge", "Maintenance", "Resort Manager"]
 
 # (email, first_name, roles, employee_full_name)
 DEMO_USERS = [

@@ -67,6 +67,9 @@ const CONTRACTS = [
 	{ file: "service-location-api.ts", type: "DayOfWeek", doctype: "operating_hours", field: "day_of_week" },
 	// setup-api.ts ↔ Room Connection
 	{ file: "setup-api.ts", type: "RoomConnectionType", doctype: "room_connection", field: "connection_type" },
+	// spaces-api.ts ↔ Spa Room / Activity Area
+	{ file: "spaces-api.ts", type: "OperatingStatus", doctype: "spa_room", field: "operating_status" },
+	{ file: "spaces-api.ts", type: "ActivityAreaType", doctype: "activity_area", field: "area_type" },
 ];
 
 function doctypeOptions(doctype, field) {

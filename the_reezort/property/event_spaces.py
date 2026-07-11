@@ -56,6 +56,20 @@ def _activity_area_data(doc):
 	}
 
 
+def _spa_room_data(doc):
+	return {
+		"name": doc.name,
+		"resort_property": doc.resort_property,
+		"spa_room_name": doc.spa_room_name,
+		"spa_room_code": doc.spa_room_code,
+		"outlet": doc.outlet,
+		"capacity": doc.capacity,
+		"default_duration_buffer": doc.default_duration_buffer,
+		"operating_status": doc.operating_status,
+		"is_active": doc.is_active,
+	}
+
+
 # ---------- Event Space ----------
 
 @frappe.whitelist()
@@ -284,5 +298,111 @@ def delete_activity_area(name):
 	except frappe.LinkExistsError:
 		frappe.throw(
 			_("Cannot delete Activity Area {0} — other records still reference it. Deactivate it instead.").format(name)
+		)
+	return _envelope({"deleted": name})
+
+
+# ---------- Spa Room ----------
+
+@frappe.whitelist()
+def create_spa_room(payload):
+	"""Create a new Spa Room master record."""
+	_require_permission("Spa Room", "create")
+	payload = _as_dict(payload)
+
+	resort_property = (payload.get("resort_property") or "").strip()
+	spa_room_name = (payload.get("spa_room_name") or "").strip()
+	spa_room_code = (payload.get("spa_room_code") or "").strip()
+
+	if not resort_property:
+		frappe.throw(_("resort_property is required."))
+	if not spa_room_name:
+		frappe.throw(_("spa_room_name is required."))
+	if not spa_room_code:
+		frappe.throw(_("spa_room_code is required."))
+
+	doc = frappe.get_doc(
+		{
+			"doctype": "Spa Room",
+			"resort_property": resort_property,
+			"spa_room_name": spa_room_name,
+			"spa_room_code": spa_room_code,
+			"outlet": payload.get("outlet"),
+			"capacity": payload.get("capacity"),
+			"default_duration_buffer": payload.get("default_duration_buffer"),
+			"operating_status": payload.get("operating_status") or "Available",
+			"is_active": 1,
+		}
+	)
+	doc.insert(ignore_permissions=True)
+	return _envelope({"spa_room": _spa_room_data(doc)})
+
+
+@frappe.whitelist()
+def list_spa_rooms(resort_property=None, include_inactive=0):
+	"""List Spa Rooms, optionally filtered by property."""
+	_require_permission("Spa Room", "read")
+	filters = {}
+	if resort_property:
+		filters["resort_property"] = resort_property
+	if not str(include_inactive) in ("1", "true", "True"):
+		filters["is_active"] = 1
+
+	rows = frappe.get_all(
+		"Spa Room",
+		filters=filters,
+		fields=[
+			"name", "resort_property", "spa_room_name", "spa_room_code",
+			"outlet", "capacity", "default_duration_buffer",
+			"operating_status", "is_active",
+		],
+		order_by="spa_room_name asc",
+	)
+	return _envelope({"spa_rooms": rows, "total": len(rows)})
+
+
+@frappe.whitelist()
+def update_spa_room(name, payload):
+	"""Update editable fields on a Spa Room record."""
+	_require_permission("Spa Room", "write")
+	payload = _as_dict(payload)
+
+	_EDITABLE = [
+		"spa_room_name", "outlet", "capacity",
+		"default_duration_buffer", "operating_status",
+	]
+
+	doc = frappe.get_doc("Spa Room", name)
+	changed = []
+	for field in _EDITABLE:
+		if field in payload:
+			value = payload[field]
+			if isinstance(value, str):
+				value = value.strip()
+			doc.set(field, value)
+			changed.append(field)
+
+	doc.save(ignore_permissions=True)
+	return _envelope({"spa_room": _spa_room_data(doc), "changed": changed})
+
+
+@frappe.whitelist()
+def set_spa_room_active(name, is_active):
+	"""Soft activate or deactivate a Spa Room."""
+	_require_permission("Spa Room", "write")
+	active = 1 if str(is_active) in ("1", "true", "True") else 0
+	frappe.db.set_value("Spa Room", name, "is_active", active)
+	return _envelope({"name": name, "is_active": active})
+
+
+@frappe.whitelist()
+def delete_spa_room(name):
+	"""Hard delete a Spa Room, refused if other records still reference it."""
+	_require_permission("Spa Room", "delete")
+	try:
+		frappe.delete_doc("Spa Room", name)
+	except frappe.LinkExistsError:
+		frappe.throw(
+			_("Cannot delete Spa Room {0} — other records still reference it. Deactivate it instead.").format(name)
 		)
 	return _envelope({"deleted": name})

@@ -6,23 +6,118 @@
  "doctype": "DocType",
  "document_type": "Setup",
  "engine": "InnoDB",
- "field_order": ["resort_property", "location_name", "location_code", "location_type", "building", "floor", "billing_section", "can_bill_direct", "can_post_to_folio", "erpnext_section", "default_cost_center", "default_warehouse", "hours_section", "operating_hours", "is_active"],
+ "field_order": [
+  "resort_property",
+  "location_name",
+  "location_code",
+  "location_type",
+  "building",
+  "floor",
+  "billing_section",
+  "can_bill_direct",
+  "can_post_to_folio",
+  "erpnext_section",
+  "default_cost_center",
+  "default_warehouse",
+  "hours_section",
+  "operating_hours",
+  "is_active"
+ ],
  "fields": [
-  {"fieldname": "resort_property", "fieldtype": "Link", "in_list_view": 1, "label": "Resort Property", "options": "Resort Property", "reqd": 1},
-  {"fieldname": "location_name", "fieldtype": "Data", "in_list_view": 1, "label": "Location Name", "reqd": 1},
-  {"fieldname": "location_code", "fieldtype": "Data", "in_list_view": 1, "label": "Location Code", "reqd": 1},
-  {"fieldname": "location_type", "fieldtype": "Select", "in_list_view": 1, "label": "Location Type", "options": "Restaurant\nBar\nCafe\nRoom Service\nSpa\nGym\nPool\nRetail\nActivity\nOther", "reqd": 1},
-  {"fieldname": "building", "fieldtype": "Link", "label": "Building", "options": "Resort Building"},
-  {"fieldname": "floor", "fieldtype": "Link", "label": "Floor", "options": "Resort Floor"},
-  {"fieldname": "billing_section", "fieldtype": "Section Break", "label": "Billing"},
-  {"default": "1", "fieldname": "can_bill_direct", "fieldtype": "Check", "label": "Can Bill Direct"},
-  {"default": "1", "fieldname": "can_post_to_folio", "fieldtype": "Check", "label": "Can Post To Folio"},
-  {"fieldname": "erpnext_section", "fieldtype": "Section Break", "label": "ERPNext Mapping"},
-  {"fieldname": "default_cost_center", "fieldtype": "Link", "label": "Default Cost Center", "options": "Cost Center"},
-  {"fieldname": "default_warehouse", "fieldtype": "Link", "label": "Default Warehouse", "options": "Warehouse"},
-  {"fieldname": "hours_section", "fieldtype": "Section Break", "label": "Operating Hours"},
-  {"fieldname": "operating_hours", "fieldtype": "Table", "label": "Operating Hours", "options": "Operating Hours"},
-  {"default": "1", "fieldname": "is_active", "fieldtype": "Check", "in_list_view": 1, "label": "Active"}
+  {
+   "fieldname": "resort_property",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Resort Property",
+   "options": "Resort Property",
+   "reqd": 1
+  },
+  {
+   "fieldname": "location_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Location Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "location_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Location Code",
+   "reqd": 1
+  },
+  {
+   "fieldname": "location_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Location Type",
+   "options": "Restaurant\nBar\nCafe\nRoom Service\nSpa\nGym\nPool\nRetail\nActivity\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "building",
+   "fieldtype": "Link",
+   "label": "Building",
+   "options": "Resort Building"
+  },
+  {
+   "fieldname": "floor",
+   "fieldtype": "Link",
+   "label": "Floor",
+   "options": "Resort Floor"
+  },
+  {
+   "fieldname": "billing_section",
+   "fieldtype": "Section Break",
+   "label": "Billing"
+  },
+  {
+   "default": "1",
+   "fieldname": "can_bill_direct",
+   "fieldtype": "Check",
+   "label": "Can Bill Direct"
+  },
+  {
+   "default": "1",
+   "fieldname": "can_post_to_folio",
+   "fieldtype": "Check",
+   "label": "Can Post To Folio"
+  },
+  {
+   "fieldname": "erpnext_section",
+   "fieldtype": "Section Break",
+   "label": "ERPNext Mapping"
+  },
+  {
+   "fieldname": "default_cost_center",
+   "fieldtype": "Link",
+   "label": "Default Cost Center",
+   "options": "Cost Center"
+  },
+  {
+   "fieldname": "default_warehouse",
+   "fieldtype": "Link",
+   "label": "Default Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "hours_section",
+   "fieldtype": "Section Break",
+   "label": "Operating Hours"
+  },
+  {
+   "fieldname": "operating_hours",
+   "fieldtype": "Table",
+   "label": "Operating Hours",
+   "options": "Operating Hours"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  }
  ],
  "links": [],
  "modified": "2026-06-29 00:00:00.000000",
@@ -31,14 +126,126 @@
  "name": "Service Location",
  "owner": "Administrator",
  "permissions": [
-  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
-  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Resort Manager", "share": 1, "write": 1},
-  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 1, "read": 1, "report": 1, "role": "Front Desk", "share": 0, "write": 0},
-  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Reservation Agent", "share": 0, "write": 0},
-  {"create": 0, "delete": 0, "email": 0, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Revenue Manager", "share": 0, "write": 0},
-  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Housekeeping", "share": 0, "write": 0},
-  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Maintenance", "share": 0, "write": 0},
-  {"create": 0, "delete": 0, "email": 0, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Accounts Manager", "share": 0, "write": 0}
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Resort Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Front Desk",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "Reservation Agent",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Revenue Manager",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "Housekeeping",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "Maintenance",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Housekeeping Supervisor",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Housekeeping Attendant",
+   "share": 0,
+   "write": 0
+  }
  ],
  "sort_field": "location_name",
  "sort_order": "ASC",

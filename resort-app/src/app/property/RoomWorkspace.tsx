@@ -34,6 +34,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EngagementTimeline } from "@/components/property/engagement-timeline";
 import { RoomInsightsPanel } from "@/components/property/room-insights";
 import { getRoomTimeline, type TimelineEvent } from "@/lib/timeline-api";
+import { listRoomStatusEvents, type RoomStatusEvent } from "@/lib/room-status-events-api";
 import {
 	EQUIPMENT_CONDITIONS,
 	FolioApiError,
@@ -63,6 +64,15 @@ const MAINTENANCE = ["Available", "Maintenance Requested", "Under Maintenance", 
 const SELLABLE = ["Sellable", "Not Sellable", "Restricted", "Temporarily Blocked"];
 const SMOKING = ["Non-Smoking", "Smoking", "Flexible"];
 
+function formatWhen(iso: string | null): string {
+	if (!iso) return "—";
+	const d = new Date(iso.replace(" ", "T"));
+	if (Number.isNaN(d.getTime())) return iso;
+	return new Intl.DateTimeFormat("en-IN", {
+		day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+	}).format(d);
+}
+
 function reportError(error: unknown, fallback: string) {
 	const detail = error instanceof FolioApiError ? error.blockers[0]?.message ?? error.message : String(error);
 	toast.error(fallback, { description: detail });
@@ -88,6 +98,7 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 	const [amenities, setAmenities] = useState<Amenity[]>([]);
 	const [equipment, setEquipment] = useState<RoomEquipmentItem[]>([]);
 	const [events, setEvents] = useState<TimelineEvent[]>([]);
+	const [statusEvents, setStatusEvents] = useState<RoomStatusEvent[]>([]);
 	const [connections, setConnections] = useState<RoomConnection[]>([]);
 	const [savingConnections, setSavingConnections] = useState(false);
 	const [loading, setLoading] = useState(true);
@@ -135,16 +146,18 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 				maintenance_status: foundRoom.maintenance_status ?? "Available",
 				sellable_status: foundRoom.sellable_status ?? "Sellable",
 			});
-			const [am, eq, tl, conn] = await Promise.all([
+			const [am, eq, tl, conn, hist] = await Promise.all([
 				listAmenities(),
 				getRoomEquipment(foundRoom.name).catch(() => ({ items: [] as RoomEquipmentItem[] })),
 				getRoomTimeline(foundRoom.name).catch(() => ({ target: { doctype: "Room", name: foundRoom.name }, events: [] as TimelineEvent[] })),
 				getRoomConnections(foundRoom.name).catch(() => ({ room: foundRoom.name, connections: [] as RoomConnection[] })),
+				listRoomStatusEvents(foundRoom.name, 1, 50).catch(() => ({ room: foundRoom.name, total: 0, page: 1, page_size: 50, events: [] as RoomStatusEvent[] })),
 			]);
 			setAmenities(am.amenities);
 			setEquipment(eq.items);
 			setEvents(tl.events);
 			setConnections(conn.connections);
+			setStatusEvents(hist.events);
 		} catch (error) {
 			reportError(error, "Could not load room");
 		} finally {
@@ -287,6 +300,7 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 						<TabsTrigger value="overview">Overview</TabsTrigger>
 						<TabsTrigger value="equipment">Equipment</TabsTrigger>
 						<TabsTrigger value="connections" data-testid="room-tab-connections">Connections</TabsTrigger>
+						<TabsTrigger value="history" data-testid="room-tab-history">Status history</TabsTrigger>
 						<TabsTrigger value="timeline" data-testid="room-tab-timeline">Timeline</TabsTrigger>
 					</TabsList>
 
@@ -454,6 +468,38 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 										Save connections
 									</Button>
 								</div>
+							</CardContent>
+						</Card>
+					</TabsContent>
+
+					<TabsContent value="history" className="mt-4">
+						<Card>
+							<CardContent className="flex flex-col gap-3 py-4" data-testid="room-status-history">
+								<h3 className="text-sm font-semibold">Status change history</h3>
+								{statusEvents.length === 0 ? (
+									<p className="text-sm text-muted-foreground">
+										No status changes recorded yet. Every occupancy, housekeeping, maintenance, or sellable change is logged here with who changed it and why.
+									</p>
+								) : (
+									<div className="flex flex-col divide-y">
+										{statusEvents.map((ev) => (
+											<div key={ev.name} className="flex flex-wrap items-baseline justify-between gap-2 py-2">
+												<div className="flex flex-col">
+													<span className="text-sm font-medium">
+														{ev.event_type}: {ev.previous_value || "—"} → {ev.new_value}
+													</span>
+													{ev.reason ? (
+														<span className="text-xs text-muted-foreground">{ev.reason}</span>
+													) : null}
+												</div>
+												<div className="text-right text-xs text-muted-foreground">
+													<div>{ev.changed_by}</div>
+													<div>{formatWhen(ev.changed_at)}</div>
+												</div>
+											</div>
+										))}
+									</div>
+								)}
 							</CardContent>
 						</Card>
 					</TabsContent>

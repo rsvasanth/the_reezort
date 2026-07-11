@@ -32,6 +32,9 @@ class Room(Document):
         self.set_display_status()
         self._detect_status_changes()
 
+    def on_trash(self):
+        self._guard_historical_records()
+
     def on_update(self):
         self._write_status_events()
 
@@ -157,3 +160,44 @@ class Room(Document):
                     "changed_at": changed_at,
                 }
             ).insert(ignore_permissions=True)
+
+    # ------------------------------------------------------------------ #
+    # Deletion guard                                                       #
+    # ------------------------------------------------------------------ #
+
+    # (doctype, room-link fieldname, human label). Guest Folio is covered
+    # transitively — a folio cannot exist without a Stay, which is checked.
+    _HISTORY_LINKS = (
+        ("Reservation Room", "room", "reservation"),
+        ("Stay", "current_room", "stay"),
+        ("Housekeeping Task", "room", "housekeeping task"),
+        ("Maintenance Ticket", "room", "maintenance ticket"),
+    )
+
+    def _guard_historical_records(self):
+        """Block hard-deleting a room that carries operational history — the
+        spec prohibits it and requires suggesting deactivation instead
+        (spec 001 §Rooms, acceptance: delete-with-history → blocked)."""
+        blocking = []
+        for doctype, field, label in self._HISTORY_LINKS:
+            if not frappe.db.exists("DocType", doctype):
+                continue
+            if frappe.db.count(doctype, {field: self.name}):
+                blocking.append(label)
+
+        # Room Move references the room from either side of a switch.
+        if frappe.db.exists("DocType", "Room Move") and frappe.db.count(
+            "Room Move", {"from_room": self.name}
+        ) + frappe.db.count("Room Move", {"to_room": self.name}):
+            blocking.append("room move")
+
+        if blocking:
+            frappe.throw(
+                _(
+                    "Room {0} has historical records ({1}) and cannot be deleted. "
+                    "Deactivate it instead — it stays in reports but is hidden "
+                    "from operational selection."
+                ).format(self.name, ", ".join(sorted(set(blocking)))),
+                frappe.ValidationError,
+                title=_("Deletion Blocked"),
+            )

@@ -75,7 +75,29 @@ class RoomInventoryBlock(Document):
 		elif self.scope == "Room Type" and self.room_type:
 			self._guard_room_type_over_block()
 
+	def _overlap_policy(self):
+		"""The property's hard_block_overlap_policy setting drives how strictly
+		overlaps are rejected. Defaults to Strict when unset.
+
+		- Strict:            any overlapping active hard block is rejected.
+		- Allow Same Source: overlap allowed only when every overlapping block
+		                     shares this block's (source_doctype, source_name);
+		                     a different source (or a manual/unsourced block
+		                     overlapping a sourced one) is still rejected.
+		- Manual Approval:   overlap is permitted (a human reconciles it
+		                     operationally); no hard rejection here.
+		"""
+		from the_reezort.the_reezort.doctype.property_settings.property_settings import (
+			_get_setting_or_none,
+		)
+
+		return _get_setting_or_none(self.resort_property, "hard_block_overlap_policy") or "Strict"
+
 	def _guard_room_overlap(self):
+		policy = self._overlap_policy()
+		if policy == "Manual Approval":
+			return
+
 		filters = {
 			"scope": "Room",
 			"room": self.room,
@@ -87,18 +109,39 @@ class RoomInventoryBlock(Document):
 		if self.name:
 			filters["name"] = ["!=", self.name]
 
-		existing = frappe.db.count("Room Inventory Block", filters)
-		if existing:
-			frappe.throw(
-				_(
-					"A hard block already exists for Room {0} overlapping {1} to {2}. "
-					"Release or cancel the existing block first."
-				).format(self.room, self.start_date, self.end_date),
-				frappe.ValidationError,
-				title=_("Overlapping Block"),
+		overlapping = frappe.get_all(
+			"Room Inventory Block",
+			filters=filters,
+			fields=["name", "source_doctype", "source_name"],
+		)
+		if not overlapping:
+			return
+
+		if policy == "Allow Same Source":
+			same_source = all(
+				(b.source_doctype or "") == (self.source_doctype or "")
+				and (b.source_name or "") == (self.source_name or "")
+				for b in overlapping
 			)
+			if same_source:
+				return
+
+		frappe.throw(
+			_(
+				"A hard block already exists for Room {0} overlapping {1} to {2}. "
+				"Release or cancel the existing block first."
+			).format(self.room, self.start_date, self.end_date),
+			frappe.ValidationError,
+			title=_("Overlapping Block"),
+		)
 
 	def _guard_room_type_over_block(self):
+		# Manual Approval defers over-block reconciliation to a human; the
+		# count-based guard is a hard rule under both Strict and Allow Same
+		# Source (source identity does not change physical room counts).
+		if self._overlap_policy() == "Manual Approval":
+			return
+
 		filters = {
 			"scope": "Room Type",
 			"room_type": self.room_type,

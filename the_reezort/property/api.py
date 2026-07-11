@@ -166,6 +166,79 @@ def get_room_type_availability(property=None, start_date=None, end_date=None, ro
 
 
 @frappe.whitelist()
+def get_room_type_inventory_view(property=None, start_date=None, end_date=None):
+	"""Reservation/revenue-facing inventory breakdown per room type (spec 001
+	§Room Type Inventory View): total / active / sellable / out-of-order /
+	out-of-service / dirty room counts, plus date-range availability (physical
+	rooms minus status blocks and active inventory blocks) when a range is
+	given. Gated on Room read so Reservation Agents / Revenue Managers can see
+	it without setup rights."""
+	_require_permission("Room", "read")
+	start, end = _validate_date_range(start_date, end_date)
+
+	filters = {"is_active": 1}
+	if property:
+		filters["resort_property"] = property
+
+	types = frappe.get_all(
+		"Room Type",
+		filters=filters,
+		fields=["name", "room_type_name", "room_type_code"],
+		order_by="room_type_name asc",
+	)
+
+	rows = []
+	for rt in types:
+		room_filters = {"room_type": rt.name}
+		if property:
+			room_filters["resort_property"] = property
+		rooms = frappe.get_all(
+			"Room",
+			filters=room_filters,
+			fields=["name", "is_active", "sellable_status", "maintenance_status", "housekeeping_status"],
+		)
+
+		total = len(rooms)
+		active_rooms = [r for r in rooms if r.is_active]
+		active = len(active_rooms)
+		sellable = sum(1 for r in active_rooms if r.sellable_status == "Sellable")
+		out_of_order = sum(1 for r in active_rooms if r.maintenance_status == "Out of Order")
+		out_of_service = sum(1 for r in active_rooms if r.maintenance_status == "Out of Service")
+		dirty = sum(1 for r in active_rooms if r.housekeeping_status == "Dirty")
+
+		row = {
+			"room_type": rt.name,
+			"room_type_code": rt.room_type_code,
+			"room_type_name": rt.room_type_name,
+			"total_rooms": total,
+			"active_rooms": active,
+			"sellable_rooms": sellable,
+			"out_of_order": out_of_order,
+			"out_of_service": out_of_service,
+			"dirty": dirty,
+		}
+
+		if start and end:
+			status_blocked = {
+				r.name for r in active_rooms
+				if r.maintenance_status in BLOCKING_MAINTENANCE_STATUSES
+				or r.sellable_status != "Sellable"
+			}
+			not_blocked = [r.name for r in active_rooms if r.name not in status_blocked]
+			inv_blocked = _inventory_block_room_names(not_blocked, start, end)
+			rt_block_count = _inventory_block_count_for_room_type(rt.name, start, end)
+			blocked = len(status_blocked) + len(inv_blocked) + rt_block_count
+			row["available_for_range"] = max(active - blocked, 0)
+
+		rows.append(row)
+
+	result = {"inventory": rows}
+	if start and end:
+		result["date_range"] = {"start_date": str(start), "end_date": str(end)}
+	return _envelope(result)
+
+
+@frappe.whitelist()
 def find_allocatable_rooms(property=None, room_type=None, start_date=None, end_date=None, preferences=None):
 	_require_permission("Room", "read")
 	start, end = _validate_date_range(start_date, end_date)
@@ -528,7 +601,7 @@ def _check_erpnext_link_integrity(property=None):
 	locations = frappe.get_all(
 		"Service Location",
 		filters=loc_filters,
-		fields=["name", "location_name", "location_type", "default_warehouse", "default_cost_center", "can_bill_direct", "can_post_to_folio"],
+		fields=["name", "location_name", "location_type", "resort_property", "default_warehouse", "default_cost_center", "can_bill_direct", "can_post_to_folio"],
 	)
 
 	# Revenue-generating outlet types that typically require stock tracking.
@@ -580,6 +653,62 @@ def _check_erpnext_link_integrity(property=None):
 					),
 				}
 			)
+
+	# Company consistency: a Service Location's Warehouse and Cost Center must
+	# belong to the same Company as its Resort Property, or postings land in
+	# the wrong ledger.
+	property_company = {p.name: p.company for p in properties}
+	for loc in locations:
+		company = property_company.get(loc.get("resort_property")) if loc.get("resort_property") else None
+		if not company:
+			# Fall back to reading the property's company when not already loaded.
+			rp = frappe.db.get_value("Service Location", loc.name, "resort_property")
+			company = frappe.db.get_value("Resort Property", rp, "company") if rp else None
+		if not company:
+			continue
+		if loc.default_warehouse:
+			wh_company = frappe.db.get_value("Warehouse", loc.default_warehouse, "company")
+			if wh_company and wh_company != company:
+				issues.append({
+					"doctype": "Service Location", "name": loc.name, "severity": "Error",
+					"message": "Warehouse {0} belongs to Company {1}, not the property's Company {2}.".format(
+						loc.default_warehouse, wh_company, company),
+				})
+		if loc.default_cost_center:
+			cc_company = frappe.db.get_value("Cost Center", loc.default_cost_center, "company")
+			if cc_company and cc_company != company:
+				issues.append({
+					"doctype": "Service Location", "name": loc.name, "severity": "Error",
+					"message": "Cost Center {0} belongs to Company {1}, not the property's Company {2}.".format(
+						loc.default_cost_center, cc_company, company),
+				})
+
+	# Room Type → ERPNext Item mapping (needed for rate posting / GST at
+	# settlement — a missing item silently drops accommodation revenue).
+	rt_filters = {"is_active": 1}
+	if property:
+		rt_filters["resort_property"] = property
+	for rt in frappe.get_all("Room Type", filters=rt_filters, fields=["name", "room_type_name", "erpnext_item"]):
+		if not rt.erpnext_item:
+			issues.append({
+				"doctype": "Room Type", "name": rt.name, "severity": "Error",
+				"message": "Room Type {0} has no ERPNext Item — its rate cannot be invoiced.".format(rt.room_type_name),
+			})
+
+	# Room → ERPNext Asset link (informational — only relevant where the room
+	# is tracked as a fixed asset; flagged low so it never blocks completeness).
+	# SQL `IN (NULL)` never matches, so count empty/NULL in Python rather than
+	# via a list filter.
+	room_filters = {"is_active": 1}
+	if property:
+		room_filters["resort_property"] = property
+	active_rooms = frappe.get_all("Room", filters=room_filters, fields=["name", "room_asset"])
+	missing_asset = [r for r in active_rooms if not r.room_asset]
+	if missing_asset:
+		issues.append({
+			"doctype": "Room", "name": missing_asset[0].name, "severity": "Info",
+			"message": "{0} active room(s) have no ERPNext Asset link (only needed where rooms are tracked as fixed assets).".format(len(missing_asset)),
+		})
 
 	return issues
 

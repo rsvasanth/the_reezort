@@ -1,19 +1,20 @@
 {
  "actions": [],
- "allow_import": 0,
- "allow_rename": 0,
- "autoname": "field:resort_property",
+ "allow_import": 1,
+ "autoname": "format:{resort_property}-{spa_room_code}",
  "creation": "2026-07-11 00:00:00.000000",
  "doctype": "DocType",
  "document_type": "Setup",
  "engine": "InnoDB",
  "field_order": [
   "resort_property",
-  "room_policy_section",
-  "allow_dirty_allocation_default",
-  "room_identifier_uniqueness",
-  "hard_block_overlap_policy",
-  "default_room_naming_series"
+  "spa_room_name",
+  "spa_room_code",
+  "outlet",
+  "capacity",
+  "default_duration_buffer",
+  "operating_status",
+  "is_active"
  ],
  "fields": [
   {
@@ -25,45 +26,59 @@
    "reqd": 1
   },
   {
-   "fieldname": "room_policy_section",
-   "fieldtype": "Section Break",
-   "label": "Room Policy"
+   "fieldname": "spa_room_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Spa Room Name",
+   "reqd": 1
   },
   {
-   "default": "0",
-   "fieldname": "allow_dirty_allocation_default",
-   "fieldtype": "Check",
-   "label": "Allow Dirty Room Allocation (Default)"
+   "fieldname": "spa_room_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Spa Room Code",
+   "reqd": 1
   },
   {
-   "default": "Property",
-   "fieldname": "room_identifier_uniqueness",
+   "fieldname": "outlet",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Outlet",
+   "options": "Service Location"
+  },
+  {
+   "fieldname": "capacity",
+   "fieldtype": "Int",
+   "label": "Capacity"
+  },
+  {
+   "description": "Buffer minutes reserved between appointments for turnover/cleaning.",
+   "fieldname": "default_duration_buffer",
+   "fieldtype": "Int",
+   "label": "Default Duration Buffer (min)"
+  },
+  {
+   "default": "Available",
+   "fieldname": "operating_status",
    "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "Room Number Uniqueness Scope",
-   "options": "Property\nBuilding",
+   "label": "Operating Status",
+   "options": "Available\nUnder Maintenance\nOut of Service",
    "reqd": 1
   },
   {
-   "default": "Strict",
-   "fieldname": "hard_block_overlap_policy",
-   "fieldtype": "Select",
-   "label": "Hard Block Overlap Policy",
-   "options": "Strict\nAllow Same Source\nManual Approval",
-   "reqd": 1
-  },
-  {
-   "fieldname": "default_room_naming_series",
-   "fieldtype": "Data",
-   "label": "Default Room Naming Series"
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
   }
  ],
  "links": [],
  "modified": "2026-07-11 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "THE REEZORT",
- "name": "Property Settings",
- "naming_rule": "By fieldname",
+ "name": "Spa Room",
  "owner": "Administrator",
  "permissions": [
   {
@@ -95,7 +110,7 @@
    "delete": 0,
    "email": 0,
    "export": 0,
-   "print": 0,
+   "print": 1,
    "read": 1,
    "report": 1,
    "role": "Front Desk",
@@ -119,19 +134,7 @@
    "delete": 0,
    "email": 0,
    "export": 0,
-   "print": 0,
-   "read": 1,
-   "report": 1,
-   "role": "Revenue Manager",
-   "share": 0,
-   "write": 0
-  },
-  {
-   "create": 0,
-   "delete": 0,
-   "email": 0,
-   "export": 0,
-   "print": 0,
+   "print": 1,
    "read": 1,
    "report": 1,
    "role": "Housekeeping",
@@ -187,8 +190,8 @@
    "write": 0
   }
  ],
- "sort_field": "modified",
- "sort_order": "DESC",
+ "sort_field": "spa_room_name",
+ "sort_order": "ASC",
  "states": [],
  "track_changes": 1
 }

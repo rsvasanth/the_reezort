@@ -11,6 +11,12 @@ export function priorityTone(p: MaintenancePriority): Tone {
 	switch (p) {
 		case "Urgent":
 			return { badge: "border-transparent bg-destructive text-destructive-foreground", label: "Urgent" };
+		case "Safety Critical":
+			return { badge: "border-transparent bg-destructive text-destructive-foreground", label: "Safety Critical" };
+		case "Revenue Blocking":
+			return { badge: "border-transparent bg-orange-500 text-black", label: "Revenue Blocking" };
+		case "Guest Impacting":
+			return { badge: "border-transparent bg-amber-500 text-black", label: "Guest Impacting" };
 		case "High":
 			return { badge: "border-transparent bg-amber-500 text-black", label: "High" };
 		case "Normal":
@@ -29,8 +35,16 @@ export function stateTone(s: MaintenanceState): Tone {
 			return { badge: "border-transparent bg-sky-500/15 text-sky-600 dark:text-sky-300", label: "Assigned" };
 		case "In Progress":
 			return { badge: "border-transparent bg-brass/15 text-brass", label: "In Progress" };
+		case "Waiting for Parts":
+			return { badge: "border-transparent bg-orange-500/15 text-orange-700 dark:text-orange-300", label: "Waiting for Parts" };
+		case "On Hold":
+			return { badge: "border-transparent bg-slate-500/15 text-slate-600 dark:text-slate-300", label: "On Hold" };
 		case "Resolved":
 			return { badge: "border-transparent bg-emerald-500/15 text-emerald-600 dark:text-emerald-300", label: "Resolved" };
+		case "Verification Required":
+			return { badge: "border-transparent bg-purple-500/15 text-purple-600 dark:text-purple-300", label: "Verification Required" };
+		case "Released":
+			return { badge: "border-transparent bg-emerald-500/20 text-emerald-700 dark:text-emerald-200", label: "Released" };
 		case "Closed":
 			return { badge: "border text-muted-foreground", label: "Closed" };
 		case "Duplicate":

@@ -19,7 +19,11 @@ export type MaintenanceState =
 	| "Reported"
 	| "Assigned"
 	| "In Progress"
+	| "Waiting for Parts"
+	| "On Hold"
 	| "Resolved"
+	| "Verification Required"
+	| "Released"
 	| "Closed"
 	| "Duplicate";
 
@@ -33,10 +37,26 @@ export type MaintenanceCategory =
 	| "Landscape"
 	| "Other";
 
-export type MaintenancePriority = "Low" | "Normal" | "High" | "Urgent";
+export type MaintenancePriority =
+	| "Low"
+	| "Normal"
+	| "High"
+	| "Urgent"
+	| "Guest Impacting"
+	| "Safety Critical"
+	| "Revenue Blocking";
+
+export type MaintenanceSeverity = "Minor" | "Moderate" | "Major" | "Critical";
 
 /** States that count as still-open (drive the overdue KPI + default filter). */
-export const OPEN_STATES: MaintenanceState[] = ["Reported", "Assigned", "In Progress"];
+export const OPEN_STATES: MaintenanceState[] = [
+	"Reported",
+	"Assigned",
+	"In Progress",
+	"Waiting for Parts",
+	"On Hold",
+	"Verification Required",
+];
 
 // ---------- shapes ----------
 
@@ -53,6 +73,7 @@ export type MaintenanceTicket = {
 	state: MaintenanceState;
 	category: MaintenanceCategory;
 	priority: MaintenancePriority;
+	severity: MaintenanceSeverity | null;
 	room: string | null;
 	stay: string | null;
 	guest: string | null;
@@ -72,6 +93,16 @@ export type MaintenanceTicket = {
 	minutes_remaining: number | null;
 	is_overdue: boolean;
 	photos: MaintenancePhoto[];
+	// New fields (module 009 engineering)
+	guest_impact: boolean;
+	safety_impact: boolean;
+	revenue_blocking: boolean;
+	downtime: string | null;
+	guest_safe_note: string | null;
+	technical_notes: string | null;
+	expected_completion_at: string | null;
+	completed_at: string | null;
+	released_at: string | null;
 };
 
 export type TicketListResult = {
@@ -228,6 +259,14 @@ export function assignTicket(name: string, user: string): Promise<{ ticket: Main
 	return callData("assign_ticket", { method: "POST", body: { name, user } });
 }
 
+export function addTicketNote(
+	ticket: string,
+	note: string,
+	visibility: "Internal" | "Guest Safe" = "Internal",
+): Promise<{ ticket: MaintenanceTicket }> {
+	return callData("add_ticket_note", { method: "POST", body: { ticket, note, visibility } });
+}
+
 export function transitionTicket(
 	name: string,
 	next_state: MaintenanceState,
@@ -264,6 +303,7 @@ function mockTicket(over: Partial<MaintenanceTicket> & { name: string; subject: 
 		state: "Reported",
 		category: "HVAC",
 		priority: "Normal",
+		severity: null,
 		room: null,
 		stay: null,
 		guest: null,
@@ -283,6 +323,15 @@ function mockTicket(over: Partial<MaintenanceTicket> & { name: string; subject: 
 		minutes_remaining: 120,
 		is_overdue: false,
 		photos: [],
+		guest_impact: false,
+		safety_impact: false,
+		revenue_blocking: false,
+		downtime: null,
+		guest_safe_note: null,
+		technical_notes: null,
+		expected_completion_at: null,
+		completed_at: null,
+		released_at: null,
 		...over,
 	};
 }

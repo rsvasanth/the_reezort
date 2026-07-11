@@ -39,6 +39,7 @@ import TableOrderScreen from "@/app/restaurant/TableOrderScreen";
 import KitchenScreen from "@/app/restaurant/KitchenScreen";
 import RestaurantManagementScreen from "@/app/restaurant/management/RestaurantManagementScreen";
 import MaintenanceInbox from "@/app/maintenance/MaintenanceInbox";
+import EngineeringBoard from "@/app/maintenance/EngineeringBoard";
 import RevenueDashboard from "@/app/analytics/RevenueDashboard";
 import OtaInbox from "@/app/integrations/OtaInbox";
 import { parseHashRoute, useHashRoute } from "@/hooks/use-hash-route";
@@ -321,6 +322,14 @@ function AuthGate() {
 		return (
 			<AppShell>
 				<MaintenanceInbox />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "engineering-board") {
+		return (
+			<AppShell>
+				<EngineeringBoard />
 			</AppShell>
 		);
 	}

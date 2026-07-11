@@ -1,0 +1,104 @@
+{
+ "actions": [],
+ "allow_import": 0,
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-07-11 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "preventive_plan",
+  "due_date",
+  "task_status",
+  "column_break_1",
+  "maintenance_ticket",
+  "generated_at",
+  "completed_at",
+  "checklist_result"
+ ],
+ "fields": [
+  {
+   "default": "RZ-PMT-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "RZ-PMT-.YYYY.-.#####"
+  },
+  {
+   "fieldname": "preventive_plan",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Preventive Plan",
+   "options": "Preventive Maintenance Plan",
+   "reqd": 1
+  },
+  {
+   "fieldname": "due_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Due Date",
+   "reqd": 1
+  },
+  {
+   "default": "Scheduled",
+   "fieldname": "task_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Task Status",
+   "options": "Scheduled\nGenerated\nIn Progress\nCompleted\nMissed\nCancelled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "maintenance_ticket",
+   "fieldtype": "Link",
+   "label": "Maintenance Ticket",
+   "options": "Maintenance Ticket"
+  },
+  {
+   "fieldname": "generated_at",
+   "fieldtype": "Datetime",
+   "label": "Generated At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "completed_at",
+   "fieldtype": "Datetime",
+   "label": "Completed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "checklist_result",
+   "fieldtype": "Link",
+   "label": "Checklist Result",
+   "options": "Engineering Checklist Result"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-07-11 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Preventive Maintenance Task",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Resort Manager", "share": 1, "write": 1},
+  {"create": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Maintenance", "share": 1, "write": 1},
+  {"read": 1, "report": 1, "role": "Front Desk"},
+  {"read": 1, "report": 1, "role": "Housekeeping"},
+  {"read": 1, "report": 1, "role": "Accounts Manager"}
+ ],
+ "sort_field": "due_date",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}

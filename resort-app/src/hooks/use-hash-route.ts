@@ -58,6 +58,7 @@ export type ParsedRoute =
 	| { kind: "restaurant-kitchen" }
 	| { kind: "restaurant-management" }
 	| { kind: "maintenance" }
+	| { kind: "engineering-board" }
 	| { kind: "cashier-close" }
 	| { kind: "analytics-revenue" }
 	| { kind: "ota-inbox" }
@@ -119,6 +120,9 @@ export function parseHashRoute(hash: string): ParsedRoute {
 		return { kind: "restaurant-table", order: order ? decodeURIComponent(order) : null };
 	}
 	if (path === "/restaurant") return { kind: "restaurant" };
+
+	// Engineering board — must match before bare /maintenance.
+	if (path === "/maintenance/engineering") return { kind: "engineering-board" };
 
 	// Maintenance inbox — tolerate a trailing ?ticket=… deep-link query.
 	if (path === "/maintenance" || path.startsWith("/maintenance?")) return { kind: "maintenance" };

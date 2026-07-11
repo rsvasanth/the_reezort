@@ -160,6 +160,7 @@ scheduler_events = {
 		"the_reezort.staff.notification_scheduler.send_approval_followups",
 		"the_reezort.staff.notification_scheduler.send_leave_advance_followups",
 		"the_reezort.analytics.revenue.snapshot_yesterday",
+		"the_reezort.maintenance.preventive.run_daily_preventive_generation",
 	],
 }
 

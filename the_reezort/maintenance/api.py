@@ -50,15 +50,19 @@ from the_reezort.utils import require_permission as _require_permission_generic
 # closes; Closed is terminal.
 STATE_TRANSITIONS: dict[str, set[str]] = {
 	"Reported": {"Assigned", "In Progress", "Duplicate"},
-	"Assigned": {"In Progress", "Resolved"},
-	"In Progress": {"Resolved", "On Hold"} if False else {"Resolved"},  # On Hold deferred
-	"Resolved": {"Closed"},
+	"Assigned": {"In Progress", "On Hold", "Resolved"},
+	"In Progress": {"Resolved", "On Hold", "Waiting for Parts"},
+	"Waiting for Parts": {"In Progress", "On Hold"},
+	"On Hold": {"In Progress"},
+	"Resolved": {"Closed", "Verification Required"},
+	"Verification Required": {"Released"},
+	"Released": {"Closed"},
 	"Closed": set(),
 	"Duplicate": set(),
 }
 
-OPEN_STATES = {"Reported", "Assigned", "In Progress"}
-TERMINAL_STATES = {"Resolved", "Closed", "Duplicate"}
+OPEN_STATES = {"Reported", "Assigned", "In Progress", "Waiting for Parts", "On Hold", "Verification Required"}
+TERMINAL_STATES = {"Released", "Closed", "Duplicate"}
 
 CATEGORIES = ["HVAC", "Plumbing", "Electrical", "Structural", "IT", "Housekeeping Equipment", "Landscape", "Other"]
 PRIORITIES = ["Low", "Normal", "High", "Urgent"]
@@ -120,20 +124,36 @@ def _ticket_dict(doc) -> dict:
 		"state": doc.state,
 		"category": doc.category,
 		"priority": doc.priority,
+		"severity": doc.get("severity"),
+		"location_type": doc.get("location_type"),
 		"room": doc.room,
+		"building": doc.get("building"),
+		"floor": doc.get("floor"),
+		"area": doc.get("area"),
 		"stay": doc.stay,
 		"guest": doc.guest,
 		"raised_by": doc.raised_by,
 		"assigned_to": doc.assigned_to,
+		"assigned_employee": doc.get("assigned_employee"),
 		"source_doctype": doc.source_doctype,
 		"source_name": doc.source_name,
+		"erpnext_asset": doc.get("erpnext_asset"),
+		"guest_impact": bool(doc.get("guest_impact")),
+		"safety_impact": bool(doc.get("safety_impact")),
+		"revenue_blocking": bool(doc.get("revenue_blocking")),
+		"downtime": doc.get("downtime"),
 		"reported_at": str(doc.reported_at) if doc.reported_at else None,
 		"sla_due": str(doc.sla_due) if doc.sla_due else None,
 		"assigned_at": str(doc.assigned_at) if doc.assigned_at else None,
 		"started_at": str(doc.started_at) if doc.started_at else None,
+		"expected_completion_at": str(doc.get("expected_completion_at")) if doc.get("expected_completion_at") else None,
+		"completed_at": str(doc.get("completed_at")) if doc.get("completed_at") else None,
 		"resolved_at": str(doc.resolved_at) if doc.resolved_at else None,
+		"released_at": str(doc.get("released_at")) if doc.get("released_at") else None,
 		"closed_at": str(doc.closed_at) if doc.closed_at else None,
 		"resolution_notes": doc.resolution_notes,
+		"technical_notes": doc.get("technical_notes"),
+		"guest_safe_note": doc.get("guest_safe_note"),
 		"escalated": bool(doc.escalated),
 		"duplicate_of": doc.duplicate_of,
 		"minutes_remaining": remaining,
@@ -221,7 +241,11 @@ def list_tickets(
 		"Reported": 0,
 		"Assigned": 0,
 		"In Progress": 0,
+		"Waiting for Parts": 0,
+		"On Hold": 0,
 		"Resolved": 0,
+		"Verification Required": 0,
+		"Released": 0,
 		"Closed": 0,
 		"Duplicate": 0,
 	}
@@ -442,10 +466,15 @@ def transition_ticket(name: str, next_state: str, notes: str | None = None) -> d
 			doc.assigned_at = now
 	elif next_state == "Resolved":
 		doc.resolved_at = now
+		doc.completed_at = doc.get("completed_at") or now
 		if notes:
 			doc.resolution_notes = (doc.resolution_notes or "") + (
 				"\n" if doc.resolution_notes else ""
 			) + notes
+	elif next_state == "Verification Required":
+		pass  # Downtime API sets released_at when verification passes.
+	elif next_state == "Released":
+		doc.released_at = now
 	elif next_state == "Closed":
 		doc.closed_at = now
 	elif next_state == "Duplicate":
@@ -476,6 +505,37 @@ def transition_ticket(name: str, next_state: str, notes: str | None = None) -> d
 		except Exception:
 			pass
 
+	return _envelope({"ticket": _ticket_dict(doc)})
+
+
+@frappe.whitelist()
+def add_ticket_note(ticket: str, note: str, visibility: str = "Internal") -> dict:
+	"""Append a timestamped note to technical_notes without changing the ticket state.
+
+	visibility: "Internal" (default) — appended to technical_notes.
+	            "Guest Safe"         — appended to guest_safe_note instead.
+	"""
+	_require_permission("write")
+	if not frappe.db.exists("Maintenance Ticket", ticket):
+		frappe.throw(_("Unknown ticket: {0}").format(ticket))
+	note = (note or "").strip()
+	if not note:
+		frappe.throw(_("Note cannot be empty."))
+
+	doc = frappe.get_doc("Maintenance Ticket", ticket)
+	now = now_datetime()
+	stamp = f"[{now.strftime('%Y-%m-%d %H:%M')} {frappe.session.user}] "
+	entry = stamp + note
+
+	if visibility == "Guest Safe":
+		existing = (doc.get("guest_safe_note") or "").strip()
+		doc.guest_safe_note = (existing + "\n" + entry).strip()
+	else:
+		existing = (doc.get("technical_notes") or "").strip()
+		doc.technical_notes = (existing + "\n" + entry).strip()
+
+	doc.save(ignore_permissions=True)
+	_record_audit("note", doc.name, {"visibility": visibility, "length": len(note)})
 	return _envelope({"ticket": _ticket_dict(doc)})
 
 

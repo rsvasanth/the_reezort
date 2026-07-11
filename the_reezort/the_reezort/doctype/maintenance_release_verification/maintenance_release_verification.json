@@ -1,0 +1,53 @@
+{
+ "actions": [],
+ "allow_import": 0,
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-07-11 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "maintenance_ticket",
+  "room_downtime",
+  "column_break_1",
+  "verification_status",
+  "verified_by",
+  "verified_at",
+  "details_section",
+  "housekeeping_task",
+  "notes"
+ ],
+ "fields": [
+  {"default": "RZ-MRV-.YYYY.-.#####", "fieldname": "naming_series", "fieldtype": "Select", "hidden": 1, "label": "Series", "options": "RZ-MRV-.YYYY.-.#####"},
+  {"fieldname": "maintenance_ticket", "fieldtype": "Link", "in_list_view": 1, "label": "Maintenance Ticket", "options": "Maintenance Ticket", "reqd": 1},
+  {"fieldname": "room_downtime", "fieldtype": "Link", "in_list_view": 1, "label": "Room Downtime", "options": "Room Downtime"},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"default": "Pending", "fieldname": "verification_status", "fieldtype": "Select", "in_list_view": 1, "label": "Verification Status", "options": "Pending\nPassed\nFailed\nHousekeeping Required\nCancelled", "reqd": 1},
+  {"fieldname": "verified_by", "fieldtype": "Link", "label": "Verified By", "options": "User", "reqd": 1},
+  {"fieldname": "verified_at", "fieldtype": "Datetime", "label": "Verified At", "reqd": 1},
+  {"fieldname": "details_section", "fieldtype": "Section Break", "label": "Details"},
+  {"fieldname": "housekeeping_task", "fieldtype": "Link", "label": "Housekeeping Task", "options": "Housekeeping Task"},
+  {"fieldname": "notes", "fieldtype": "Small Text", "label": "Notes"}
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-07-11 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Maintenance Release Verification",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Resort Manager", "share": 1, "write": 1},
+  {"create": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Maintenance", "share": 1, "write": 1},
+  {"read": 1, "report": 1, "role": "Front Desk", "share": 0},
+  {"read": 1, "report": 1, "role": "Housekeeping", "share": 0},
+  {"read": 1, "report": 1, "export": 1, "role": "Accounts Manager", "share": 0}
+ ],
+ "sort_field": "verified_at",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

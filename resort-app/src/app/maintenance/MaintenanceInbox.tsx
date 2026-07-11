@@ -9,13 +9,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useFrappeAuth } from "frappe-react-sdk";
 import { motion } from "motion/react";
-import { AlertTriangle, Loader2, Plus, RefreshCw, Search, Wrench } from "lucide-react";
+import { AlertTriangle, Loader2, MessageSquarePlus, Plus, RefreshCw, Search, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
 	Select,
 	SelectContent,
@@ -23,15 +25,25 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import {
+	Sheet,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+	SheetDescription,
+	SheetFooter,
+} from "@/components/ui/sheet";
 import { EASE_OUT } from "@/lib/motion";
 import { FolioApiError } from "@/lib/folio-api";
 import { ReportIssueSheet } from "@/components/maintenance/report-issue-sheet";
 import {
 	MOCK_LIST,
+	addTicketNote,
 	assignTicket,
 	getPrimaryResortProperty,
 	listTickets,
 	transitionTicket,
+	type MaintenanceState,
 	type MaintenanceTicket,
 	type TicketListResult,
 } from "@/lib/maintenance-api";
@@ -40,7 +52,19 @@ import { priorityTone, relativeTime, shortRoom, slaLabel, stateTone } from "./ma
 
 type LoadState = "loading" | "live" | "mock";
 
-const STATUS_FILTERS = ["Open", "Reported", "Assigned", "In Progress", "Resolved", "Closed", "All"] as const;
+const STATUS_FILTERS = [
+	"Open",
+	"Reported",
+	"Assigned",
+	"In Progress",
+	"Waiting for Parts",
+	"On Hold",
+	"Resolved",
+	"Verification Required",
+	"Released",
+	"Closed",
+	"All",
+] as const;
 const PRIORITY_FILTERS = ["Any", "Urgent", "High", "Normal", "Low"] as const;
 
 export default function MaintenanceInbox() {
@@ -53,6 +77,7 @@ export default function MaintenanceInbox() {
 	const [reportOpen, setReportOpen] = useState(false);
 	const [busyRow, setBusyRow] = useState<string | null>(null);
 	const [propertyName, setPropertyName] = useState<string | null>(null);
+	const [noteTicket, setNoteTicket] = useState<MaintenanceTicket | null>(null);
 
 	// Property for new tickets — the inbox may be empty (no ticket to derive
 	// from), so resolve the real Resort Property once on mount (env-agnostic).
@@ -93,11 +118,13 @@ export default function MaintenanceInbox() {
 
 	const resortProperty = data?.tickets[0]?.resort_property ?? propertyName ?? "RZ-DEMO";
 
-	// "Open" is a client-side rollup of the three open states.
+	// "Open" is a client-side rollup of the open states.
 	const rows = useMemo(() => {
 		const all = data?.tickets ?? [];
 		if (status !== "Open") return all;
-		return all.filter((t) => ["Reported", "Assigned", "In Progress"].includes(t.state));
+		return all.filter((t) =>
+			["Reported", "Assigned", "In Progress", "Waiting for Parts", "On Hold", "Verification Required"].includes(t.state),
+		);
 	}, [data, status]);
 
 	async function act(fn: () => Promise<unknown>, ticket: MaintenanceTicket) {
@@ -129,8 +156,35 @@ export default function MaintenanceInbox() {
 		void act(() => assignTicket(t.name, currentUser).then(() => toast.success("Assigned to you")), t);
 	}
 
+	function holdTicket(t: MaintenanceTicket) {
+		void act(() => transitionTicket(t.name, "On Hold").then(() => toast.success("Ticket on hold")), t);
+	}
+
+	function requestVerification(t: MaintenanceTicket) {
+		void act(() => transitionTicket(t.name, "Verification Required").then(() => toast.success("Verification requested")), t);
+	}
+
+	function releaseTicket(t: MaintenanceTicket) {
+		if (!window.confirm(`Release "${t.subject}"? Confirm the room is ready.`)) return;
+		void act(() => transitionTicket(t.name, "Released").then(() => toast.success("Ticket released")), t);
+	}
+
+	function waitingForParts(t: MaintenanceTicket) {
+		void act(() => transitionTicket(t.name, "Waiting for Parts").then(() => toast.success("Waiting for parts")), t);
+	}
+
+	function resumeTicket(t: MaintenanceTicket) {
+		void act(() => transitionTicket(t.name, "In Progress").then(() => toast.success("Resumed")), t);
+	}
+
 	const counts = data?.counts ?? {};
-	const openCount = (counts.Reported ?? 0) + (counts.Assigned ?? 0) + (counts["In Progress"] ?? 0);
+	const openCount =
+		(counts.Reported ?? 0) +
+		(counts.Assigned ?? 0) +
+		(counts["In Progress"] ?? 0) +
+		(counts["Waiting for Parts"] ?? 0) +
+		(counts["On Hold"] ?? 0) +
+		(counts["Verification Required"] ?? 0);
 
 	return (
 		<main className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 lg:px-6">
@@ -206,6 +260,12 @@ export default function MaintenanceInbox() {
 								onAssignToMe={() => assignToMe(t)}
 								onStart={() => startTicket(t)}
 								onResolve={() => resolveTicket(t)}
+								onHold={() => holdTicket(t)}
+								onWaitingForParts={() => waitingForParts(t)}
+								onResume={() => resumeTicket(t)}
+								onRequestVerification={() => requestVerification(t)}
+								onRelease={() => releaseTicket(t)}
+								onAddNote={() => setNoteTicket(t)}
 							/>
 						</motion.div>
 					))}
@@ -218,6 +278,12 @@ export default function MaintenanceInbox() {
 				resortProperty={resortProperty}
 				onCreated={() => load(true)}
 			/>
+
+			<AddNoteSheet
+				ticket={noteTicket}
+				onClose={() => setNoteTicket(null)}
+				onSaved={() => load(true)}
+			/>
 		</main>
 	);
 }
@@ -229,6 +295,12 @@ function TicketRow({
 	onAssignToMe,
 	onStart,
 	onResolve,
+	onHold,
+	onWaitingForParts,
+	onResume,
+	onRequestVerification,
+	onRelease,
+	onAddNote,
 }: {
 	ticket: MaintenanceTicket;
 	busy: boolean;
@@ -236,6 +308,12 @@ function TicketRow({
 	onAssignToMe: () => void;
 	onStart: () => void;
 	onResolve: () => void;
+	onHold: () => void;
+	onWaitingForParts: () => void;
+	onResume: () => void;
+	onRequestVerification: () => void;
+	onRelease: () => void;
+	onAddNote: () => void;
 }) {
 	const pt = priorityTone(ticket.priority);
 	const st = stateTone(ticket.state);
@@ -259,6 +337,18 @@ function TicketRow({
 						<span className="truncate text-sm font-medium">{ticket.subject}</span>
 						<Badge variant="outline" className={`text-[10px] ${pt.badge}`}>{pt.label}</Badge>
 						<Badge variant="outline" className={`text-[10px] ${st.badge}`}>{st.label}</Badge>
+						{ticket.severity ? (
+							<Badge variant="outline" className="text-[10px]">{ticket.severity}</Badge>
+						) : null}
+						{ticket.guest_impact ? (
+							<Badge variant="outline" className="text-[10px] border-amber-400 text-amber-700 dark:text-amber-300">Guest</Badge>
+						) : null}
+						{ticket.safety_impact ? (
+							<Badge variant="outline" className="text-[10px] border-destructive text-destructive">Safety</Badge>
+						) : null}
+						{ticket.revenue_blocking ? (
+							<Badge variant="outline" className="text-[10px] border-orange-500 text-orange-700 dark:text-orange-300">Revenue</Badge>
+						) : null}
 						{overdue ? (
 							<Badge variant="outline" className="gap-1 border-transparent bg-[#b28600] text-[10px] text-black">
 								<AlertTriangle className="size-3" /> Overdue
@@ -271,10 +361,18 @@ function TicketRow({
 						<span>· by {ticket.raised_by}</span>
 						<span>· {ticket.assigned_to ? `Assigned to ${ticket.assigned_to}` : "Unassigned"}</span>
 						<span className={overdue ? "text-[#8e6a00] dark:text-[#d2a106]" : ""}>· SLA {slaLabel(ticket.minutes_remaining)}</span>
+						{ticket.downtime ? (
+							<span>· Downtime: <a href="#/maintenance/engineering" className="hover:underline">{ticket.downtime}</a></span>
+						) : null}
 					</div>
+					{ticket.guest_safe_note ? (
+						<div className="mt-1.5 rounded-md bg-muted px-2 py-1 text-[11px] text-muted-foreground">
+							Guest note: {ticket.guest_safe_note}
+						</div>
+					) : null}
 				</div>
 
-				<div className="flex shrink-0 items-center gap-1.5">
+				<div className="flex shrink-0 flex-wrap items-center gap-1.5">
 					{!ticket.assigned_to && ["Reported", "Assigned"].includes(ticket.state) && currentUser ? (
 						<Button size="sm" variant="outline" disabled={busy} onClick={onAssignToMe} data-testid={`assign-${ticket.name}`}>
 							Assign to me
@@ -286,12 +384,137 @@ function TicketRow({
 						</Button>
 					) : null}
 					{ticket.state === "In Progress" ? (
-						<Button size="sm" disabled={busy} onClick={onResolve} data-testid={`resolve-${ticket.name}`}>
-							{busy ? <Loader2 className="mr-1 size-3.5 animate-spin" /> : null}Resolve
+						<>
+							<Button size="sm" variant="outline" disabled={busy} onClick={onHold} data-testid={`hold-${ticket.name}`}>
+								Hold
+							</Button>
+							<Button size="sm" variant="outline" disabled={busy} onClick={onWaitingForParts} data-testid={`parts-${ticket.name}`}>
+								Waiting parts
+							</Button>
+							<Button size="sm" disabled={busy} onClick={onResolve} data-testid={`resolve-${ticket.name}`}>
+								{busy ? <Loader2 className="mr-1 size-3.5 animate-spin" /> : null}Resolve
+							</Button>
+						</>
+					) : null}
+					{["On Hold", "Waiting for Parts"].includes(ticket.state) ? (
+						<Button size="sm" disabled={busy} onClick={onResume} data-testid={`resume-${ticket.name}`}>
+							{busy ? <Loader2 className="mr-1 size-3.5 animate-spin" /> : null}Resume
 						</Button>
 					) : null}
+					{ticket.state === "Resolved" ? (
+						<Button size="sm" variant="outline" disabled={busy} onClick={onRequestVerification} data-testid={`verify-req-${ticket.name}`}>
+							Request verification
+						</Button>
+					) : null}
+					{ticket.state === "Verification Required" ? (
+						<Button size="sm" disabled={busy} onClick={onRelease} data-testid={`release-${ticket.name}`}>
+							{busy ? <Loader2 className="mr-1 size-3.5 animate-spin" /> : null}Release
+						</Button>
+					) : null}
+					<Button
+						size="sm"
+						variant="ghost"
+						disabled={busy}
+						onClick={onAddNote}
+						aria-label="Add note"
+						data-testid={`note-${ticket.name}`}
+					>
+						<MessageSquarePlus className="size-3.5" />
+					</Button>
 				</div>
 			</div>
 		</div>
+	);
+}
+
+// ---------- AddNoteSheet ----------
+
+function AddNoteSheet({
+	ticket,
+	onClose,
+	onSaved,
+}: {
+	ticket: MaintenanceTicket | null;
+	onClose: () => void;
+	onSaved: () => void;
+}) {
+	const [note, setNote] = useState("");
+	const [visibility, setVisibility] = useState<"Internal" | "Guest Safe">("Internal");
+	const [busy, setBusy] = useState(false);
+
+	useEffect(() => {
+		if (ticket) {
+			setNote("");
+			setVisibility("Internal");
+			setBusy(false);
+		}
+	}, [ticket]);
+
+	async function submit() {
+		if (!ticket || !note.trim()) {
+			toast.error("Note cannot be empty");
+			return;
+		}
+		setBusy(true);
+		try {
+			await addTicketNote(ticket.name, note.trim(), visibility);
+			toast.success("Note added");
+			onClose();
+			onSaved();
+		} catch (error) {
+			const msg = error instanceof FolioApiError ? error.blockers[0]?.message ?? error.message : String(error);
+			toast.error("Could not add note", { description: msg });
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	return (
+		<Sheet open={!!ticket} onOpenChange={(v) => { if (!v) onClose(); }}>
+			<SheetContent side="right" className="flex w-full flex-col gap-0 sm:max-w-md" data-testid="add-note-sheet">
+				<SheetHeader>
+					<SheetTitle className="flex items-center gap-2">
+						<MessageSquarePlus className="size-4" /> Add note
+					</SheetTitle>
+					<SheetDescription>
+						{ticket?.name} · {ticket?.subject}
+					</SheetDescription>
+				</SheetHeader>
+
+				<div className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-4">
+					<div>
+						<Label className="text-xs">Visibility</Label>
+						<Select
+							value={visibility}
+							onValueChange={(v) => setVisibility(v as "Internal" | "Guest Safe")}
+						>
+							<SelectTrigger data-testid="note-visibility"><SelectValue /></SelectTrigger>
+							<SelectContent>
+								<SelectItem value="Internal">Internal (staff only)</SelectItem>
+								<SelectItem value="Guest Safe">Guest Safe (visible to front desk)</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+					<div>
+						<Label className="text-xs">Note</Label>
+						<Textarea
+							value={note}
+							onChange={(e) => setNote(e.target.value)}
+							placeholder="Add observation, parts status, or guest-facing update…"
+							rows={5}
+							data-testid="note-text"
+						/>
+					</div>
+				</div>
+
+				<SheetFooter className="border-t px-4 py-3">
+					<Button variant="ghost" onClick={onClose} disabled={busy}>Cancel</Button>
+					<Button onClick={submit} disabled={busy} data-testid="note-submit">
+						{busy ? <Loader2 className="mr-1.5 size-4 animate-spin" /> : null}
+						Save note
+					</Button>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
 	);
 }

@@ -52,6 +52,16 @@ const CONTRACTS = [
 	{ file: "maintenance-api.ts", type: "MaintenanceState", doctype: "maintenance_ticket", field: "state" },
 	{ file: "maintenance-api.ts", type: "MaintenanceCategory", doctype: "maintenance_ticket", field: "category" },
 	{ file: "maintenance-api.ts", type: "MaintenancePriority", doctype: "maintenance_ticket", field: "priority" },
+	{ file: "maintenance-api.ts", type: "MaintenanceSeverity", doctype: "maintenance_ticket", field: "severity" },
+	// downtime-api.ts ↔ Room Downtime / Maintenance Release Verification
+	{ file: "downtime-api.ts", type: "DowntimeType", doctype: "room_downtime", field: "downtime_type" },
+	{ file: "downtime-api.ts", type: "DowntimeStatus", doctype: "room_downtime", field: "downtime_status" },
+	{ file: "downtime-api.ts", type: "RevenueImpactClass", doctype: "room_downtime", field: "revenue_impact_class" },
+	{ file: "downtime-api.ts", type: "VerificationStatus", doctype: "maintenance_release_verification", field: "verification_status" },
+	// preventive-api.ts ↔ Preventive Maintenance Plan / Task
+	{ file: "preventive-api.ts", type: "PlanScope", doctype: "preventive_maintenance_plan", field: "plan_scope" },
+	{ file: "preventive-api.ts", type: "RecurrenceType", doctype: "preventive_maintenance_plan", field: "recurrence_type" },
+	{ file: "preventive-api.ts", type: "PmTaskStatus", doctype: "preventive_maintenance_task", field: "task_status" },
 	// ota-api.ts ↔ OTA Reservation Message
 	{ file: "ota-api.ts", type: "OtaMessageState", doctype: "ota_reservation_message", field: "state" },
 	{ file: "ota-api.ts", type: "OtaSource", doctype: "ota_reservation_message", field: "source" },

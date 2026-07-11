@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
-import { ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, Trash2, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
 import { AppSidebar } from "@/components/app-sidebar";
@@ -33,6 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { EngagementTimeline } from "@/components/property/engagement-timeline";
 import { RoomInsightsPanel } from "@/components/property/room-insights";
+import { ReportIssueSheet } from "@/components/maintenance/report-issue-sheet";
 import { getRoomTimeline, type TimelineEvent } from "@/lib/timeline-api";
 import { listRoomStatusEvents, type RoomStatusEvent } from "@/lib/room-status-events-api";
 import {
@@ -104,6 +105,7 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 	const [statusReason, setStatusReason] = useState("");
+	const [reportIssueOpen, setReportIssueOpen] = useState(false);
 	const [form, setForm] = useState({
 		room_name: "",
 		room_type: "",
@@ -289,10 +291,19 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 							<Badge variant={form.sellable_status === "Sellable" ? "secondary" : "outline"}>{form.sellable_status}</Badge>
 						</div>
 					</div>
-					<Button onClick={save} disabled={saving} data-testid="room-save">
-						{saving ? <Loader2 className="size-4 animate-spin" /> : null}
-						Save changes
-					</Button>
+					<div className="flex items-center gap-2">
+						<Button
+							variant="outline"
+							onClick={() => setReportIssueOpen(true)}
+							data-testid="room-report-issue"
+						>
+							<Wrench className="mr-1.5 size-4" /> Report issue
+						</Button>
+						<Button onClick={save} disabled={saving} data-testid="room-save">
+							{saving ? <Loader2 className="size-4 animate-spin" /> : null}
+							Save changes
+						</Button>
+					</div>
 				</header>
 
 				<Tabs defaultValue="overview">
@@ -509,6 +520,16 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 					</TabsContent>
 				</Tabs>
 			</main>
+
+			<ReportIssueSheet
+				open={reportIssueOpen}
+				onOpenChange={setReportIssueOpen}
+				resortProperty={tree?.resort_property ?? "REEZORT"}
+				room={room.name}
+				onCreated={() => {
+					setReportIssueOpen(false);
+				}}
+			/>
 		</AppShell>
 	);
 }

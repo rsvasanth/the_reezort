@@ -1,0 +1,165 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-07-11 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "plan_name",
+  "property",
+  "active",
+  "column_break_1",
+  "plan_scope",
+  "recurrence_type",
+  "next_due_date",
+  "scope_section",
+  "room",
+  "room_type",
+  "column_break_2",
+  "erpnext_asset",
+  "asset_category",
+  "execution_section",
+  "checklist_template",
+  "expected_minutes",
+  "responsible_team"
+ ],
+ "fields": [
+  {
+   "default": "RZ-PMP-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "RZ-PMP-.YYYY.-.#####"
+  },
+  {
+   "fieldname": "plan_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Plan Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "property",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Property",
+   "options": "Resort Property",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "plan_scope",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Plan Scope",
+   "options": "Room\nRoom Type\nAsset\nAsset Category\nBuilding\nFloor\nOutlet\nFacility\nVehicle\nUtility",
+   "reqd": 1
+  },
+  {
+   "fieldname": "recurrence_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Recurrence Type",
+   "options": "Daily\nWeekly\nMonthly\nQuarterly\nAnnual\nRuntime Based\nSeasonal\nManual",
+   "reqd": 1
+  },
+  {
+   "fieldname": "next_due_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Next Due Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "scope_section",
+   "fieldtype": "Section Break",
+   "label": "Scope"
+  },
+  {
+   "fieldname": "room",
+   "fieldtype": "Link",
+   "label": "Room",
+   "options": "Room"
+  },
+  {
+   "fieldname": "room_type",
+   "fieldtype": "Link",
+   "label": "Room Type",
+   "options": "Room Type"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "erpnext_asset",
+   "fieldtype": "Link",
+   "label": "Asset",
+   "options": "Asset"
+  },
+  {
+   "fieldname": "asset_category",
+   "fieldtype": "Link",
+   "label": "Asset Category",
+   "options": "Asset Category"
+  },
+  {
+   "fieldname": "execution_section",
+   "fieldtype": "Section Break",
+   "label": "Execution"
+  },
+  {
+   "fieldname": "checklist_template",
+   "fieldtype": "Link",
+   "label": "Checklist Template",
+   "options": "Engineering Checklist Template"
+  },
+  {
+   "fieldname": "expected_minutes",
+   "fieldtype": "Int",
+   "label": "Expected Duration (min)"
+  },
+  {
+   "fieldname": "responsible_team",
+   "fieldtype": "Data",
+   "label": "Responsible Team"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-07-11 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Preventive Maintenance Plan",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Resort Manager", "share": 1, "write": 1},
+  {"create": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Maintenance", "share": 1, "write": 1},
+  {"read": 1, "report": 1, "role": "Front Desk"},
+  {"read": 1, "report": 1, "role": "Housekeeping"},
+  {"read": 1, "report": 1, "role": "Accounts Manager"}
+ ],
+ "sort_field": "next_due_date",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}

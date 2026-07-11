@@ -4,10 +4,11 @@ from collections import Counter
 import frappe
 from the_reezort.permissions import system_manager_only
 from frappe import _
-from frappe.utils import getdate
+from frappe.utils import getdate, now_datetime
 
 from the_reezort.utils import as_dict as _as_dict
 from the_reezort.utils import as_list as _as_list
+from the_reezort.utils import envelope as _envelope
 from the_reezort.utils import require_permission as _require_permission
 
 ROOM_FIELDS = [
@@ -104,7 +105,7 @@ def get_room_status_board(property=None, building=None, floor=None, room_type=No
 @frappe.whitelist()
 def get_room_type_availability(property=None, start_date=None, end_date=None, room_types=None, include_restricted=False):
 	_require_permission("Room", "read")
-	_validate_date_range(start_date, end_date)
+	start, end = _validate_date_range(start_date, end_date)
 
 	room_types = _as_list(room_types)
 	filters = {"is_active": 1}
@@ -133,13 +134,22 @@ def get_room_type_availability(property=None, start_date=None, end_date=None, ro
 			fields=["name", "sellable_status", "maintenance_status"],
 		)
 		physical_rooms = len(rooms)
-		blocked_rooms = sum(
-			1
+
+		status_blocked_names = {
+			room.name
 			for room in rooms
 			if room.maintenance_status in BLOCKING_MAINTENANCE_STATUSES
 			or room.sellable_status == "Not Sellable"
 			or (not include_restricted and room.sellable_status in ("Restricted", "Temporarily Blocked"))
-		)
+		}
+		blocked_rooms = len(status_blocked_names)
+
+		if start and end:
+			all_room_names = [r.name for r in rooms]
+			not_status_blocked = [r for r in all_room_names if r not in status_blocked_names]
+			inv_blocked = _inventory_block_room_names(not_status_blocked, start, end)
+			rt_block_count = _inventory_block_count_for_room_type(room_type_doc.name, start, end)
+			blocked_rooms += len(inv_blocked) + rt_block_count
 
 		availability.append(
 			{
@@ -158,7 +168,7 @@ def get_room_type_availability(property=None, start_date=None, end_date=None, ro
 @frappe.whitelist()
 def find_allocatable_rooms(property=None, room_type=None, start_date=None, end_date=None, preferences=None):
 	_require_permission("Room", "read")
-	_validate_date_range(start_date, end_date)
+	start, end = _validate_date_range(start_date, end_date)
 
 	preferences = _as_dict(preferences)
 	filters = {
@@ -185,6 +195,12 @@ def find_allocatable_rooms(property=None, room_type=None, start_date=None, end_d
 		fields=ROOM_FIELDS,
 		order_by="display_order asc, room_number asc",
 	)
+
+	if start and end:
+		all_room_names = [r.name for r in rooms]
+		inv_blocked = _inventory_block_room_names(all_room_names, start, end)
+		if inv_blocked:
+			rooms = [r for r in rooms if r.name not in inv_blocked]
 
 	return {"rooms": [_score_allocatable_room(room, preferences) for room in rooms]}
 
@@ -217,6 +233,232 @@ def _score_allocatable_room(room, preferences):
 	return row
 
 
+# ------------------------------------------------------------------ #
+# Room Inventory Block helpers                                          #
+# ------------------------------------------------------------------ #
+
+
+def _inventory_block_room_names(room_names, start_date, end_date):
+	"""Return a set of room names that have an active, inventory-blocking
+	Room Inventory Block (Room scope) overlapping [start_date, end_date).
+
+	Only checks the rooms supplied in room_names; returns the subset that
+	are blocked, as a set of names."""
+	if not room_names or not start_date or not end_date:
+		return set()
+	rows = frappe.get_all(
+		"Room Inventory Block",
+		filters={
+			"scope": "Room",
+			"room": ["in", room_names],
+			"inventory_blocking": 1,
+			"status": "Active",
+			"start_date": ["<", end_date],
+			"end_date": [">", start_date],
+		},
+		pluck="room",
+	)
+	return set(rows)
+
+
+def _inventory_block_count_for_room_type(room_type_name, start_date, end_date):
+	"""Count active Room Type-scope inventory blocks overlapping [start_date, end_date)."""
+	if not room_type_name or not start_date or not end_date:
+		return 0
+	return frappe.db.count(
+		"Room Inventory Block",
+		{
+			"scope": "Room Type",
+			"room_type": room_type_name,
+			"inventory_blocking": 1,
+			"status": "Active",
+			"start_date": ["<", end_date],
+			"end_date": [">", start_date],
+		},
+	)
+
+
+# ------------------------------------------------------------------ #
+# Room Inventory Block API endpoints                                    #
+# ------------------------------------------------------------------ #
+
+
+@frappe.whitelist()
+def create_room_block(
+	property=None,
+	scope=None,
+	room=None,
+	room_type=None,
+	block_type=None,
+	start_date=None,
+	end_date=None,
+	is_hard_block=True,
+	inventory_blocking=True,
+	reason=None,
+	source_doctype=None,
+	source_name=None,
+):
+	"""Create an authorized Room Inventory Block.
+
+	Hard blocks are validated for overlap in the controller.
+	Returns the new document name and its status.
+	"""
+	_require_permission("Room Inventory Block", "create")
+
+	if not property:
+		frappe.throw(_("Resort Property is required."), frappe.MandatoryError)
+	if not scope or scope not in ("Room", "Room Type"):
+		frappe.throw(_("Scope must be 'Room' or 'Room Type'."), frappe.ValidationError)
+	if not block_type:
+		frappe.throw(_("Block Type is required."), frappe.MandatoryError)
+	if not reason or not str(reason).strip():
+		frappe.throw(_("Reason is required."), frappe.MandatoryError)
+	_validate_date_range(start_date, end_date)
+
+	is_hard_block = bool(int(is_hard_block)) if str(is_hard_block).isdigit() else bool(is_hard_block)
+	inventory_blocking = bool(int(inventory_blocking)) if str(inventory_blocking).isdigit() else bool(inventory_blocking)
+
+	doc = frappe.get_doc(
+		{
+			"doctype": "Room Inventory Block",
+			"resort_property": property,
+			"scope": scope,
+			"room": room if scope == "Room" else None,
+			"room_type": room_type if scope == "Room Type" else None,
+			"block_type": block_type,
+			"start_date": start_date,
+			"end_date": end_date,
+			"is_hard_block": 1 if is_hard_block else 0,
+			"inventory_blocking": 1 if inventory_blocking else 0,
+			"reason": reason,
+			"source_doctype": source_doctype,
+			"source_name": source_name,
+			"status": "Active",
+		}
+	)
+	doc.insert(ignore_permissions=True)
+	frappe.db.commit()
+
+	return _envelope(
+		{"room_inventory_block": doc.name, "status": doc.status},
+	)
+
+
+@frappe.whitelist()
+def release_room_block(room_inventory_block=None, reason=None):
+	"""Release an active Room Inventory Block.
+
+	Idempotent: if the block is already Released or Cancelled,
+	returns the current state without error.
+	"""
+	_require_permission("Room Inventory Block", "write")
+
+	if not room_inventory_block:
+		frappe.throw(_("Room Inventory Block name is required."), frappe.MandatoryError)
+
+	doc = frappe.get_doc("Room Inventory Block", room_inventory_block)
+
+	if doc.status in ("Released", "Cancelled"):
+		return _envelope(
+			{"room_inventory_block": doc.name, "status": doc.status},
+		)
+
+	doc.status = "Released"
+	doc.released_by = frappe.session.user
+	doc.released_at = now_datetime()
+	if reason:
+		doc.reason = "\n".join(filter(None, [doc.reason, f"Released: {reason}"]))
+
+	doc.save(ignore_permissions=True)
+	frappe.db.commit()
+
+	return _envelope(
+		{"room_inventory_block": doc.name, "status": doc.status},
+	)
+
+
+@frappe.whitelist()
+def list_room_blocks(
+	property=None,
+	room=None,
+	room_type=None,
+	start_date=None,
+	end_date=None,
+	status=None,
+	scope=None,
+	page=1,
+	page_length=50,
+):
+	"""List Room Inventory Blocks with optional filters.
+
+	Date filters (start_date / end_date) return blocks whose period
+	overlaps the requested range — the same semantics used by
+	availability calculations.
+	"""
+	_require_permission("Room Inventory Block", "read")
+
+	filters = {}
+	if property:
+		filters["resort_property"] = property
+	if room:
+		filters["room"] = room
+	if room_type:
+		filters["room_type"] = room_type
+	if scope:
+		filters["scope"] = scope
+	if status:
+		status_list = _as_list(status) if isinstance(status, str) and status.strip().startswith("[") else (
+			status if isinstance(status, list) else [s.strip() for s in str(status).split(",") if s.strip()]
+		)
+		filters["status"] = ["in", status_list]
+	if start_date and end_date:
+		# Overlap: block's start < query end AND block's end > query start
+		filters["start_date"] = ["<", end_date]
+		filters["end_date"] = [">", start_date]
+	elif start_date:
+		filters["end_date"] = [">=", start_date]
+	elif end_date:
+		filters["start_date"] = ["<=", end_date]
+
+	page = max(int(page or 1), 1)
+	page_length = max(int(page_length or 50), 1)
+	total_count = frappe.db.count("Room Inventory Block", filters)
+
+	rows = frappe.get_all(
+		"Room Inventory Block",
+		filters=filters,
+		fields=[
+			"name",
+			"resort_property",
+			"scope",
+			"block_type",
+			"room",
+			"room_type",
+			"start_date",
+			"end_date",
+			"is_hard_block",
+			"inventory_blocking",
+			"reason",
+			"status",
+			"created_by",
+			"released_by",
+			"released_at",
+		],
+		order_by="start_date desc",
+		limit_start=(page - 1) * page_length,
+		limit_page_length=page_length,
+	)
+
+	return _envelope(
+		{
+			"blocks": rows,
+			"total_count": total_count,
+			"page": page,
+			"page_length": page_length,
+		}
+	)
+
+
 @frappe.whitelist()
 def run_setup_completeness_check(property=None):
 	_require_permission("Resort Property", "read")
@@ -245,16 +487,18 @@ def run_setup_completeness_check(property=None):
 		)
 
 	missing = [key for key, count in counts.items() if not count]
+	issues = _check_erpnext_link_integrity(property)
 
 	return {
-		"complete": not missing,
+		"complete": not missing and not issues,
 		"counts": counts,
 		"missing": missing,
-		"next_action": _next_setup_action(missing),
+		"issues": issues,
+		"next_action": _next_setup_action(missing, issues),
 	}
 
 
-def _next_setup_action(missing):
+def _next_setup_action(missing, issues=None):
 	actions = {
 		"properties": "Create a Resort Property linked to an ERPNext Company.",
 		"buildings": "Create at least one Resort Building.",
@@ -263,8 +507,81 @@ def _next_setup_action(missing):
 		"rooms": "Create physical Room records.",
 		"service_locations": "Create service locations for restaurant, room service, or outlets.",
 	}
+	if missing:
+		return actions.get(missing[0], "Complete missing setup steps.")
+	if issues:
+		return "Fix ERPNext link integrity issues: {0}".format(issues[0]["message"])
+	return "Property setup is ready for room inventory operations."
 
-	return actions.get(missing[0]) if missing else "Property setup is ready for room inventory operations."
+
+def _check_erpnext_link_integrity(property=None):
+	"""Check active Service Locations and other records for missing ERPNext links.
+
+	Returns a list of issue dicts matching the run_setup_completeness_check
+	API response shape: {doctype, name, severity, message}.
+	"""
+	issues = []
+	loc_filters = {"is_active": 1}
+	if property:
+		loc_filters["resort_property"] = property
+
+	locations = frappe.get_all(
+		"Service Location",
+		filters=loc_filters,
+		fields=["name", "location_name", "location_type", "default_warehouse", "default_cost_center", "can_bill_direct", "can_post_to_folio"],
+	)
+
+	# Revenue-generating outlet types that typically require stock tracking.
+	warehouse_required_types = {"Restaurant", "Bar", "Cafe", "Room Service", "Spa", "Retail"}
+
+	for loc in locations:
+		if not loc.default_warehouse:
+			severity = "Error" if loc.location_type in warehouse_required_types else "Warning"
+			issues.append(
+				{
+					"doctype": "Service Location",
+					"name": loc.name,
+					"severity": severity,
+					"message": "Default Warehouse is missing for {0} ({1}).".format(
+						loc.location_name, loc.location_type
+					),
+				}
+			)
+		if not loc.default_cost_center:
+			issues.append(
+				{
+					"doctype": "Service Location",
+					"name": loc.name,
+					"severity": "Warning",
+					"message": "Default Cost Center is missing for {0} ({1}).".format(
+						loc.location_name, loc.location_type
+					),
+				}
+			)
+
+	# Check active Resort Properties for missing Company link.
+	prop_filters = {"is_active": 1}
+	if property:
+		prop_filters["name"] = property
+	properties = frappe.get_all(
+		"Resort Property",
+		filters=prop_filters,
+		fields=["name", "property_name", "company"],
+	)
+	for prop in properties:
+		if not prop.company:
+			issues.append(
+				{
+					"doctype": "Resort Property",
+					"name": prop.name,
+					"severity": "Error",
+					"message": "Resort Property {0} is not linked to an ERPNext Company.".format(
+						prop.property_name
+					),
+				}
+			)
+
+	return issues
 
 
 @frappe.whitelist()

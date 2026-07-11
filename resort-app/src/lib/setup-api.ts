@@ -383,6 +383,35 @@ export async function getRoomEquipment(
 	});
 }
 
+// ---------- Room connections ----------
+
+export type RoomConnectionType = "Connecting" | "Adjacent" | "Nearby";
+
+export type RoomConnection = {
+	connected_room: string;
+	connection_type: RoomConnectionType;
+	notes: string;
+};
+
+export async function getRoomConnections(
+	room: string
+): Promise<{ room: string; connections: RoomConnection[] }> {
+	return callSetup("the_reezort.setup.management.get_room_connections", {
+		method: "GET",
+		params: { room },
+	});
+}
+
+export async function setRoomConnections(
+	room: string,
+	connections: RoomConnection[]
+): Promise<{ room: string; count: number }> {
+	return callSetup("the_reezort.setup.management.set_room_connections", {
+		method: "POST",
+		body: { room, connections },
+	});
+}
+
 // ---------- Pricing (Rate Plans / Seasons / Packages) ----------
 
 export type RatePlanRow = {

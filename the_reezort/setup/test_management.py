@@ -45,7 +45,11 @@ class TestPropertyManagement(FrappeTestCase):
 		self.room_name = f"{prop}-M101"
 
 	def test_update_and_soft_deactivate(self):
-		res = management.update_record("Room", self.room_name, {"room_name": "Sea View", "housekeeping_status": "Dirty"})
+		res = management.update_record(
+			"Room",
+			self.room_name,
+			{"room_name": "Sea View", "housekeeping_status": "Dirty", "reason": "Test override"},
+		)
 		self.assertIn("room_name", res["data"]["changed"])
 		self.assertEqual(res["data"]["record"]["room_name"], "Sea View")
 		self.assertEqual(res["data"]["record"]["housekeeping_status"], "Dirty")

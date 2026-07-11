@@ -15,7 +15,7 @@ import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import {
 	BedDouble, Brush, ClipboardList, CreditCard, FileText,
-	Move, Receipt, Wrench, ExternalLink, Loader2,
+	Move, Receipt, Wrench, ExternalLink, Loader2, History,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,7 @@ const KIND_META: Record<TimelineEventKind, { label: string; color: string; Icon:
 	condition: { label: "Condition", color: "bg-[#b28600]", Icon: ClipboardList },
 	move: { label: "Room moves", color: "bg-[#fa4d56]", Icon: Move },
 	ticket: { label: "Service", color: "bg-[#eb6200]", Icon: Wrench },
+	status: { label: "Status changes", color: "bg-[#525252]", Icon: History },
 };
 
 function formatWhen(iso: string | null): string {

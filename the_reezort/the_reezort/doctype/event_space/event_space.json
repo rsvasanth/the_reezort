@@ -1,0 +1,147 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "format:{resort_property}-{space_code}",
+ "creation": "2026-07-11 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "engine": "InnoDB",
+ "field_order": [
+  "resort_property",
+  "space_name",
+  "space_code",
+  "building",
+  "floor",
+  "capacity_section",
+  "capacity",
+  "area_sqft",
+  "divisible",
+  "combined_with",
+  "erpnext_section",
+  "default_cost_center",
+  "notes_section",
+  "equipment_notes",
+  "operating_status",
+  "is_active"
+ ],
+ "fields": [
+  {
+   "fieldname": "resort_property",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Resort Property",
+   "options": "Resort Property",
+   "reqd": 1
+  },
+  {
+   "fieldname": "space_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Space Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "space_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Space Code",
+   "reqd": 1
+  },
+  {
+   "fieldname": "building",
+   "fieldtype": "Link",
+   "label": "Building",
+   "options": "Resort Building"
+  },
+  {
+   "fieldname": "floor",
+   "fieldtype": "Link",
+   "label": "Floor",
+   "options": "Resort Floor"
+  },
+  {
+   "fieldname": "capacity_section",
+   "fieldtype": "Section Break",
+   "label": "Capacity and Layout"
+  },
+  {
+   "fieldname": "capacity",
+   "fieldtype": "Int",
+   "label": "Capacity"
+  },
+  {
+   "fieldname": "area_sqft",
+   "fieldtype": "Float",
+   "label": "Area (sq ft)"
+  },
+  {
+   "default": "0",
+   "fieldname": "divisible",
+   "fieldtype": "Check",
+   "label": "Divisible"
+  },
+  {
+   "fieldname": "combined_with",
+   "fieldtype": "Table",
+   "label": "Can Combine With",
+   "options": "Event Space Combination"
+  },
+  {
+   "fieldname": "erpnext_section",
+   "fieldtype": "Section Break",
+   "label": "ERPNext Mapping"
+  },
+  {
+   "fieldname": "default_cost_center",
+   "fieldtype": "Link",
+   "label": "Default Cost Center",
+   "options": "Cost Center"
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes and Status"
+  },
+  {
+   "fieldname": "equipment_notes",
+   "fieldtype": "Text",
+   "label": "Equipment Notes"
+  },
+  {
+   "default": "Available",
+   "fieldname": "operating_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Operating Status",
+   "options": "Available\nUnder Maintenance\nOut of Service",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-11 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Event Space",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Resort Manager", "share": 1, "write": 1},
+  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 1, "read": 1, "report": 1, "role": "Front Desk", "share": 0, "write": 0},
+  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Reservation Agent", "share": 0, "write": 0},
+  {"create": 0, "delete": 0, "email": 0, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Revenue Manager", "share": 0, "write": 0},
+  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Housekeeping", "share": 0, "write": 0},
+  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Maintenance", "share": 0, "write": 0},
+  {"create": 0, "delete": 0, "email": 0, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Accounts Manager", "share": 0, "write": 0}
+ ],
+ "sort_field": "space_name",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}

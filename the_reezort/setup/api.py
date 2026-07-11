@@ -454,10 +454,15 @@ def create_rooms_bulk(payload):
 	if smoking_policy not in ("Non-Smoking", "Smoking", "Flexible"):
 		frappe.throw(_("Invalid smoking policy."))
 
+	from the_reezort.the_reezort.doctype.property_settings.property_settings import (
+		_room_uniqueness_filters as _uniq_filters,
+	)
+
 	created = []
 	skipped = []
 	for number in room_numbers:
-		if _exists("Room", {"resort_property": resort_property, "room_number": number}):
+		dup_filters = {**_uniq_filters(resort_property, building), "room_number": number}
+		if _exists("Room", dup_filters):
 			skipped.append(number)
 			continue
 		room = frappe.get_doc(

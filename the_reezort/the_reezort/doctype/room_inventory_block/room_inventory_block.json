@@ -1,0 +1,224 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-07-11 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "resort_property",
+  "block_type",
+  "scope",
+  "room",
+  "room_type",
+  "start_date",
+  "end_date",
+  "is_hard_block",
+  "inventory_blocking",
+  "reason",
+  "status",
+  "source_section",
+  "source_doctype",
+  "source_name",
+  "audit_section",
+  "created_by",
+  "released_by",
+  "released_at"
+ ],
+ "fields": [
+  {
+   "default": "RZ-RIB-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "RZ-RIB-.YYYY.-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "resort_property",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Resort Property",
+   "options": "Resort Property",
+   "reqd": 1
+  },
+  {
+   "fieldname": "block_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Block Type",
+   "options": "Maintenance\nVIP Hold\nOwner Hold\nGroup Hold\nOperational\nOther",
+   "reqd": 1
+  },
+  {
+   "default": "Room",
+   "fieldname": "scope",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Scope",
+   "options": "Room\nRoom Type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "room",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Room",
+   "options": "Room"
+  },
+  {
+   "fieldname": "room_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Room Type",
+   "options": "Room Type"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Start Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "End Date",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "is_hard_block",
+   "fieldtype": "Check",
+   "label": "Hard Block"
+  },
+  {
+   "default": "1",
+   "fieldname": "inventory_blocking",
+   "fieldtype": "Check",
+   "label": "Inventory Blocking"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason",
+   "reqd": 1
+  },
+  {
+   "default": "Active",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Active\nReleased\nCancelled",
+   "reqd": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "source_section",
+   "fieldtype": "Section Break",
+   "label": "Source"
+  },
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Data",
+   "label": "Source DocType"
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Source Name",
+   "options": "source_doctype"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "audit_section",
+   "fieldtype": "Section Break",
+   "label": "Audit"
+  },
+  {
+   "fieldname": "created_by",
+   "fieldtype": "Link",
+   "label": "Created By",
+   "no_copy": 1,
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "released_by",
+   "fieldtype": "Link",
+   "label": "Released By",
+   "no_copy": 1,
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "released_at",
+   "fieldtype": "Datetime",
+   "label": "Released At",
+   "no_copy": 1,
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-11 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Room Inventory Block",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Resort Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Front Desk",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Reservation Manager",
+   "export": 1
+  },
+  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Reservation Agent", "share": 0, "write": 0},
+  {"create": 1, "delete": 0, "email": 0, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Revenue Manager", "share": 0, "write": 1},
+  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Housekeeping", "share": 0, "write": 0},
+  {"create": 1, "delete": 0, "email": 0, "export": 0, "print": 1, "read": 1, "report": 1, "role": "Maintenance", "share": 0, "write": 1},
+  {"create": 0, "delete": 0, "email": 0, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Accounts Manager", "share": 0, "write": 0}
+ ],
+ "sort_field": "start_date",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

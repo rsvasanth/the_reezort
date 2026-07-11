@@ -272,6 +272,36 @@ def _room_moves(room: str) -> list[dict]:
 	return events
 
 
+def _status_events_for_room(room: str) -> list[dict]:
+	if not frappe.db.exists("DocType", "Room Status Event"):
+		return []
+	rows = frappe.get_all(
+		"Room Status Event",
+		filters={"room": room},
+		fields=["name", "event_type", "previous_value", "new_value", "reason", "changed_by", "changed_at"],
+	)
+	events = []
+	for r in rows:
+		title = f"{r['event_type']} → {r['new_value']}"
+		subtitle = f"from {r['previous_value']}" if r["previous_value"] else "initial value"
+		if r["reason"]:
+			subtitle = f"{subtitle} · {r['reason']}"
+		events.append(
+			_event(
+				"status",
+				r["changed_at"],
+				title,
+				"Room Status Event",
+				r["name"],
+				subtitle=subtitle,
+				actor=r["changed_by"],
+				room=room,
+				status=r["new_value"],
+			)
+		)
+	return events
+
+
 def _service_tickets_for_room(room: str) -> list[dict]:
 	if not frappe.db.exists("DocType", "Service Ticket"):
 		return []
@@ -324,6 +354,7 @@ def get_room_timeline(room: str, limit: int | None = None) -> dict:
 	events.extend(_condition_captures_for_room(room))
 	events.extend(_room_moves(room))
 	events.extend(_service_tickets_for_room(room))
+	events.extend(_status_events_for_room(room))
 
 	events = _sort_events(events)
 	if limit:
@@ -349,6 +380,7 @@ def get_property_timeline(resort_property: str, limit: int | None = None) -> dic
 		events.extend(_condition_captures_for_room(r))
 		events.extend(_room_moves(r))
 		events.extend(_service_tickets_for_room(r))
+		events.extend(_status_events_for_room(r))
 
 	# Property-scoped folios + payments (not room-scoped).
 	folios = frappe.get_all(
@@ -408,6 +440,7 @@ def _timeline_from_rooms(rooms: list[str], target: dict, limit: int | None) -> d
 		events.extend(_condition_captures_for_room(r))
 		events.extend(_room_moves(r))
 		events.extend(_service_tickets_for_room(r))
+		events.extend(_status_events_for_room(r))
 		stays.extend(frappe.get_all("Stay", filters={"current_room": r}, pluck="name"))
 	folios = (
 		frappe.get_all("Guest Folio", filters={"stay": ["in", stays]}, pluck="name") if stays else []

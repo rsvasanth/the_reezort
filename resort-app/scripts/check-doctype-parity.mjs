@@ -55,6 +55,18 @@ const CONTRACTS = [
 	// ota-api.ts ↔ OTA Reservation Message
 	{ file: "ota-api.ts", type: "OtaMessageState", doctype: "ota_reservation_message", field: "state" },
 	{ file: "ota-api.ts", type: "OtaSource", doctype: "ota_reservation_message", field: "source" },
+	// room-blocks-api.ts ↔ Room Inventory Block
+	{ file: "room-blocks-api.ts", type: "BlockType", doctype: "room_inventory_block", field: "block_type" },
+	{ file: "room-blocks-api.ts", type: "BlockScope", doctype: "room_inventory_block", field: "scope" },
+	{ file: "room-blocks-api.ts", type: "BlockStatus", doctype: "room_inventory_block", field: "status" },
+	// property-settings-api.ts ↔ Property Settings
+	{ file: "property-settings-api.ts", type: "RoomIdentifierUniqueness", doctype: "property_settings", field: "room_identifier_uniqueness" },
+	{ file: "property-settings-api.ts", type: "HardBlockOverlapPolicy", doctype: "property_settings", field: "hard_block_overlap_policy" },
+	// service-location-api.ts ↔ Service Location / Operating Hours
+	{ file: "service-location-api.ts", type: "ServiceLocationType", doctype: "service_location", field: "location_type" },
+	{ file: "service-location-api.ts", type: "DayOfWeek", doctype: "operating_hours", field: "day_of_week" },
+	// setup-api.ts ↔ Room Connection
+	{ file: "setup-api.ts", type: "RoomConnectionType", doctype: "room_connection", field: "connection_type" },
 ];
 
 function doctypeOptions(doctype, field) {

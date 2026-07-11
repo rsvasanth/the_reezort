@@ -83,7 +83,8 @@ export type TimelineEventKind =
 	| "housekeeping"
 	| "condition"
 	| "move"
-	| "ticket";
+	| "ticket"
+	| "status";
 
 export type TimelineEvent = {
 	kind: TimelineEventKind;

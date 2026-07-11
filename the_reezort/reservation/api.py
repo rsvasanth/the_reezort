@@ -106,6 +106,67 @@ def _active_hold_usage(property_name, arrival_date, departure_date):
 	return usage
 
 
+def _inventory_block_deductions_by_type(property_name, arrival_date, departure_date):
+	"""Return a Counter of room_type -> count deducted by active Room Inventory Blocks.
+
+	Room-scope blocks are deducted only if the blocked room is currently
+	sellable (i.e., already in the _room_type_inventory baseline), to
+	avoid double-subtracting rooms that are also blocked by maintenance status.
+	Room Type-scope blocks add one deduction per block record.
+	"""
+	result = Counter()
+
+	# Room-scope blocks: collect distinct blocked room names, then look up
+	# only those that are also in the sellable pool (matching _room_type_inventory).
+	room_block_rows = frappe.get_all(
+		"Room Inventory Block",
+		filters={
+			"scope": "Room",
+			"resort_property": property_name,
+			"inventory_blocking": 1,
+			"status": "Active",
+			"start_date": ["<", departure_date],
+			"end_date": [">", arrival_date],
+		},
+		pluck="room",
+	)
+	blocked_rooms = list({r for r in room_block_rows if r})
+	if blocked_rooms:
+		# Only count rooms that would appear in _room_type_inventory
+		# (active, sellable, not under blocking maintenance).
+		sellable_blocked = frappe.get_all(
+			"Room",
+			filters={
+				"name": ["in", blocked_rooms],
+				"is_active": 1,
+				"maintenance_status": ["not in", BLOCKING_MAINTENANCE_STATUSES],
+				"sellable_status": "Sellable",
+			},
+			fields=["name", "room_type"],
+		)
+		for r in sellable_blocked:
+			result[r.room_type] += 1
+
+	# Room Type-scope blocks: each block record reduces the type by 1.
+	type_block_rows = frappe.get_all(
+		"Room Inventory Block",
+		filters={
+			"scope": "Room Type",
+			"resort_property": property_name,
+			"inventory_blocking": 1,
+			"status": "Active",
+			"start_date": ["<", departure_date],
+			"end_date": [">", arrival_date],
+		},
+		fields=["room_type"],
+	)
+	for tb in type_block_rows:
+		if tb.room_type:
+			result[tb.room_type] += 1
+
+	return result
+
+
 def _active_hold_usage_excluding(property_name, arrival_date, departure_date, exclude_reservation):
 	"""Active-hold usage by room type, ignoring one reservation's own holds.
 
@@ -141,8 +202,17 @@ def _available_counts_excluding(property_name, arrival_date, departure_date, exc
 	]
 	reservation_usage = _reservation_room_usage(others)
 	hold_usage = _active_hold_usage_excluding(property_name, arrival_date, departure_date, exclude_reservation)
+	inventory_block_usage = _inventory_block_deductions_by_type(
+		property_name, arrival_date, departure_date
+	)
 	return {
-		room_type: max(physical - reservation_usage[room_type] - hold_usage[room_type], 0)
+		room_type: max(
+			physical
+			- reservation_usage[room_type]
+			- hold_usage[room_type]
+			- inventory_block_usage[room_type],
+			0,
+		)
 		for room_type, physical in inventory.items()
 	}
 
@@ -213,12 +283,19 @@ def _availability_rows(property_name, arrival_date, departure_date, plan_code=No
 		_overlapping_reservations(property_name, arrival_date, departure_date)
 	)
 	hold_usage = _active_hold_usage(property_name, arrival_date, departure_date)
+	inventory_block_usage = _inventory_block_deductions_by_type(
+		property_name, arrival_date, departure_date
+	)
 	nights = date_diff(departure_date, arrival_date)
 	currency = _property_currency(property_name)
 	rows = []
 
 	for room_type, physical_count in inventory.items():
-		blocked_count = reservation_usage[room_type] + hold_usage[room_type]
+		blocked_count = (
+			reservation_usage[room_type]
+			+ hold_usage[room_type]
+			+ inventory_block_usage[room_type]
+		)
 		available_count = max(physical_count - blocked_count, 0)
 		room_type_doc = frappe.db.get_value(
 			"Room Type",

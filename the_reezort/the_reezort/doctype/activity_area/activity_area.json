@@ -1,0 +1,97 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "format:{resort_property}-{area_code}",
+ "creation": "2026-07-11 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "engine": "InnoDB",
+ "field_order": [
+  "resort_property",
+  "area_name",
+  "area_code",
+  "area_type",
+  "linked_service_location",
+  "capacity",
+  "operating_status",
+  "is_active"
+ ],
+ "fields": [
+  {
+   "fieldname": "resort_property",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Resort Property",
+   "options": "Resort Property",
+   "reqd": 1
+  },
+  {
+   "fieldname": "area_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Area Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "area_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Area Code",
+   "reqd": 1
+  },
+  {
+   "fieldname": "area_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Area Type",
+   "options": "Spa Room\nWellness\nActivity\nPool\nCabana\nFacility\nOther"
+  },
+  {
+   "fieldname": "linked_service_location",
+   "fieldtype": "Link",
+   "label": "Service Location",
+   "options": "Service Location"
+  },
+  {
+   "fieldname": "capacity",
+   "fieldtype": "Int",
+   "label": "Capacity"
+  },
+  {
+   "default": "Available",
+   "fieldname": "operating_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Operating Status",
+   "options": "Available\nUnder Maintenance\nOut of Service",
+   "reqd": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-11 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Activity Area",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Resort Manager", "share": 1, "write": 1},
+  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 1, "read": 1, "report": 1, "role": "Front Desk", "share": 0, "write": 0},
+  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Reservation Agent", "share": 0, "write": 0},
+  {"create": 0, "delete": 0, "email": 0, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Revenue Manager", "share": 0, "write": 0},
+  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 1, "read": 1, "report": 1, "role": "Housekeeping", "share": 0, "write": 0},
+  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Maintenance", "share": 0, "write": 0},
+  {"create": 0, "delete": 0, "email": 0, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Accounts Manager", "share": 0, "write": 0}
+ ],
+ "sort_field": "area_name",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,82 @@
+{
+ "actions": [],
+ "allow_import": 0,
+ "allow_rename": 0,
+ "autoname": "field:resort_property",
+ "creation": "2026-07-11 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "engine": "InnoDB",
+ "field_order": [
+  "resort_property",
+  "room_policy_section",
+  "allow_dirty_allocation_default",
+  "room_identifier_uniqueness",
+  "hard_block_overlap_policy",
+  "default_room_naming_series"
+ ],
+ "fields": [
+  {
+   "fieldname": "resort_property",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Resort Property",
+   "options": "Resort Property",
+   "reqd": 1
+  },
+  {
+   "fieldname": "room_policy_section",
+   "fieldtype": "Section Break",
+   "label": "Room Policy"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_dirty_allocation_default",
+   "fieldtype": "Check",
+   "label": "Allow Dirty Room Allocation (Default)"
+  },
+  {
+   "default": "Property",
+   "fieldname": "room_identifier_uniqueness",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Room Number Uniqueness Scope",
+   "options": "Property\nBuilding",
+   "reqd": 1
+  },
+  {
+   "default": "Strict",
+   "fieldname": "hard_block_overlap_policy",
+   "fieldtype": "Select",
+   "label": "Hard Block Overlap Policy",
+   "options": "Strict\nAllow Same Source\nManual Approval",
+   "reqd": 1
+  },
+  {
+   "fieldname": "default_room_naming_series",
+   "fieldtype": "Data",
+   "label": "Default Room Naming Series"
+  }
+ ],
+ "links": [],
+ "modified": "2026-07-11 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Property Settings",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Resort Manager", "share": 1, "write": 1},
+  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Front Desk", "share": 0, "write": 0},
+  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Reservation Agent", "share": 0, "write": 0},
+  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Revenue Manager", "share": 0, "write": 0},
+  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Housekeeping", "share": 0, "write": 0},
+  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Maintenance", "share": 0, "write": 0},
+  {"create": 0, "delete": 0, "email": 0, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Accounts Manager", "share": 0, "write": 0}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

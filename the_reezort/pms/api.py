@@ -46,8 +46,23 @@ READY_HOUSEKEEPING_STATUSES = ("Clean", "Inspected")
 
 def _allocation_housekeeping_filter(property_name):
 	"""housekeeping_status filter for allocation, honoring the property's
-	allow_dirty_room_allocation policy. Returns None when no filter applies."""
-	if frappe.db.get_value("Resort Property", property_name, "allow_dirty_room_allocation"):
+	allow_dirty_allocation_default from Property Settings.
+
+	Falls back to Resort Property.allow_dirty_room_allocation when no Property
+	Settings record exists yet (backward-compatible for existing deployments).
+	Returns None when no filter should be applied (dirty rooms allowed).
+	"""
+	from the_reezort.the_reezort.doctype.property_settings.property_settings import (
+		_get_setting_or_none as _ps_setting_or_none,
+	)
+
+	allow_dirty = _ps_setting_or_none(property_name, "allow_dirty_allocation_default")
+	if allow_dirty is None:
+		# No Property Settings record yet — fall back to the legacy Resort Property flag.
+		allow_dirty = frappe.db.get_value(
+			"Resort Property", property_name, "allow_dirty_room_allocation"
+		)
+	if allow_dirty:
 		return None
 	return ["in", list(READY_HOUSEKEEPING_STATUSES)]
 

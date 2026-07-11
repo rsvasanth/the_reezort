@@ -38,18 +38,24 @@ import {
 	EQUIPMENT_CONDITIONS,
 	FolioApiError,
 	getPropertyTree,
+	getRoomConnections,
 	getRoomEquipment,
 	listAmenities,
 	listSetupOptions,
+	setRoomConnections,
 	setRoomEquipment,
 	updateRecord,
 	type Amenity,
 	type EquipmentCondition,
 	type PropertyTree,
+	type RoomConnection,
+	type RoomConnectionType,
 	type RoomEquipmentItem,
 	type TreeRoom,
 	type TreeRoomType,
 } from "@/lib/setup-api";
+
+const CONNECTION_TYPES: RoomConnectionType[] = ["Connecting", "Adjacent", "Nearby"];
 
 const OCCUPANCY = ["Vacant", "Reserved", "Occupied", "Due In", "Due Out", "Checked Out", "Hold"];
 const HOUSEKEEPING = ["Clean", "Dirty", "In Progress", "Inspected", "Pickup", "Turndown Required", "Out of Service Cleaning"];
@@ -82,8 +88,11 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 	const [amenities, setAmenities] = useState<Amenity[]>([]);
 	const [equipment, setEquipment] = useState<RoomEquipmentItem[]>([]);
 	const [events, setEvents] = useState<TimelineEvent[]>([]);
+	const [connections, setConnections] = useState<RoomConnection[]>([]);
+	const [savingConnections, setSavingConnections] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
+	const [statusReason, setStatusReason] = useState("");
 	const [form, setForm] = useState({
 		room_name: "",
 		room_type: "",
@@ -126,14 +135,16 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 				maintenance_status: foundRoom.maintenance_status ?? "Available",
 				sellable_status: foundRoom.sellable_status ?? "Sellable",
 			});
-			const [am, eq, tl] = await Promise.all([
+			const [am, eq, tl, conn] = await Promise.all([
 				listAmenities(),
 				getRoomEquipment(foundRoom.name).catch(() => ({ items: [] as RoomEquipmentItem[] })),
 				getRoomTimeline(foundRoom.name).catch(() => ({ target: { doctype: "Room", name: foundRoom.name }, events: [] as TimelineEvent[] })),
+				getRoomConnections(foundRoom.name).catch(() => ({ room: foundRoom.name, connections: [] as RoomConnection[] })),
 			]);
 			setAmenities(am.amenities);
 			setEquipment(eq.items);
 			setEvents(tl.events);
+			setConnections(conn.connections);
 		} catch (error) {
 			reportError(error, "Could not load room");
 		} finally {
@@ -145,6 +156,13 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 
 	async function save() {
 		if (!room) return;
+		// The payload always includes all four status fields, so the backend
+		// always requires a reason (setup/management.py:update_record — it
+		// checks field presence, not whether the value actually changed).
+		if (!statusReason.trim()) {
+			toast.error("Reason required", { description: "Explain the status change before saving." });
+			return;
+		}
 		setSaving(true);
 		try {
 			await updateRecord("Room", room.name, {
@@ -155,9 +173,11 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 				housekeeping_status: form.housekeeping_status,
 				maintenance_status: form.maintenance_status,
 				sellable_status: form.sellable_status,
+				reason: statusReason.trim(),
 			});
 			await setRoomEquipment(room.name, equipment);
 			toast.success("Room saved", { description: room.name });
+			setStatusReason("");
 			await load();
 		} catch (error) {
 			reportError(error, "Could not save the room");
@@ -181,6 +201,37 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 
 	function removeRow(index: number) {
 		setEquipment((prev) => prev.filter((_, i) => i !== index));
+	}
+
+	function addConnection() {
+		const candidate = tree?.rooms.find((r) => r.name !== room?.name && !connections.some((c) => c.connected_room === r.name));
+		if (!candidate) {
+			toast.error("No rooms available", { description: "Every other room is already connected, or there are no other rooms." });
+			return;
+		}
+		setConnections((prev) => [...prev, { connected_room: candidate.name, connection_type: "Connecting", notes: "" }]);
+	}
+
+	function updateConnection(index: number, patch: Partial<RoomConnection>) {
+		setConnections((prev) => prev.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+	}
+
+	function removeConnection(index: number) {
+		setConnections((prev) => prev.filter((_, i) => i !== index));
+	}
+
+	async function saveConnections() {
+		if (!room) return;
+		setSavingConnections(true);
+		try {
+			await setRoomConnections(room.name, connections);
+			toast.success("Connections saved", { description: room.name });
+			await load();
+		} catch (error) {
+			reportError(error, "Could not save room connections");
+		} finally {
+			setSavingConnections(false);
+		}
 	}
 
 	if (!roomName) {
@@ -235,6 +286,7 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 					<TabsList data-testid="room-tabs">
 						<TabsTrigger value="overview">Overview</TabsTrigger>
 						<TabsTrigger value="equipment">Equipment</TabsTrigger>
+						<TabsTrigger value="connections" data-testid="room-tab-connections">Connections</TabsTrigger>
 						<TabsTrigger value="timeline" data-testid="room-tab-timeline">Timeline</TabsTrigger>
 					</TabsList>
 
@@ -270,6 +322,16 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 								<LabeledSelect label="Smoking policy" value={form.smoking_policy} onChange={(v) => setForm({ ...form, smoking_policy: v })}>
 									{SMOKING.map((o) => <SelectItem key={o} value={o}>{o}</SelectItem>)}
 								</LabeledSelect>
+								<div className="sm:col-span-2">
+									<Labeled label="Reason for this change (required — recorded on the status audit trail)">
+										<Input
+											value={statusReason}
+											onChange={(e) => setStatusReason(e.target.value)}
+											placeholder="e.g. Guest requested late checkout, room reset after departure…"
+											data-testid="room-status-reason"
+										/>
+									</Labeled>
+								</div>
 							</CardContent>
 						</Card>
 					</TabsContent>
@@ -326,6 +388,72 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 										</div>
 									))
 								)}
+							</CardContent>
+						</Card>
+					</TabsContent>
+
+					<TabsContent value="connections" className="mt-4">
+						<Card>
+							<CardContent className="flex flex-col gap-3 py-4" data-testid="room-connections">
+								<div className="flex items-center justify-between">
+									<h3 className="text-sm font-semibold">Connecting rooms</h3>
+									<Button variant="outline" size="sm" onClick={addConnection} data-testid="add-connection">
+										<Plus className="size-4" /> Add
+									</Button>
+								</div>
+								{connections.length === 0 ? (
+									<p className="text-sm text-muted-foreground">
+										No connections recorded. Link this room to adjoining or nearby rooms so front desk can allocate connecting/adjacent stays.
+									</p>
+								) : (
+									connections.map((row, index) => (
+										<div key={index} className="grid grid-cols-[1.2fr_1fr_1fr_auto] items-end gap-2">
+											<LabeledSelect
+												label="Room"
+												value={row.connected_room}
+												onChange={(v) => updateConnection(index, { connected_room: v })}
+											>
+												{tree?.rooms
+													.filter((r) => r.name !== room.name)
+													.map((r) => (
+														<SelectItem key={r.name} value={r.name}>
+															{r.room_number}{r.room_name ? ` · ${r.room_name}` : ""}
+														</SelectItem>
+													))}
+											</LabeledSelect>
+											<LabeledSelect
+												label="Type"
+												value={row.connection_type}
+												onChange={(v) => updateConnection(index, { connection_type: v as RoomConnectionType })}
+											>
+												{CONNECTION_TYPES.map((c) => (
+													<SelectItem key={c} value={c}>{c}</SelectItem>
+												))}
+											</LabeledSelect>
+											<Labeled label="Notes">
+												<Input
+													value={row.notes ?? ""}
+													onChange={(e) => updateConnection(index, { notes: e.target.value })}
+													placeholder="optional"
+												/>
+											</Labeled>
+											<Button
+												variant="ghost"
+												size="icon"
+												onClick={() => removeConnection(index)}
+												aria-label="Remove connection"
+											>
+												<Trash2 className="size-4 text-destructive" />
+											</Button>
+										</div>
+									))
+								)}
+								<div className="flex justify-end">
+									<Button onClick={saveConnections} disabled={savingConnections} data-testid="save-connections">
+										{savingConnections ? <Loader2 className="size-4 animate-spin" /> : null}
+										Save connections
+									</Button>
+								</div>
 							</CardContent>
 						</Card>
 					</TabsContent>

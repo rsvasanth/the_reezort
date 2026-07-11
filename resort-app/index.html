@@ -33,6 +33,15 @@
 		</script>
 		<!-- csrf_token -->
 		<script>
+			// frappe-react-sdk's axios instance (useFrappeAuth/logout, etc.)
+			// reads the bare window.csrf_token global directly — it does not
+			// know about window.frappe.csrf_token. Without this, every
+			// frappe-react-sdk request (e.g. logout's POST /api/method/logout)
+			// goes out with no CSRF header and the backend rejects it with
+			// CSRFTokenError; nav-user.tsx's handleLogout() swallows that in a
+			// try/finally and reloads anyway, so logout silently no-ops instead
+			// of erroring. Mirror the token into both globals.
+			window.csrf_token = window.frappe.csrf_token;
 			// TODO: load boot data here (context file is created in `www` directory)
 		</script>
     <script type="module" src="/src/main.tsx"></script>

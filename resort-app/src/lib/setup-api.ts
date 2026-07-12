@@ -94,7 +94,25 @@ export type TreeRoom = {
 	is_accessible: number;
 	is_active: number;
 	image: string | null;
+	room_asset?: string | null;
 };
+
+export type ErpnextAsset = {
+	name: string;
+	asset_name: string;
+	item_code: string | null;
+	asset_category: string | null;
+	gross_purchase_amount: number | null;
+	location: string | null;
+	linked_room: string | null;
+};
+
+export async function listErpnextAssets(search?: string): Promise<{ assets: ErpnextAsset[]; total: number }> {
+	return callSetup("the_reezort.property.api.list_erpnext_assets", {
+		method: "GET",
+		params: { search: search || undefined },
+	});
+}
 
 export type PropertyTree = {
 	resort_property: string;

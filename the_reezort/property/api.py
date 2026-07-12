@@ -533,6 +533,38 @@ def list_room_blocks(
 
 
 @frappe.whitelist()
+def list_erpnext_assets(search=None, unlinked_only=False):
+	"""Submitted ERPNext Assets available to link to a Room, plus which Room
+	(if any) each is already linked to. Powers the room asset picker — an
+	asset is created by ERPNext procurement (Purchase Receipt/Invoice → Asset);
+	this just lets staff bridge it to a room without the desk."""
+	_require_permission("Room", "read")
+	if not frappe.db.exists("DocType", "Asset"):
+		return _envelope({"assets": [], "total": 0})
+
+	filters = {"docstatus": 1}
+	if search:
+		filters["asset_name"] = ["like", "%{0}%".format(search.strip())]
+	assets = frappe.get_all(
+		"Asset",
+		filters=filters,
+		fields=["name", "asset_name", "item_code", "asset_category", "gross_purchase_amount", "location"],
+		order_by="modified desc",
+		limit=50,
+	)
+	# Which room each asset is already linked to (reverse of Room.room_asset).
+	linked = {
+		r["room_asset"]: r["name"]
+		for r in frappe.get_all("Room", filters={"room_asset": ["is", "set"]}, fields=["name", "room_asset"])
+	}
+	for a in assets:
+		a["linked_room"] = linked.get(a["name"])
+	if str(unlinked_only) in ("1", "true", "True"):
+		assets = [a for a in assets if not a["linked_room"]]
+	return _envelope({"assets": assets, "total": len(assets)})
+
+
+@frappe.whitelist()
 def run_setup_completeness_check(property=None):
 	_require_permission("Resort Property", "read")
 

@@ -44,10 +44,12 @@ import {
 	getRoomConnections,
 	getRoomEquipment,
 	listAmenities,
+	listErpnextAssets,
 	listSetupOptions,
 	setRoomConnections,
 	setRoomEquipment,
 	updateRecord,
+	type ErpnextAsset,
 	type Amenity,
 	type EquipmentCondition,
 	type PropertyTree,
@@ -107,6 +109,7 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 	const [saving, setSaving] = useState(false);
 	const [statusReason, setStatusReason] = useState("");
 	const [reportIssueOpen, setReportIssueOpen] = useState(false);
+	const [assets, setAssets] = useState<ErpnextAsset[]>([]);
 	const [form, setForm] = useState({
 		room_name: "",
 		room_type: "",
@@ -161,6 +164,7 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 			setEvents(tl.events);
 			setConnections(conn.connections);
 			setStatusEvents(hist.events);
+			listErpnextAssets().then((a) => setAssets(a.assets)).catch(() => setAssets([]));
 		} catch (error) {
 			reportError(error, "Could not load room");
 		} finally {
@@ -330,6 +334,30 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 											await load();
 										}}
 									/>
+								</div>
+								<div className="sm:col-span-2">
+									<LabeledSelect
+										label="Linked ERPNext Asset (fixed-asset tracking)"
+										value={room.room_asset ?? "__none__"}
+										onChange={async (v) => {
+											await updateRecord("Room", room.name, { room_asset: v === "__none__" ? "" : v });
+											toast.success("Asset link updated", { description: room.room_number });
+											await load();
+										}}
+									>
+										<SelectItem value="__none__">Not linked</SelectItem>
+										{room.room_asset && !assets.some((a) => a.name === room.room_asset) ? (
+											<SelectItem value={room.room_asset}>{room.room_asset} (current)</SelectItem>
+										) : null}
+										{assets.map((a) => (
+											<SelectItem key={a.name} value={a.name}>
+												{a.asset_name}{a.linked_room && a.linked_room !== room.name ? ` · on ${a.linked_room}` : ""}
+											</SelectItem>
+										))}
+									</LabeledSelect>
+									{assets.length === 0 ? (
+										<p className="mt-1 text-xs text-muted-foreground">No ERPNext assets exist yet — create them via procurement (Purchase Receipt → Asset), then link here.</p>
+									) : null}
 								</div>
 								<Labeled label="Room name">
 									<Input

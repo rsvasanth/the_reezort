@@ -208,7 +208,7 @@ def get_property_tree(resort_property):
 			"name", "room_number", "room_name", "building", "floor", "room_type",
 			"occupancy_status", "housekeeping_status", "maintenance_status",
 			"sellable_status", "smoking_policy", "is_accessible", "is_active",
-			"image",
+			"image", "room_asset",
 		],
 		order_by="room_number asc",
 	)

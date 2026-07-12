@@ -57,7 +57,7 @@ _EDITABLE = {
 	"Room": [
 		"room_name", "room_type", "smoking_policy", "is_accessible", "display_order",
 		"occupancy_status", "housekeeping_status", "maintenance_status", "sellable_status",
-		"image",
+		"image", "room_asset", "cost_center",
 	],
 	"Room Amenity": ["amenity_name", "amenity_type", "is_guest_visible", "icon"],
 	"Service Location": [

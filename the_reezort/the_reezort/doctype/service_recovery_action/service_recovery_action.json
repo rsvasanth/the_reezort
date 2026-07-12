@@ -1,0 +1,202 @@
+{
+ "actions": [],
+ "allow_import": 0,
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-07-12 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "guest_complaint",
+  "guest_request",
+  "recovery_type",
+  "column_break_1",
+  "status",
+  "approval_required",
+  "approval_request",
+  "financial_section",
+  "estimated_value",
+  "cost_center",
+  "guest_folio",
+  "erpnext_sales_invoice",
+  "erpnext_credit_note",
+  "detail_section",
+  "reason",
+  "completion_evidence"
+ ],
+ "fields": [
+  {
+   "default": "RZ-SRA-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "RZ-SRA-.YYYY.-.#####"
+  },
+  {
+   "fieldname": "guest_complaint",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Guest Complaint",
+   "options": "Guest Complaint"
+  },
+  {
+   "fieldname": "guest_request",
+   "fieldtype": "Link",
+   "label": "Guest Request",
+   "options": "Guest Request"
+  },
+  {
+   "fieldname": "recovery_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Recovery Type",
+   "options": "Apology\nAmenity\nRoom Move\nComplimentary Item\nDiscount\nRefund Request\nLoyalty Credit\nManager Call\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Draft\nPending Approval\nApproved\nRejected\nIn Progress\nCompleted\nCancelled\nPosted to Billing",
+   "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "approval_required",
+   "fieldtype": "Check",
+   "label": "Approval Required"
+  },
+  {
+   "fieldname": "approval_request",
+   "fieldtype": "Link",
+   "label": "Approval Request",
+   "options": "Approval Request"
+  },
+  {
+   "fieldname": "financial_section",
+   "fieldtype": "Section Break",
+   "label": "Financial"
+  },
+  {
+   "fieldname": "estimated_value",
+   "fieldtype": "Currency",
+   "label": "Estimated Value"
+  },
+  {
+   "fieldname": "cost_center",
+   "fieldtype": "Link",
+   "label": "Cost Center",
+   "options": "Cost Center"
+  },
+  {
+   "fieldname": "guest_folio",
+   "fieldtype": "Link",
+   "label": "Guest Folio",
+   "options": "Guest Folio"
+  },
+  {
+   "fieldname": "erpnext_sales_invoice",
+   "fieldtype": "Link",
+   "label": "ERPNext Sales Invoice (Ref)",
+   "options": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "erpnext_credit_note",
+   "fieldtype": "Link",
+   "label": "ERPNext Credit Note (Ref)",
+   "options": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "detail_section",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "reason",
+   "fieldtype": "Small Text",
+   "label": "Reason",
+   "reqd": 1
+  },
+  {
+   "fieldname": "completion_evidence",
+   "fieldtype": "Attach",
+   "label": "Completion Evidence"
+  }
+ ],
+ "modified": "2026-07-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "The Reezort",
+ "name": "Service Recovery Action",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Resort Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Front Desk",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Concierge",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Housekeeping"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

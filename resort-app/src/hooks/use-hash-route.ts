@@ -62,6 +62,7 @@ export type ParsedRoute =
 	| { kind: "cashier-close" }
 	| { kind: "analytics-revenue" }
 	| { kind: "ota-inbox" }
+	| { kind: "guest-relations" }
 	| { kind: "condition"; stay: string | null };
 
 export function parseHashRoute(hash: string): ParsedRoute {
@@ -132,6 +133,8 @@ export function parseHashRoute(hash: string): ParsedRoute {
 	if (path === "/analytics/revenue" || path.startsWith("/analytics/revenue?")) return { kind: "analytics-revenue" };
 
 	if (path === "/integrations/ota-inbox" || path.startsWith("/integrations/ota-inbox?")) return { kind: "ota-inbox" };
+
+	if (path === "/guest-relations") return { kind: "guest-relations" };
 
 	const checkinMatch = path.match(/^\/check-in(?:\/(.*))?$/);
 	if (checkinMatch) {

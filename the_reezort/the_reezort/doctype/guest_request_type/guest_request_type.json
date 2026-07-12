@@ -1,0 +1,52 @@
+{
+ "actions": [],
+ "autoname": "field:request_type_code",
+ "creation": "2026-07-12 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "request_type_name",
+  "request_type_code",
+  "resort_property",
+  "default_department",
+  "default_priority",
+  "default_privacy_level",
+  "response_sla_minutes",
+  "resolution_sla_minutes",
+  "handoff_module",
+  "requires_guest_verification",
+  "is_guest_visible",
+  "is_active"
+ ],
+ "fields": [
+  {"fieldname": "request_type_name", "fieldtype": "Data", "label": "Request Type Name", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "request_type_code", "fieldtype": "Data", "label": "Request Type Code", "reqd": 1, "unique": 1, "in_list_view": 1},
+  {"fieldname": "resort_property", "fieldtype": "Link", "label": "Resort Property", "options": "Resort Property"},
+  {"fieldname": "default_department", "fieldtype": "Select", "label": "Default Department", "options": "\nFront Desk\nConcierge\nHousekeeping\nMaintenance\nF&B\nEvents\nBilling\nSecurity\nTransport\nOther"},
+  {"fieldname": "default_priority", "fieldtype": "Select", "label": "Default Priority", "options": "\nLow\nNormal\nHigh\nUrgent\nVIP\nSafety", "default": "Normal"},
+  {"fieldname": "default_privacy_level", "fieldtype": "Select", "label": "Default Privacy Level", "options": "\nNormal\nPrivate\nVIP\nSecurity\nMedical", "default": "Normal"},
+  {"fieldname": "response_sla_minutes", "fieldtype": "Int", "label": "Response SLA (minutes)"},
+  {"fieldname": "resolution_sla_minutes", "fieldtype": "Int", "label": "Resolution SLA (minutes)"},
+  {"fieldname": "handoff_module", "fieldtype": "Select", "label": "Handoff Module", "options": "None\nHousekeeping\nMaintenance\nF&B\nBilling\nEvents\nIntegrations\nSpa Parked", "default": "None"},
+  {"fieldname": "requires_guest_verification", "fieldtype": "Check", "label": "Requires Guest Verification", "default": "0"},
+  {"fieldname": "is_guest_visible", "fieldtype": "Check", "label": "Guest Visible", "default": "1"},
+  {"fieldname": "is_active", "fieldtype": "Check", "label": "Active", "default": "1"}
+ ],
+ "links": [],
+ "modified": "2026-07-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Guest Request Type",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Resort Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Front Desk", "read": 1},
+  {"role": "Concierge", "read": 1},
+  {"role": "Housekeeping", "read": 1},
+  {"role": "Accounts Manager", "read": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

@@ -42,6 +42,7 @@ import MaintenanceInbox from "@/app/maintenance/MaintenanceInbox";
 import EngineeringBoard from "@/app/maintenance/EngineeringBoard";
 import RevenueDashboard from "@/app/analytics/RevenueDashboard";
 import OtaInbox from "@/app/integrations/OtaInbox";
+import GuestRelations from "@/app/guest-services/GuestRelations";
 import { parseHashRoute, useHashRoute } from "@/hooks/use-hash-route";
 import { canAccessDesk, defaultLandingRoute, useUserProfile } from "@/hooks/use-user-profile";
 import { useVersionCheck } from "@/hooks/use-version-check";
@@ -354,6 +355,14 @@ function AuthGate() {
 		return (
 			<AppShell>
 				<OtaInbox />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "guest-relations") {
+		return (
+			<AppShell>
+				<GuestRelations />
 			</AppShell>
 		);
 	}

@@ -1,0 +1,268 @@
+{
+ "actions": [],
+ "allow_import": 0,
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-07-12 00:00:00.000000",
+ "doctype": "DocType",
+ "document_type": "Document",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "resort_property",
+  "complaint_summary",
+  "column_break_1",
+  "status",
+  "complaint_category",
+  "severity",
+  "context_section",
+  "guest_profile",
+  "reservation",
+  "stay",
+  "room",
+  "source_request",
+  "column_break_2",
+  "owner_user",
+  "department",
+  "response_due_at",
+  "resolution_due_at",
+  "detail_section",
+  "complaint_details",
+  "desired_resolution",
+  "root_cause",
+  "resolution_section",
+  "resolution_summary",
+  "guest_satisfaction",
+  "legal_or_safety_risk"
+ ],
+ "fields": [
+  {
+   "default": "RZ-CMP-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "RZ-CMP-.YYYY.-.#####"
+  },
+  {
+   "fieldname": "resort_property",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Resort Property",
+   "options": "Resort Property",
+   "reqd": 1
+  },
+  {
+   "fieldname": "complaint_summary",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Complaint Summary",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Open",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "options": "Open\nAcknowledged\nInvestigating\nWaiting for Guest\nWaiting for Department\nRecovery Proposed\nRecovery Approved\nResolved\nReopened\nEscalated\nClosed",
+   "reqd": 1
+  },
+  {
+   "fieldname": "complaint_category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Category",
+   "options": "Room\nHousekeeping\nMaintenance\nF&B\nBilling\nStaff\nNoise\nSafety\nDelay\nEvent\nOther",
+   "reqd": 1
+  },
+  {
+   "default": "Medium",
+   "fieldname": "severity",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Severity",
+   "options": "Low\nMedium\nHigh\nCritical",
+   "reqd": 1
+  },
+  {
+   "fieldname": "context_section",
+   "fieldtype": "Section Break",
+   "label": "Context"
+  },
+  {
+   "fieldname": "guest_profile",
+   "fieldtype": "Link",
+   "label": "Guest Profile",
+   "options": "Guest Profile"
+  },
+  {
+   "fieldname": "reservation",
+   "fieldtype": "Link",
+   "label": "Reservation",
+   "options": "Reservation"
+  },
+  {
+   "fieldname": "stay",
+   "fieldtype": "Link",
+   "label": "Stay",
+   "options": "Stay"
+  },
+  {
+   "fieldname": "room",
+   "fieldtype": "Link",
+   "label": "Room",
+   "options": "Room"
+  },
+  {
+   "fieldname": "source_request",
+   "fieldtype": "Link",
+   "label": "Source Guest Request",
+   "options": "Guest Request"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "owner_user",
+   "fieldtype": "Link",
+   "label": "Owner",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Department",
+   "options": "Front Desk\nConcierge\nHousekeeping\nMaintenance\nF&B\nEvents\nBilling\nSecurity\nTransport\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "response_due_at",
+   "fieldtype": "Datetime",
+   "label": "Response Due At"
+  },
+  {
+   "fieldname": "resolution_due_at",
+   "fieldtype": "Datetime",
+   "label": "Resolution Due At"
+  },
+  {
+   "fieldname": "detail_section",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "complaint_details",
+   "fieldtype": "Text",
+   "label": "Complaint Details",
+   "reqd": 1
+  },
+  {
+   "fieldname": "desired_resolution",
+   "fieldtype": "Text",
+   "label": "Desired Resolution"
+  },
+  {
+   "fieldname": "root_cause",
+   "fieldtype": "Select",
+   "label": "Root Cause",
+   "options": "\nProcess Failure\nEquipment Failure\nStaff Error\nThird-Party Vendor\nGuest Expectation\nForce Majeure\nOther"
+  },
+  {
+   "fieldname": "resolution_section",
+   "fieldtype": "Section Break",
+   "label": "Resolution"
+  },
+  {
+   "fieldname": "resolution_summary",
+   "fieldtype": "Text",
+   "label": "Resolution Summary"
+  },
+  {
+   "fieldname": "guest_satisfaction",
+   "fieldtype": "Select",
+   "label": "Guest Satisfaction",
+   "options": "\nSatisfied\nNeutral\nNot Satisfied\nUnknown"
+  },
+  {
+   "default": "0",
+   "fieldname": "legal_or_safety_risk",
+   "fieldtype": "Check",
+   "label": "Legal or Safety Risk"
+  }
+ ],
+ "modified": "2026-07-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "The Reezort",
+ "name": "Guest Complaint",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Resort Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Front Desk",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Concierge",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Housekeeping"
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

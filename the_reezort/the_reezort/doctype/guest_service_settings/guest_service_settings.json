@@ -1,0 +1,42 @@
+{
+ "actions": [],
+ "autoname": "field:resort_property",
+ "creation": "2026-07-12 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "resort_property",
+  "default_request_sla_minutes",
+  "default_complaint_sla_minutes",
+  "require_guest_verification_for_close",
+  "allow_guest_portal_requests",
+  "auto_generate_vip_preparation",
+  "default_recovery_approval_role"
+ ],
+ "fields": [
+  {"fieldname": "resort_property", "fieldtype": "Link", "label": "Resort Property", "options": "Resort Property", "reqd": 1, "unique": 1, "in_list_view": 1},
+  {"fieldname": "default_request_sla_minutes", "fieldtype": "Int", "label": "Default Request SLA (minutes)", "reqd": 1, "default": "60"},
+  {"fieldname": "default_complaint_sla_minutes", "fieldtype": "Int", "label": "Default Complaint SLA (minutes)", "reqd": 1, "default": "120"},
+  {"fieldname": "require_guest_verification_for_close", "fieldtype": "Check", "label": "Require Guest Verification to Close", "default": "0"},
+  {"fieldname": "allow_guest_portal_requests", "fieldtype": "Check", "label": "Allow Guest Portal Requests", "default": "0"},
+  {"fieldname": "auto_generate_vip_preparation", "fieldtype": "Check", "label": "Auto-Generate VIP Preparation Tasks", "default": "0"},
+  {"fieldname": "default_recovery_approval_role", "fieldtype": "Link", "label": "Default Recovery Approval Role", "options": "Role"}
+ ],
+ "links": [],
+ "modified": "2026-07-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Guest Service Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Resort Manager", "read": 1, "write": 1, "create": 1, "report": 1},
+  {"role": "Front Desk", "read": 1},
+  {"role": "Concierge", "read": 1},
+  {"role": "Housekeeping", "read": 1},
+  {"role": "Accounts Manager", "read": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

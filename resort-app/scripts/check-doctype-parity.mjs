@@ -80,6 +80,21 @@ const CONTRACTS = [
 	// spaces-api.ts ↔ Spa Room / Activity Area
 	{ file: "spaces-api.ts", type: "OperatingStatus", doctype: "spa_room", field: "operating_status" },
 	{ file: "spaces-api.ts", type: "ActivityAreaType", doctype: "activity_area", field: "area_type" },
+	// guest-services-api.ts ↔ Guest Request / Guest Complaint / Service Recovery Action / Service Handoff
+	{ file: "guest-services-api.ts", type: "GuestRequestStatus", doctype: "guest_request", field: "status" },
+	{ file: "guest-services-api.ts", type: "GuestRequestPriority", doctype: "guest_request", field: "priority" },
+	{ file: "guest-services-api.ts", type: "GuestRequestSource", doctype: "guest_request", field: "source" },
+	{ file: "guest-services-api.ts", type: "ServiceDepartment", doctype: "guest_request", field: "department" },
+	{ file: "guest-services-api.ts", type: "PrivacyLevel", doctype: "guest_request", field: "privacy_level" },
+	{ file: "guest-services-api.ts", type: "RequestSatisfaction", doctype: "guest_request", field: "guest_satisfaction" },
+	{ file: "guest-services-api.ts", type: "ComplaintStatus", doctype: "guest_complaint", field: "status" },
+	{ file: "guest-services-api.ts", type: "ComplaintCategory", doctype: "guest_complaint", field: "complaint_category" },
+	{ file: "guest-services-api.ts", type: "ComplaintSeverity", doctype: "guest_complaint", field: "severity" },
+	{ file: "guest-services-api.ts", type: "ComplaintSatisfaction", doctype: "guest_complaint", field: "guest_satisfaction" },
+	{ file: "guest-services-api.ts", type: "RecoveryType", doctype: "service_recovery_action", field: "recovery_type" },
+	{ file: "guest-services-api.ts", type: "RecoveryStatus", doctype: "service_recovery_action", field: "status" },
+	{ file: "guest-services-api.ts", type: "HandoffTargetModule", doctype: "service_handoff", field: "target_module" },
+	{ file: "guest-services-api.ts", type: "HandoffStatus", doctype: "service_handoff", field: "status" },
 ];
 
 function doctypeOptions(doctype, field) {

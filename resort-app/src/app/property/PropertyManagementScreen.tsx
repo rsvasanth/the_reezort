@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import PropertySetupScreen from "@/app/setup/PropertySetupScreen";
 import { PricingTab } from "@/app/property/PricingTab";
 import { RoomThumb } from "@/components/property/room-thumb";
+import { PhotoField } from "@/components/property/photo-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -247,6 +248,17 @@ export default function PropertyManagementScreen() {
 							</div>
 						) : null}
 					</div>
+
+					{tree ? (
+						<div className="mt-3">
+							<Label className="mb-1.5 block text-xs text-muted-foreground">Property photo</Label>
+							<PhotoField
+								image={tree.property_image}
+								label="Resort property"
+								onUploaded={(fileUrl) => mutate(() => updateRecord("Resort Property", tree.resort_property, { image: fileUrl }), "Property photo updated")}
+							/>
+						</div>
+					) : null}
 
 					{tree ? (
 						<Tabs defaultValue="rooms">
@@ -524,9 +536,16 @@ function RoomTypeRow({ t, onMutate }: { t: TreeRoomType; onMutate: MutateFn }) {
 	const dirty = rate !== String(t.nightly_rate ?? "");
 	return (
 		<div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-			<span className={t.is_active ? "" : "text-muted-foreground line-through"}>
-				{t.room_type_name} <span className="text-muted-foreground">({t.room_type_code}, max {t.max_occupancy})</span>
-			</span>
+			<div className="flex items-center gap-3">
+				<PhotoField
+					image={t.image}
+					label={t.room_type_name}
+					onUploaded={(fileUrl) => onMutate(() => updateRecord("Room Type", t.name, { image: fileUrl }), "Photo updated")}
+				/>
+				<span className={t.is_active ? "" : "text-muted-foreground line-through"}>
+					{t.room_type_name} <span className="text-muted-foreground">({t.room_type_code}, max {t.max_occupancy})</span>
+				</span>
+			</div>
 			<div className="flex items-center gap-1">
 				<span className="text-xs text-muted-foreground">₹/night</span>
 				<Input

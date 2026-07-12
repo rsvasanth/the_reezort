@@ -33,6 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { EngagementTimeline } from "@/components/property/engagement-timeline";
 import { RoomInsightsPanel } from "@/components/property/room-insights";
+import { PhotoField } from "@/components/property/photo-field";
 import { ReportIssueSheet } from "@/components/maintenance/report-issue-sheet";
 import { getRoomTimeline, type TimelineEvent } from "@/lib/timeline-api";
 import { listRoomStatusEvents, type RoomStatusEvent } from "@/lib/room-status-events-api";
@@ -319,6 +320,17 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 						<RoomInsightsPanel room={room.name} />
 						<Card>
 							<CardContent className="grid gap-4 py-4 sm:grid-cols-2">
+								<div className="sm:col-span-2">
+									<Label className="mb-1.5 block text-xs text-muted-foreground">Room photo</Label>
+									<PhotoField
+										image={room.image}
+										label={room.room_number}
+										onUploaded={async (fileUrl) => {
+											await updateRecord("Room", room.name, { image: fileUrl });
+											await load();
+										}}
+									/>
+								</div>
 								<Labeled label="Room name">
 									<Input
 										value={form.room_name}

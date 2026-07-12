@@ -77,6 +77,7 @@ export type TreeRoomType = {
 	max_occupancy: number;
 	is_active: number;
 	nightly_rate?: number;
+	image?: string | null;
 };
 export type TreeRoom = {
 	name: string;
@@ -97,6 +98,7 @@ export type TreeRoom = {
 
 export type PropertyTree = {
 	resort_property: string;
+	property_image?: string | null;
 	buildings: TreeBuilding[];
 	floors: TreeFloor[];
 	room_types: TreeRoomType[];
@@ -199,6 +201,35 @@ function readCsrfToken(): string {
 	const token = w.csrf_token ?? w.frappe?.csrf_token ?? "";
 	// The www page renders the literal string "None" when no token is set.
 	return token === "None" ? "" : token;
+}
+
+/**
+ * Upload an image to Frappe's File store and return its public file_url.
+ * Reuses the standard /api/method/upload_file endpoint (same mechanism as
+ * check-in condition photos). The returned URL is what the `image` field on
+ * Room / Room Type / Resort Property stores.
+ */
+export async function uploadImage(file: File): Promise<string> {
+	const form = new FormData();
+	form.append("file", file, file.name);
+	form.append("is_private", "0");
+	form.append("folder", "Home");
+	const response = await fetch(`${BASE}/upload_file`, {
+		method: "POST",
+		credentials: "include",
+		headers: { Accept: "application/json", "X-Frappe-CSRF-Token": readCsrfToken() },
+		body: form,
+	});
+	const text = await response.text();
+	const parsed = text ? (safeJson(text) as { message?: { file_url?: string } }) : undefined;
+	if (!response.ok) {
+		throw new FolioApiError(`Image upload failed with ${response.status}`, { status: response.status });
+	}
+	const fileUrl = parsed?.message?.file_url;
+	if (!fileUrl) {
+		throw new FolioApiError("Image upload returned no file_url", { status: response.status });
+	}
+	return fileUrl;
 }
 
 function safeJson(text: string): unknown {

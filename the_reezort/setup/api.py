@@ -196,7 +196,7 @@ def get_property_tree(resort_property):
 	room_types = frappe.get_all(
 		"Room Type",
 		filters={"resort_property": resort_property},
-		fields=["name", "room_type_name", "room_type_code", "max_occupancy", "is_active", "erpnext_item"],
+		fields=["name", "room_type_name", "room_type_code", "max_occupancy", "is_active", "erpnext_item", "image"],
 		order_by="room_type_name asc",
 	)
 	for rt in room_types:
@@ -221,6 +221,7 @@ def get_property_tree(resort_property):
 	return _envelope(
 		{
 			"resort_property": resort_property,
+			"property_image": frappe.db.get_value("Resort Property", resort_property, "image"),
 			"buildings": buildings,
 			"floors": floors,
 			"room_types": room_types,

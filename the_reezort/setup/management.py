@@ -46,16 +46,18 @@ _EDITABLE = {
 	"Resort Property": [
 		"property_name", "company", "default_currency", "timezone", "address",
 		"phone", "email", "tax_region", "default_check_in_time", "default_check_out_time",
+		"image",
 	],
 	"Resort Building": ["building_name", "operational_zone", "display_order"],
 	"Resort Floor": ["floor_label", "housekeeping_zone", "maintenance_zone", "display_order"],
 	"Room Type": [
 		"room_type_name", "description", "standard_adults", "standard_children",
-		"max_occupancy", "bed_configuration",
+		"max_occupancy", "bed_configuration", "image",
 	],
 	"Room": [
 		"room_name", "room_type", "smoking_policy", "is_accessible", "display_order",
 		"occupancy_status", "housekeeping_status", "maintenance_status", "sellable_status",
+		"image",
 	],
 	"Room Amenity": ["amenity_name", "amenity_type", "is_guest_visible", "icon"],
 	"Service Location": [

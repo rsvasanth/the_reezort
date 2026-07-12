@@ -65,7 +65,11 @@ OPEN_STATES = {"Reported", "Assigned", "In Progress", "Waiting for Parts", "On H
 TERMINAL_STATES = {"Released", "Closed", "Duplicate"}
 
 CATEGORIES = ["HVAC", "Plumbing", "Electrical", "Structural", "IT", "Housekeeping Equipment", "Landscape", "Other"]
-PRIORITIES = ["Low", "Normal", "High", "Urgent"]
+# Must stay in sync with maintenance_ticket.json's priority Select options —
+# the doctype was extended with the impact-based priorities but this validation
+# constant was not, so tickets with them 400'd (parity guard only checks the TS
+# union vs the doctype, not this Python constant).
+PRIORITIES = ["Low", "Normal", "High", "Urgent", "Guest Impacting", "Safety Critical", "Revenue Blocking"]
 
 DEDUPE_WINDOW_HOURS = 2
 

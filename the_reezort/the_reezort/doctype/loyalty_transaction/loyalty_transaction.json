@@ -1,0 +1,52 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-07-12 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "loyalty_membership",
+  "transaction_type",
+  "status",
+  "points",
+  "value_amount",
+  "source_doctype",
+  "source_name",
+  "guest_folio",
+  "erpnext_sales_invoice",
+  "approval_request",
+  "reason"
+ ],
+ "fields": [
+  {"fieldname": "naming_series", "fieldtype": "Select", "label": "Series", "options": "RZ-LTX-.YYYY.-.#####", "default": "RZ-LTX-.YYYY.-.#####", "reqd": 1},
+  {"fieldname": "loyalty_membership", "fieldtype": "Link", "label": "Loyalty Membership", "options": "Loyalty Membership", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "transaction_type", "fieldtype": "Select", "label": "Transaction Type", "options": "Accrual\nRedemption\nAdjustment\nExpiry\nReversal", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "status", "fieldtype": "Select", "label": "Status", "options": "Draft\nApproved\nPosted\nReversed\nCancelled", "reqd": 1, "default": "Draft", "in_list_view": 1},
+  {"fieldname": "points", "fieldtype": "Float", "label": "Points", "default": "0"},
+  {"fieldname": "value_amount", "fieldtype": "Currency", "label": "Value Amount", "default": "0"},
+  {"fieldname": "source_doctype", "fieldtype": "Data", "label": "Source DocType"},
+  {"fieldname": "source_name", "fieldtype": "Dynamic Link", "label": "Source Name", "options": "source_doctype"},
+  {"fieldname": "guest_folio", "fieldtype": "Link", "label": "Guest Folio", "options": "Guest Folio"},
+  {"fieldname": "erpnext_sales_invoice", "fieldtype": "Link", "label": "ERPNext Sales Invoice", "options": "Sales Invoice"},
+  {"fieldname": "approval_request", "fieldtype": "Link", "label": "Approval Request", "options": "Approval Request"},
+  {"fieldname": "reason", "fieldtype": "Small Text", "label": "Reason"}
+ ],
+ "links": [],
+ "modified": "2026-07-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Loyalty Transaction",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Resort Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Front Desk", "read": 1, "create": 1, "report": 1},
+  {"role": "Concierge", "read": 1, "create": 1, "report": 1},
+  {"role": "Reservation Agent", "read": 1},
+  {"role": "Accounts Manager", "read": 1, "report": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

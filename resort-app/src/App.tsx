@@ -43,6 +43,8 @@ import EngineeringBoard from "@/app/maintenance/EngineeringBoard";
 import RevenueDashboard from "@/app/analytics/RevenueDashboard";
 import OtaInbox from "@/app/integrations/OtaInbox";
 import GuestRelations from "@/app/guest-services/GuestRelations";
+import GuestList from "@/app/crm/GuestList";
+import Guest360 from "@/app/crm/Guest360";
 import { parseHashRoute, useHashRoute } from "@/hooks/use-hash-route";
 import { canAccessDesk, defaultLandingRoute, useUserProfile } from "@/hooks/use-user-profile";
 import { useVersionCheck } from "@/hooks/use-version-check";
@@ -363,6 +365,22 @@ function AuthGate() {
 		return (
 			<AppShell>
 				<GuestRelations />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "crm") {
+		return (
+			<AppShell>
+				<GuestList />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "guest" && route.id) {
+		return (
+			<AppShell>
+				<Guest360 guestProfile={route.id} />
 			</AppShell>
 		);
 	}

@@ -1,0 +1,28 @@
+{
+ "actions": [],
+ "creation": "2026-07-12 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "istable": 1,
+ "field_order": [
+  "question_text",
+  "response_type",
+  "is_required",
+  "sort_order"
+ ],
+ "fields": [
+  {"fieldname": "question_text", "fieldtype": "Data", "label": "Question Text", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "response_type", "fieldtype": "Select", "label": "Response Type", "options": "Text\nRating\nNPS\nYes/No\nMultiple Choice\nScale", "reqd": 1, "default": "Text", "in_list_view": 1},
+  {"fieldname": "is_required", "fieldtype": "Check", "label": "Required", "default": 0, "in_list_view": 1},
+  {"fieldname": "sort_order", "fieldtype": "Int", "label": "Sort Order", "default": 0, "in_list_view": 1}
+ ],
+ "links": [],
+ "modified": "2026-07-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Feedback Question",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "sort_order",
+ "sort_order": "ASC"
+}

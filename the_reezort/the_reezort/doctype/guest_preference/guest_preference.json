@@ -1,0 +1,47 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-07-12 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "guest_profile",
+  "preference_type",
+  "preference_value",
+  "sensitivity",
+  "source",
+  "verified",
+  "is_active",
+  "notes"
+ ],
+ "fields": [
+  {"default": "RZ-GPF-.YYYY.-.#####", "fieldname": "naming_series", "fieldtype": "Select", "label": "Series", "options": "RZ-GPF-.YYYY.-.#####", "reqd": 1},
+  {"fieldname": "guest_profile", "fieldtype": "Link", "in_list_view": 1, "label": "Guest Profile", "options": "Guest Profile", "reqd": 1},
+  {"fieldname": "preference_type", "fieldtype": "Select", "in_list_view": 1, "label": "Preference Type", "options": "Room\nPillow\nFood\nAllergy\nAccessibility\nCommunication\nOccasion\nOther", "reqd": 1},
+  {"fieldname": "preference_value", "fieldtype": "Data", "in_list_view": 1, "label": "Preference Value", "reqd": 1},
+  {"default": "Normal", "fieldname": "sensitivity", "fieldtype": "Select", "label": "Sensitivity", "options": "Normal\nAllergy\nMedical\nAccessibility\nPrivate"},
+  {"fieldname": "source", "fieldtype": "Select", "label": "Source", "options": "\nGuest\nStaff\nStay\nFeedback\nImport"},
+  {"default": "0", "fieldname": "verified", "fieldtype": "Check", "label": "Verified"},
+  {"default": "1", "fieldname": "is_active", "fieldtype": "Check", "in_list_view": 1, "label": "Active"},
+  {"fieldname": "notes", "fieldtype": "Small Text", "label": "Notes"}
+ ],
+ "links": [],
+ "modified": "2026-07-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Guest Preference",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "read": 1, "write": 1, "role": "Resort Manager"},
+  {"create": 1, "read": 1, "write": 1, "role": "Front Desk"},
+  {"create": 1, "read": 1, "write": 1, "role": "Concierge"},
+  {"read": 1, "role": "Reservation Agent"},
+  {"read": 1, "role": "Accounts Manager"}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

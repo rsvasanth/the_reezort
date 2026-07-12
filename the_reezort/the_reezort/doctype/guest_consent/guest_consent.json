@@ -1,0 +1,49 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-07-12 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "guest_profile",
+  "purpose",
+  "channel",
+  "status",
+  "source",
+  "captured_at",
+  "expires_at",
+  "withdrawn_at",
+  "evidence_reference"
+ ],
+ "fields": [
+  {"default": "RZ-GCN-.YYYY.-.#####", "fieldname": "naming_series", "fieldtype": "Select", "label": "Series", "options": "RZ-GCN-.YYYY.-.#####", "reqd": 1},
+  {"fieldname": "guest_profile", "fieldtype": "Link", "in_list_view": 1, "label": "Guest Profile", "options": "Guest Profile", "reqd": 1},
+  {"fieldname": "purpose", "fieldtype": "Select", "in_list_view": 1, "label": "Purpose", "options": "Marketing\nFeedback\nProfiling\nThird Party Sharing\nLoyalty\nTransactional", "reqd": 1},
+  {"fieldname": "channel", "fieldtype": "Select", "in_list_view": 1, "label": "Channel", "options": "Email\nSMS\nWhatsApp\nPhone\nPostal\nApp\nAny", "reqd": 1},
+  {"default": "Unknown", "fieldname": "status", "fieldtype": "Select", "in_list_view": 1, "label": "Status", "options": "Granted\nWithdrawn\nExpired\nUnknown", "reqd": 1},
+  {"fieldname": "source", "fieldtype": "Select", "label": "Source", "options": "\nWebsite\nReservation\nCheck In\nStaff\nImport\nCampaign\nGuest Portal"},
+  {"fieldname": "captured_at", "fieldtype": "Datetime", "label": "Captured At", "reqd": 1},
+  {"fieldname": "expires_at", "fieldtype": "Datetime", "label": "Expires At"},
+  {"fieldname": "withdrawn_at", "fieldtype": "Datetime", "label": "Withdrawn At"},
+  {"fieldname": "evidence_reference", "fieldtype": "Data", "label": "Evidence Reference"}
+ ],
+ "links": [],
+ "modified": "2026-07-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Guest Consent",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "read": 1, "write": 1, "role": "Resort Manager"},
+  {"create": 1, "read": 1, "write": 1, "role": "Front Desk"},
+  {"create": 1, "read": 1, "write": 1, "role": "Concierge"},
+  {"read": 1, "role": "Reservation Agent"},
+  {"read": 1, "role": "Accounts Manager"}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

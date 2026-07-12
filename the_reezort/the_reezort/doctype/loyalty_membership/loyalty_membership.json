@@ -1,0 +1,48 @@
+{
+ "actions": [],
+ "autoname": "naming_series:",
+ "creation": "2026-07-12 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "guest_profile",
+  "loyalty_program",
+  "membership_number",
+  "status",
+  "tier",
+  "points_balance",
+  "value_balance",
+  "joined_on",
+  "expires_on"
+ ],
+ "fields": [
+  {"fieldname": "naming_series", "fieldtype": "Select", "label": "Series", "options": "RZ-LMB-.YYYY.-.#####", "default": "RZ-LMB-.YYYY.-.#####", "reqd": 1},
+  {"fieldname": "guest_profile", "fieldtype": "Link", "label": "Guest Profile", "options": "Guest Profile", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "loyalty_program", "fieldtype": "Link", "label": "Loyalty Program", "options": "Resort Loyalty Program", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "membership_number", "fieldtype": "Data", "label": "Membership Number", "unique": 1, "in_list_view": 1},
+  {"fieldname": "status", "fieldtype": "Select", "label": "Status", "options": "Active\nSuspended\nClosed\nExpired", "reqd": 1, "default": "Active", "in_list_view": 1},
+  {"fieldname": "tier", "fieldtype": "Data", "label": "Tier"},
+  {"fieldname": "points_balance", "fieldtype": "Float", "label": "Points Balance", "default": "0", "read_only": 1},
+  {"fieldname": "value_balance", "fieldtype": "Currency", "label": "Value Balance", "default": "0", "read_only": 1},
+  {"fieldname": "joined_on", "fieldtype": "Date", "label": "Joined On", "reqd": 1},
+  {"fieldname": "expires_on", "fieldtype": "Date", "label": "Expires On"}
+ ],
+ "links": [],
+ "modified": "2026-07-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Loyalty Membership",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Resort Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Front Desk", "read": 1, "write": 1, "create": 1, "report": 1},
+  {"role": "Concierge", "read": 1, "write": 1, "create": 1, "report": 1},
+  {"role": "Reservation Agent", "read": 1},
+  {"role": "Accounts Manager", "read": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

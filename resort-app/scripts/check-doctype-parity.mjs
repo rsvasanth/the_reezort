@@ -95,6 +95,26 @@ const CONTRACTS = [
 	{ file: "guest-services-api.ts", type: "RecoveryStatus", doctype: "service_recovery_action", field: "status" },
 	{ file: "guest-services-api.ts", type: "HandoffTargetModule", doctype: "service_handoff", field: "target_module" },
 	{ file: "guest-services-api.ts", type: "HandoffStatus", doctype: "service_handoff", field: "status" },
+	// crm-api.ts ↔ Guest Profile / Guest Preference / Guest Consent /
+	//              Resort Loyalty Program / Loyalty Membership / Loyalty Transaction / Guest Feedback
+	{ file: "crm-api.ts", type: "GuestProfileStatus", doctype: "guest_profile", field: "status" },
+	{ file: "crm-api.ts", type: "VipLevel", doctype: "guest_profile", field: "vip_level" },
+	{ file: "crm-api.ts", type: "PreferenceType", doctype: "guest_preference", field: "preference_type" },
+	{ file: "crm-api.ts", type: "PreferenceSensitivity", doctype: "guest_preference", field: "sensitivity" },
+	{ file: "crm-api.ts", type: "PreferenceSource", doctype: "guest_preference", field: "source" },
+	{ file: "crm-api.ts", type: "ConsentPurpose", doctype: "guest_consent", field: "purpose" },
+	{ file: "crm-api.ts", type: "ConsentChannel", doctype: "guest_consent", field: "channel" },
+	{ file: "crm-api.ts", type: "ConsentStatus", doctype: "guest_consent", field: "status" },
+	{ file: "crm-api.ts", type: "ConsentSource", doctype: "guest_consent", field: "source" },
+	{ file: "crm-api.ts", type: "LoyaltyProgramStatus", doctype: "resort_loyalty_program", field: "status" },
+	{ file: "crm-api.ts", type: "AccrualBasis", doctype: "resort_loyalty_program", field: "accrual_basis" },
+	{ file: "crm-api.ts", type: "RedemptionBasis", doctype: "resort_loyalty_program", field: "redemption_basis" },
+	{ file: "crm-api.ts", type: "MembershipStatus", doctype: "loyalty_membership", field: "status" },
+	{ file: "crm-api.ts", type: "TransactionType", doctype: "loyalty_transaction", field: "transaction_type" },
+	{ file: "crm-api.ts", type: "TransactionStatus", doctype: "loyalty_transaction", field: "status" },
+	{ file: "crm-api.ts", type: "FeedbackContext", doctype: "guest_feedback", field: "context" },
+	{ file: "crm-api.ts", type: "FeedbackStatus", doctype: "guest_feedback", field: "status" },
+	{ file: "crm-api.ts", type: "FeedbackSentiment", doctype: "guest_feedback", field: "sentiment" },
 ];
 
 function doctypeOptions(doctype, field) {

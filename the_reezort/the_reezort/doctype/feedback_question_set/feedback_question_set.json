@@ -1,0 +1,36 @@
+{
+ "actions": [],
+ "autoname": "field:question_set_name",
+ "creation": "2026-07-12 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "question_set_name",
+  "context",
+  "is_active",
+  "questions"
+ ],
+ "fields": [
+  {"fieldname": "question_set_name", "fieldtype": "Data", "label": "Question Set Name", "reqd": 1, "in_list_view": 1, "unique": 1},
+  {"fieldname": "context", "fieldtype": "Select", "label": "Context", "options": "Stay\nPost Stay\nF&B\nEvent\nGuest Service\nMaintenance\nGeneral", "reqd": 1, "default": "General", "in_list_view": 1},
+  {"fieldname": "is_active", "fieldtype": "Check", "label": "Active", "default": 1, "in_list_view": 1},
+  {"fieldname": "questions", "fieldtype": "Table", "label": "Questions", "options": "Feedback Question"}
+ ],
+ "links": [],
+ "modified": "2026-07-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Feedback Question Set",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Resort Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1},
+  {"role": "Front Desk", "read": 1},
+  {"role": "Concierge", "read": 1},
+  {"role": "Reservation Agent", "read": 1},
+  {"role": "Accounts Manager", "read": 1}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

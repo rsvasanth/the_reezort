@@ -1,0 +1,40 @@
+{
+ "actions": [],
+ "allow_import": 0,
+ "autoname": "prompt",
+ "creation": "2026-07-12 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "auto_create_guest_profile_from_reservation",
+  "require_approval_for_profile_merge",
+  "require_consent_for_marketing",
+  "col1",
+  "loyalty_enabled",
+  "default_loyalty_program",
+  "default_feedback_follow_up_score"
+ ],
+ "fields": [
+  {"default": "1", "fieldname": "auto_create_guest_profile_from_reservation", "fieldtype": "Check", "label": "Auto-Create Guest Profile from Reservation"},
+  {"default": "1", "fieldname": "require_approval_for_profile_merge", "fieldtype": "Check", "label": "Require Approval for Profile Merge"},
+  {"default": "1", "fieldname": "require_consent_for_marketing", "fieldtype": "Check", "label": "Require Consent for Marketing"},
+  {"fieldname": "col1", "fieldtype": "Column Break"},
+  {"default": "0", "fieldname": "loyalty_enabled", "fieldtype": "Check", "label": "Loyalty Enabled"},
+  {"fieldname": "default_loyalty_program", "fieldtype": "Link", "label": "Default Loyalty Program", "options": "Loyalty Program"},
+  {"default": "7", "fieldname": "default_feedback_follow_up_score", "fieldtype": "Int", "label": "Default Feedback Follow-Up Score (NPS threshold)"}
+ ],
+ "links": [],
+ "modified": "2026-07-12 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "CRM Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"read": 1, "write": 1, "role": "Resort Manager"}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

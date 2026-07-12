@@ -33,6 +33,7 @@ import SalesCalendarTab from "./SalesCalendarTab";
 import DishPerformanceTab from "./DishPerformanceTab";
 import WaiterShiftsTab from "./WaiterShiftsTab";
 import RestaurantAuditTab from "./RestaurantAuditTab";
+import MenuManagementTab from "./MenuManagementTab";
 
 // Radix Select can't hold an empty-string value, so "All outlets" uses a
 // sentinel that maps back to undefined (= every outlet) at the API boundary.
@@ -101,6 +102,7 @@ export default function RestaurantManagementScreen() {
 					<TabsTrigger value="dishes">Dishes</TabsTrigger>
 					<TabsTrigger value="shifts">Shifts</TabsTrigger>
 					<TabsTrigger value="audit">Audit</TabsTrigger>
+					<TabsTrigger value="menu">Menu</TabsTrigger>
 				</TabsList>
 				<TabsContent value="sales" className="mt-4">
 					<SalesAnalyticsTab outlet={outlet} />
@@ -116,6 +118,9 @@ export default function RestaurantManagementScreen() {
 				</TabsContent>
 				<TabsContent value="audit" className="mt-4">
 					<RestaurantAuditTab />
+				</TabsContent>
+				<TabsContent value="menu" className="mt-4">
+					<MenuManagementTab outlet={outlet} />
 				</TabsContent>
 			</Tabs>
 		</main>

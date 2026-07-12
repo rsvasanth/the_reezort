@@ -95,6 +95,9 @@ const CONTRACTS = [
 	{ file: "guest-services-api.ts", type: "RecoveryStatus", doctype: "service_recovery_action", field: "status" },
 	{ file: "guest-services-api.ts", type: "HandoffTargetModule", doctype: "service_handoff", field: "target_module" },
 	{ file: "guest-services-api.ts", type: "HandoffStatus", doctype: "service_handoff", field: "status" },
+	// menu-management-api.ts ↔ Menu Item
+	{ file: "menu-management-api.ts", type: "MenuCategory", doctype: "menu_item", field: "category" },
+	{ file: "menu-management-api.ts", type: "MenuVegFlag", doctype: "menu_item", field: "veg_flag" },
 	// crm-api.ts ↔ Guest Profile / Guest Preference / Guest Consent /
 	//              Resort Loyalty Program / Loyalty Membership / Loyalty Transaction / Guest Feedback
 	{ file: "crm-api.ts", type: "GuestProfileStatus", doctype: "guest_profile", field: "status" },

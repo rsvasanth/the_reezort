@@ -65,7 +65,8 @@ export type ParsedRoute =
 	| { kind: "guest-relations" }
 	| { kind: "crm" }
 	| { kind: "guest"; id: string | null }
-	| { kind: "condition"; stay: string | null };
+	| { kind: "condition"; stay: string | null }
+	| { kind: "direct-bill" };
 
 export function parseHashRoute(hash: string): ParsedRoute {
 	const path = hash.startsWith("#") ? hash.slice(1) : hash;
@@ -90,6 +91,7 @@ export function parseHashRoute(hash: string): ParsedRoute {
 	if (path === "/servicedesk") return { kind: "servicedesk" };
 
 	if (path === "/billing") return { kind: "billing" };
+	if (path === "/direct-bill") return { kind: "direct-bill" };
 
 	if (path === "/frontdesk") return { kind: "frontdesk" };
 

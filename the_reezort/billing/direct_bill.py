@@ -226,3 +226,79 @@ def create_direct_bill(payload):
 		direct_bill.db_set("payment_entry", result["results"]["payment_entries"][0], update_modified=False)
 
 	return _posted_response(direct_bill, result, result["reused"])
+
+
+@frappe.whitelist()
+def list_direct_bills(resort_property=None, status=None, customer=None, limit=50):
+	"""List direct bills for the SPA billing screen."""
+	_require_direct_bill_permission()
+
+	filters = {}
+	if resort_property:
+		filters["resort_property"] = resort_property
+	if status:
+		filters["direct_bill_status"] = status
+	if customer:
+		filters["customer"] = customer
+
+	bills = frappe.get_all(
+		DIRECT_BILL,
+		filters=filters,
+		fields=[
+			"name", "resort_property", "customer", "source_department",
+			"direct_bill_status", "currency", "total_amount",
+			"payment_mode", "credit_allowed", "sales_invoice",
+			"payment_entry", "creation",
+		],
+		order_by="creation desc",
+		limit=int(limit),
+	)
+
+	for b in bills:
+		b["creation"] = str(b["creation"]) if b["creation"] else None
+		b["total_amount"] = flt(b["total_amount"])
+		customer_name = frappe.db.get_value("Customer", b["customer"], "customer_name")
+		b["customer_name"] = customer_name or b["customer"]
+
+	return _envelope({"bills": bills})
+
+
+@frappe.whitelist()
+def get_direct_bill_detail(direct_bill):
+	"""Return a direct bill with its linked invoice items for the SPA."""
+	_require_direct_bill_permission()
+
+	doc = frappe.get_doc(DIRECT_BILL, direct_bill)
+	result = {
+		"name": doc.name,
+		"resort_property": doc.resort_property,
+		"company": doc.company,
+		"customer": doc.customer,
+		"customer_name": frappe.db.get_value("Customer", doc.customer, "customer_name") or doc.customer,
+		"source_department": doc.source_department,
+		"direct_bill_status": doc.direct_bill_status,
+		"currency": doc.currency,
+		"total_amount": flt(doc.total_amount),
+		"payment_mode": doc.payment_mode,
+		"credit_allowed": bool(doc.credit_allowed),
+		"sales_invoice": doc.sales_invoice,
+		"payment_entry": doc.payment_entry,
+		"creation": str(doc.creation) if doc.creation else None,
+	}
+
+	items = []
+	if doc.sales_invoice:
+		si_items = frappe.get_all(
+			"Sales Invoice Item",
+			filters={"parent": doc.sales_invoice},
+			fields=["item_code", "item_name", "description", "qty", "rate", "amount"],
+			order_by="idx asc",
+		)
+		for row in si_items:
+			row["qty"] = flt(row["qty"])
+			row["rate"] = flt(row["rate"])
+			row["amount"] = flt(row["amount"])
+		items = si_items
+
+	result["items"] = items
+	return _envelope(result)

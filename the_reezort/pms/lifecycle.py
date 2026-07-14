@@ -229,7 +229,119 @@ def mark_no_show(reservation, reason, fee_applicable=0, fee_amount=0):
     res.status = "No Show"
     res.save(ignore_permissions=True)
 
-    return {"no_show_record": doc.name, "reused": False, "room_released": allocated_room}
+    fee_posted = None
+    if doc.fee_applicable and flt(doc.fee_amount) > 0:
+        fee_posted = _post_no_show_fee(doc, res)
+
+    return {
+        "no_show_record": doc.name,
+        "reused": False,
+        "room_released": allocated_room,
+        "fee_posted": fee_posted,
+    }
+
+
+def _resolve_customer_for_reservation(res):
+    """Find or create an ERPNext Customer for the reservation's guest."""
+    customer = res.get("bill_to_customer") or res.get("erpnext_customer")
+    if customer:
+        return customer
+
+    profile = res.get("staying_guest_profile")
+    if profile:
+        customer = frappe.db.get_value("Guest Profile", profile, "erpnext_customer")
+        if customer:
+            return customer
+
+    return None
+
+
+def _post_no_show_fee(no_show_doc, res):
+    """Post a no-show fee as a Direct Bill → Sales Invoice."""
+    from the_reezort.billing.direct_bill import create_direct_bill
+
+    customer = _resolve_customer_for_reservation(res)
+    if not customer:
+        no_show_doc.add_comment("Comment", "No-show fee not posted: no ERPNext Customer found for this reservation.")
+        return None
+
+    idempotency_key = f"no-show-fee:{no_show_doc.name}"
+    existing = frappe.db.get_value("Direct Bill", {"idempotency_key": idempotency_key}, "name")
+    if existing:
+        return existing
+
+    no_show_item = _no_show_fee_item()
+
+    payload = {
+        "resort_property": no_show_doc.resort_property,
+        "customer": customer,
+        "source_department": None,
+        "idempotency_key": idempotency_key,
+        "lines": [{
+            "item_code": no_show_item,
+            "description": f"No-show fee — {no_show_doc.guest_name} (Reservation {no_show_doc.reservation})",
+            "qty": 1,
+            "rate": flt(no_show_doc.fee_amount),
+        }],
+        "payment": {},
+        "credit_allowed": True,
+    }
+
+    try:
+        result = create_direct_bill(frappe._dict(payload))
+        direct_bill = result.get("data", {}).get("direct_bill") if isinstance(result, dict) else None
+        if direct_bill:
+            no_show_doc.db_set("fee_handed_to_folio", 1, update_modified=False)
+        return direct_bill
+    except Exception as e:
+        no_show_doc.add_comment("Comment", f"No-show fee posting failed: {e}")
+        return None
+
+
+def _no_show_fee_item():
+    """Return the ERPNext Item for no-show fees, creating it if missing."""
+    item_code = "No Show Fee"
+    if frappe.db.exists("Item", item_code):
+        return item_code
+
+    item = frappe.get_doc({
+        "doctype": "Item",
+        "item_code": item_code,
+        "item_name": "No Show Fee",
+        "item_group": frappe.db.get_single_value("Stock Settings", "item_group") or "Services",
+        "is_stock_item": 0,
+        "is_sales_item": 1,
+        "description": "Fee charged when a guest does not arrive for a confirmed reservation",
+    })
+    item.insert(ignore_permissions=True)
+    return item_code
+
+
+@frappe.whitelist()
+def post_no_show_fee(no_show_record, fee_amount=None):
+    """Post a no-show fee for a previously-marked no-show (when fee was decided later)."""
+    _require_permission("No Show Record", "write")
+    doc = frappe.get_doc("No Show Record", no_show_record)
+
+    if doc.no_show_status != "No Show":
+        frappe.throw(_("Cannot post fee — no-show has been reversed."))
+    if doc.fee_handed_to_folio:
+        frappe.throw(_("Fee has already been posted for this no-show."))
+
+    if fee_amount is not None:
+        doc.fee_amount = flt(fee_amount)
+        doc.fee_applicable = 1
+    if not doc.fee_applicable or flt(doc.fee_amount) <= 0:
+        frappe.throw(_("Fee amount must be greater than zero."))
+
+    doc.save(ignore_permissions=True)
+
+    res = frappe.get_doc("Reservation", doc.reservation)
+    direct_bill = _post_no_show_fee(doc, res)
+    if not direct_bill:
+        frappe.throw(_("Could not post no-show fee — no Customer found for reservation."))
+
+    return {"no_show_record": doc.name, "direct_bill": direct_bill, "fee_amount": flt(doc.fee_amount)}
 
 
 def _reservation_guest_name(res):

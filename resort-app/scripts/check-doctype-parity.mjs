@@ -124,6 +124,7 @@ const CONTRACTS = [
 	{ file: "crm-api.ts", type: "FeedbackContext", doctype: "guest_feedback", field: "context" },
 	{ file: "crm-api.ts", type: "FeedbackStatus", doctype: "guest_feedback", field: "status" },
 	{ file: "crm-api.ts", type: "FeedbackSentiment", doctype: "guest_feedback", field: "sentiment" },
+	{ file: "direct-bill-api.ts", type: "DirectBillStatus", doctype: "direct_bill", field: "direct_bill_status" },
 ];
 
 function doctypeOptions(doctype, field) {

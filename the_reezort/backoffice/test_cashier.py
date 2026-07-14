@@ -7,6 +7,7 @@ from frappe.utils import flt
 from the_reezort.backoffice.cashier import (
 	approve_cashier_close,
 	get_cashier_close,
+	get_cashier_close_context,
 	list_cashier_closes,
 	open_cashier_close,
 	submit_cashier_close,
@@ -117,3 +118,80 @@ class TestCashierClose(FrappeTestCase):
 		close = self._open()
 		names = [c["name"] for c in list_cashier_closes()["data"]["closes"]]
 		self.assertIn(close["name"], names)
+
+
+class TestFnBOutletScopedClose(FrappeTestCase):
+	"""An F&B cashier close reconciles only its own outlet's POS takings
+	(spec 006/008 wiring) — not company-wide payments."""
+
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		frappe.set_user("Administrator")
+		from the_reezort.fnb.api import seed_fnb_catalog
+		from the_reezort.fnb.table_seed import seed_restaurant_tables
+		from the_reezort.property.api import seed_demo_property
+		from the_reezort.setup.bootstrap import seed_erpnext_demo_masters
+
+		cls.company = frappe.db.get_single_value("Global Defaults", "default_company") or frappe.db.get_value(
+			"Company", {}, "name"
+		)
+		currency = frappe.db.get_value("Company", cls.company, "default_currency") or "INR"
+		seed_erpnext_demo_masters(cls.company, currency=currency)
+		seed = seed_demo_property(cls.company)
+		cls.resort_property = seed["property"]
+		seed_fnb_catalog(resort_property=cls.resort_property)
+		seed_restaurant_tables(resort_property=cls.resort_property)
+		cls.sigrest = frappe.db.get_value(
+			"FnB Outlet", {"resort_property": cls.resort_property, "outlet_code": "SIGREST"}, "name"
+		)
+		cls.poolbar = frappe.db.get_value(
+			"FnB Outlet", {"resort_property": cls.resort_property, "outlet_code": "POOLBAR"}, "name"
+		)
+
+	def _settle_walk_in(self, outlet):
+		from the_reezort.fnb.restaurant import add_items, close_walk_in, open_walk_in_order, send_to_kitchen
+
+		table = frappe.db.get_value("Restaurant Table", {"outlet": outlet, "is_active": 1}, "name")
+		item = frappe.get_all("Menu Item", filters={"outlet": outlet, "is_available": 1}, pluck="name", limit=1)[0]
+		order = open_walk_in_order(outlet, table)["data"]["order"]["name"] if table else \
+			open_walk_in_order(outlet)["data"]["order"]["name"]
+		add_items(order, [{"menu_item": item, "quantity": 1}])
+		send_to_kitchen(order)
+		frappe.db.set_value("Restaurant Order", order, "state", "Served")
+		return close_walk_in(order, payments=[{"mode_of_payment": "Cash"}])["data"]
+
+	def test_fnb_close_scopes_to_its_outlet(self):
+		start = frappe.utils.add_to_date(frappe.utils.now_datetime(), seconds=-30)
+		sig = self._settle_walk_in(self.sigrest)
+		self._settle_walk_in(self.poolbar)  # different outlet — must be excluded
+		closing = frappe.utils.add_to_date(frappe.utils.now_datetime(), seconds=30)
+
+		si_total = flt(
+			frappe.db.get_value("Sales Invoice", sig["sales_invoice"], "rounded_total")
+			or frappe.db.get_value("Sales Invoice", sig["sales_invoice"], "grand_total")
+		)
+
+		ctx = get_cashier_close_context(
+			close_type="F&B", outlet=self.sigrest, opening_time=start, closing_time=closing
+		)["data"]
+		# Only SIGREST's takings — POOLBAR's order is not counted.
+		self.assertAlmostEqual(flt(ctx["expected_total"]), si_total, delta=1.0)
+		self.assertEqual(ctx["fnb_summary"]["orders_settled"], 1)
+		self.assertGreater(flt(ctx["fnb_summary"]["pos_cash_total"]), 0)
+
+	def test_company_wide_close_still_sees_all(self):
+		start = frappe.utils.add_to_date(frappe.utils.now_datetime(), seconds=-30)
+		self._settle_walk_in(self.sigrest)
+		self._settle_walk_in(self.poolbar)
+		closing = frappe.utils.add_to_date(frappe.utils.now_datetime(), seconds=30)
+
+		fnb = get_cashier_close_context(
+			close_type="F&B", outlet=self.sigrest, opening_time=start, closing_time=closing
+		)["data"]
+		allco = get_cashier_close_context(
+			close_type="Front Desk", opening_time=start, closing_time=closing
+		)["data"]
+		# Company-wide (Front Desk) sees at least both outlets → strictly more than
+		# the single-outlet F&B scope.
+		self.assertGreater(flt(allco["expected_total"]), flt(fnb["expected_total"]))

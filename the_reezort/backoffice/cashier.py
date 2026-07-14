@@ -61,6 +61,96 @@ def _collected_by_mode(company, opening_time, closing_time):
 	return totals
 
 
+def _restaurant_invoices(outlet, opening_time, closing_time):
+	"""Sales Invoices raised by one outlet's POS settlements in the window —
+	from whole-check closes (Restaurant Order) and split settlements (FnB Bill
+	Split). Room-charged portions have no Sales Invoice, so they're naturally
+	excluded from cash reconciliation."""
+	invoices = set()
+	for doctype in ("Restaurant Order", "FnB Bill Split"):
+		for si in frappe.get_all(
+			doctype,
+			filters={
+				"outlet": outlet,
+				"settled_at": ["between", [opening_time, closing_time]],
+				"erpnext_sales_invoice": ["is", "set"],
+			},
+			pluck="erpnext_sales_invoice",
+		):
+			if si:
+				invoices.add(si)
+	return list(invoices)
+
+
+def _collected_for_invoices(invoices, opening_time, closing_time):
+	"""Payments actually received against the given Sales Invoices in the window,
+	grouped by mode. Uses each Payment Entry Reference's allocated amount so a
+	multi-invoice payment still attributes correctly."""
+	if not invoices:
+		return {}
+	refs = frappe.get_all(
+		"Payment Entry Reference",
+		filters={"reference_doctype": "Sales Invoice", "reference_name": ["in", invoices], "docstatus": 1},
+		fields=["parent", "allocated_amount"],
+	)
+	if not refs:
+		return {}
+	pe_mode = {
+		p.name: (p.mode_of_payment or "Unknown")
+		for p in frappe.get_all(
+			"Payment Entry",
+			filters={
+				"name": ["in", list({r.parent for r in refs})],
+				"payment_type": "Receive",
+				"docstatus": 1,
+				"creation": ["between", [opening_time, closing_time]],
+			},
+			fields=["name", "mode_of_payment"],
+		)
+	}
+	totals = {}
+	for r in refs:
+		mode = pe_mode.get(r.parent)
+		if not mode:  # PE outside the window or not a receipt
+			continue
+		totals[mode] = flt(totals.get(mode, 0)) + flt(r.allocated_amount)
+	return totals
+
+
+def _expected_for_close(company, close_type, outlet, opening_time, closing_time):
+	"""Expected collections for a shift. An F&B close scoped to an outlet
+	reconciles only THAT outlet's POS takings; every other close type reconciles
+	company-wide as before."""
+	if close_type == "F&B" and outlet:
+		return _collected_for_invoices(
+			_restaurant_invoices(outlet, opening_time, closing_time), opening_time, closing_time
+		)
+	return _collected_by_mode(company, opening_time, closing_time)
+
+
+def _fnb_shift_summary(outlet, opening_time, closing_time):
+	"""Informational breakdown of an outlet's shift: orders settled, cash POS
+	total, and the amount pushed to guest rooms (not cash — shown for context)."""
+	pos_orders = frappe.get_all(
+		"Restaurant Order",
+		filters={"outlet": outlet, "settled_at": ["between", [opening_time, closing_time]], "state": "Settled"},
+		fields=["name", "grand_total", "erpnext_sales_invoice", "guest_folio"],
+	)
+	pos_total = sum(flt(o.grand_total) for o in pos_orders if o.erpnext_sales_invoice)
+	room_total = sum(flt(o.grand_total) for o in pos_orders if o.guest_folio and not o.erpnext_sales_invoice)
+	split_room = frappe.get_all(
+		"FnB Bill Split",
+		filters={"outlet": outlet, "settled_at": ["between", [opening_time, closing_time]], "guest_folio": ["is", "set"]},
+		fields=["grand_total"],
+	)
+	room_total += sum(flt(s.grand_total) for s in split_room)
+	return {
+		"orders_settled": len(pos_orders),
+		"pos_cash_total": flt(pos_total),
+		"room_charged_total": flt(room_total),
+	}
+
+
 def _seed_payment_rows(doc, totals):
 	"""Replace the payment rows with the given expected totals (declared cleared)."""
 	doc.set("payments", [])
@@ -72,25 +162,28 @@ def _seed_payment_rows(doc, totals):
 
 
 @frappe.whitelist()
-def get_cashier_close_context(close_type, opening_time=None, closing_time=None, company=None):
+def get_cashier_close_context(close_type, opening_time=None, closing_time=None, company=None, outlet=None):
 	"""Preview the expected payment totals for a prospective shift window, before
-	a Cashier Close is created. Drives the 'open shift' screen."""
+	a Cashier Close is created. Drives the 'open shift' screen. An F&B close with
+	an outlet previews only that outlet's POS takings."""
 	_require_permission("Cashier Close", "read")
 	if close_type not in CLOSE_TYPES:
 		frappe.throw(_("Unknown close type: {0}").format(close_type))
 	company = company or _default_company()
 	opening_time = opening_time or now_datetime()
 	closing_time = closing_time or now_datetime()
-	totals = _collected_by_mode(company, opening_time, closing_time)
-	return _envelope(
-		{
-			"company": company,
-			"close_type": close_type,
-			"expected_by_mode": totals,
-			"expected_total": flt(sum(totals.values())),
-			"variance_threshold": _variance_threshold(company),
-		}
-	)
+	totals = _expected_for_close(company, close_type, outlet, opening_time, closing_time)
+	context = {
+		"company": company,
+		"close_type": close_type,
+		"outlet": outlet,
+		"expected_by_mode": totals,
+		"expected_total": flt(sum(totals.values())),
+		"variance_threshold": _variance_threshold(company),
+	}
+	if close_type == "F&B" and outlet:
+		context["fnb_summary"] = _fnb_shift_summary(outlet, opening_time, closing_time)
+	return _envelope(context)
 
 
 @frappe.whitelist()
@@ -116,7 +209,7 @@ def open_cashier_close(close_type, cash_float=0, outlet=None, company=None, shif
 		}
 	)
 	# Seed rows with whatever has been collected already (usually nothing at open).
-	_seed_payment_rows(doc, _collected_by_mode(company, doc.opening_time, now_datetime()))
+	_seed_payment_rows(doc, _expected_for_close(company, close_type, outlet, doc.opening_time, now_datetime()))
 	doc.insert(ignore_permissions=True)
 	frappe.db.commit()
 	return _envelope(_close_dict(doc))
@@ -129,7 +222,7 @@ def get_cashier_close(cashier_close):
 	_require_permission("Cashier Close", "read")
 	doc = frappe.get_doc("Cashier Close", cashier_close)
 	if doc.close_status in ("Open", "Closing"):
-		totals = _collected_by_mode(doc.company, doc.opening_time, now_datetime())
+		totals = _expected_for_close(doc.company, doc.close_type, doc.outlet, doc.opening_time, now_datetime())
 		declared = {row.payment_mode: row.declared_amount for row in doc.payments}
 		_seed_payment_rows(doc, totals)
 		# Preserve any declared amounts the cashier already typed.
@@ -160,7 +253,7 @@ def submit_cashier_close(cashier_close, declaration):
 		frappe.throw(_("Cashier Close {0} is {1} and cannot be submitted.").format(doc.name, doc.close_status))
 
 	closing_time = now_datetime()
-	totals = _collected_by_mode(doc.company, doc.opening_time, closing_time)
+	totals = _expected_for_close(doc.company, doc.close_type, doc.outlet, doc.opening_time, closing_time)
 	declared_map = {
 		d.get("payment_mode"): flt(d.get("declared_amount")) for d in (declaration.get("payments") or [])
 	}

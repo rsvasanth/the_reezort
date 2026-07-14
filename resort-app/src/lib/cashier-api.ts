@@ -101,18 +101,26 @@ async function call<T>(
 	return data;
 }
 
+export type FnbShiftSummary = {
+	orders_settled: number;
+	pos_cash_total: number;
+	room_charged_total: number;
+};
+
 export type CashierContext = {
 	company: string;
 	close_type: string;
+	outlet?: string | null;
 	expected_by_mode: Record<string, number>;
 	expected_total: number;
 	variance_threshold: number;
+	fnb_summary?: FnbShiftSummary;
 };
 
-export function getCashierContext(close_type: string): Promise<CashierContext> {
+export function getCashierContext(close_type: string, outlet?: string): Promise<CashierContext> {
 	return call<CashierContext>("the_reezort.backoffice.cashier.get_cashier_close_context", {
 		method: "GET",
-		params: { close_type },
+		params: { close_type, outlet },
 	});
 }
 

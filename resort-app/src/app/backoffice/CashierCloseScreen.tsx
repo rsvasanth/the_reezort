@@ -27,12 +27,15 @@ import {
 	approveCashierClose,
 	CashierApiError,
 	getCashierClose,
+	getCashierContext,
 	listCashierCloses,
 	openCashierClose,
 	submitCashierClose,
 	type CashierClose,
 	type CashierCloseSummary,
+	type CashierContext,
 } from "@/lib/cashier-api";
+import { listOutlets, type FnbOutlet } from "@/lib/fnb-api";
 
 const CLOSE_TYPES = ["Front Desk", "F&B", "Event", "Night Audit", "Other"];
 
@@ -56,6 +59,9 @@ export default function CashierCloseScreen() {
 	// Open-shift form
 	const [closeType, setCloseType] = useState("Front Desk");
 	const [cashFloat, setCashFloat] = useState("2000");
+	const [outlet, setOutlet] = useState<string>("");
+	const [outlets, setOutlets] = useState<FnbOutlet[]>([]);
+	const [context, setContext] = useState<CashierContext | null>(null);
 
 	// Declaration inputs, keyed by payment mode
 	const [declared, setDeclared] = useState<Record<string, string>>({});
@@ -77,10 +83,36 @@ export default function CashierCloseScreen() {
 		void refreshList();
 	}, [refreshList]);
 
+	// Load outlets the first time F&B is chosen so a shift can be scoped to one.
+	useEffect(() => {
+		if (closeType !== "F&B" || outlets.length) return;
+		listOutlets().then((r) => setOutlets(r.outlets)).catch(() => setOutlets([]));
+	}, [closeType, outlets.length]);
+
+	// Preview the outlet's expected takings before opening the shift.
+	useEffect(() => {
+		let alive = true;
+		const scopedOutlet = closeType === "F&B" ? outlet || undefined : undefined;
+		getCashierContext(closeType, scopedOutlet)
+			.then((ctx) => alive && setContext(ctx))
+			.catch(() => alive && setContext(null));
+		return () => {
+			alive = false;
+		};
+	}, [closeType, outlet]);
+
 	async function openShift() {
+		if (closeType === "F&B" && !outlet) {
+			toast.error("Pick an outlet for an F&B shift.");
+			return;
+		}
 		setBusy(true);
 		try {
-			const close = await openCashierClose({ close_type: closeType, cash_float: Number(cashFloat) || 0 });
+			const close = await openCashierClose({
+				close_type: closeType,
+				cash_float: Number(cashFloat) || 0,
+				outlet: closeType === "F&B" ? outlet : undefined,
+			});
 			setActive(close);
 			setDeclared({});
 			setReason("");
@@ -191,6 +223,23 @@ export default function CashierCloseScreen() {
 							</SelectContent>
 						</Select>
 					</div>
+					{closeType === "F&B" ? (
+						<div className="flex flex-col gap-1">
+							<Label>Outlet</Label>
+							<Select value={outlet} onValueChange={setOutlet}>
+								<SelectTrigger className="w-52">
+									<SelectValue placeholder="Choose outlet…" />
+								</SelectTrigger>
+								<SelectContent>
+									{outlets.map((o) => (
+										<SelectItem key={o.name} value={o.name}>
+											{o.outlet_name}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+					) : null}
 					<div className="flex flex-col gap-1">
 						<Label>Cash float</Label>
 						<Input
@@ -204,6 +253,32 @@ export default function CashierCloseScreen() {
 						{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
 						Open shift
 					</Button>
+
+					{/* Live preview of what this shift will reconcile. */}
+					{context ? (
+						<div className="flex w-full flex-wrap items-center gap-x-6 gap-y-1 border-t pt-3 text-sm">
+							<span className="text-muted-foreground">
+								Expected collected:{" "}
+								<span className="font-medium text-foreground">{fmt(context.expected_total)}</span>
+							</span>
+							{context.fnb_summary ? (
+								<>
+									<span className="text-muted-foreground">
+										Orders settled:{" "}
+										<span className="font-medium text-foreground">{context.fnb_summary.orders_settled}</span>
+									</span>
+									<span className="text-muted-foreground">
+										POS cash:{" "}
+										<span className="font-medium text-foreground">{fmt(context.fnb_summary.pos_cash_total)}</span>
+									</span>
+									<span className="text-muted-foreground">
+										Charged to rooms:{" "}
+										<span className="font-medium text-foreground">{fmt(context.fnb_summary.room_charged_total)}</span>
+									</span>
+								</>
+							) : null}
+						</div>
+					) : null}
 				</CardContent>
 			</Card>
 

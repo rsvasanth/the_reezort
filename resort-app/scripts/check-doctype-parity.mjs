@@ -125,6 +125,9 @@ const CONTRACTS = [
 	{ file: "crm-api.ts", type: "FeedbackStatus", doctype: "guest_feedback", field: "status" },
 	{ file: "crm-api.ts", type: "FeedbackSentiment", doctype: "guest_feedback", field: "sentiment" },
 	{ file: "direct-bill-api.ts", type: "DirectBillStatus", doctype: "direct_bill", field: "direct_bill_status" },
+	{ file: "split-api.ts", type: "SplitType", doctype: "fnb_bill_split", field: "split_type" },
+	{ file: "split-api.ts", type: "SettlementMode", doctype: "fnb_bill_split", field: "settlement_mode" },
+	{ file: "split-api.ts", type: "SplitStatus", doctype: "fnb_bill_split", field: "split_status" },
 ];
 
 function doctypeOptions(doctype, field) {

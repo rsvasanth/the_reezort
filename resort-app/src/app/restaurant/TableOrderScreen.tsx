@@ -5,8 +5,8 @@
  * rail — items already sent, a cart for the next round, and the forward
  * action (send to kitchen → charge / close walk-in). Live-with-mock fallback.
  *
- * Split-bill is Slice 4 proper (helpers TBD backend) — this screen closes a
- * walk-in with a single cash payment for now; the seam is the onSettle path.
+ * Settle whole (SettlePaymentSheet) or split the check across guests
+ * (SplitBillSheet, spec 006 Workflow 5) — each split pays direct or to a room.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -31,6 +31,7 @@ import {
 	type RestaurantOrder,
 } from "@/lib/restaurant-api";
 import { SettlePaymentSheet } from "@/components/fnb/settle-payment-sheet";
+import { SplitBillSheet } from "@/components/fnb/split-bill-sheet";
 
 import { lineStatusTone, orderStateTone } from "./restaurant-format";
 
@@ -47,6 +48,7 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 	const [basket, setBasket] = useState<CartBasket>({});
 	const [busy, setBusy] = useState(false);
 	const [settleOpen, setSettleOpen] = useState(false);
+	const [splitOpen, setSplitOpen] = useState(false);
 
 	const loadOrder = useCallback(() => {
 		if (!orderName) {
@@ -251,7 +253,7 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 								<span className="font-mono font-medium tabular-nums">{formatINR(order.grand_total)}</span>
 							</div>
 							{canSettle ? (
-								<div className="p-3 pt-0">
+								<div className="flex flex-col gap-2 p-3 pt-0">
 									<Button
 										className="w-full"
 										disabled={busy}
@@ -260,6 +262,17 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 									>
 										Settle bill · {formatINR(order.grand_total)}
 									</Button>
+									{order.items.length > 1 ? (
+										<Button
+											variant="outline"
+											className="w-full"
+											disabled={busy}
+											onClick={() => setSplitOpen(true)}
+											data-testid="order-split"
+										>
+											Split bill
+										</Button>
+									) : null}
 								</div>
 							) : null}
 						</div>
@@ -292,6 +305,14 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 					open={settleOpen}
 					onOpenChange={setSettleOpen}
 					onSettled={(updated) => setOrder(updated)}
+				/>
+			) : null}
+			{order ? (
+				<SplitBillSheet
+					order={order}
+					open={splitOpen}
+					onOpenChange={setSplitOpen}
+					onOrderSettled={loadOrder}
 				/>
 			) : null}
 		</main>

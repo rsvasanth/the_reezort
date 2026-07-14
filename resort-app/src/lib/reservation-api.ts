@@ -94,6 +94,10 @@ export type ReservationDetail = {
 	booking_source: string | null;
 	check_in_ready: boolean;
 	stay: string | null;
+	erpnext_customer: string | null;
+	erpnext_customer_name: string | null;
+	bill_to_customer: string | null;
+	bill_to_customer_name: string | null;
 	rooms: { room_type: string; adults: number; children: number; estimated_amount: number | null; status: string }[];
 	guests: { guest_name: string; email: string | null; phone: string | null; is_primary_guest: number }[];
 };
@@ -355,4 +359,14 @@ export async function reverseNoShow(
 	reason: string,
 ): Promise<{ reservation: string; status: string }> {
 	return call("the_reezort.reservation.api.reverse_no_show", "POST", { reservation, reason });
+}
+
+export async function setReservationBillTo(
+	reservation: string,
+	billToCustomer: string | null,
+): Promise<{ reservation: string; bill_to_customer: string | null; bill_to_customer_name: string | null }> {
+	return call("the_reezort.reservation.api.set_reservation_bill_to", "POST", {
+		reservation,
+		bill_to_customer: billToCustomer ?? "",
+	});
 }

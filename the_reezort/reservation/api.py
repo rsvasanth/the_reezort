@@ -739,6 +739,20 @@ def confirm_reservation(
 		doc.deposit_status = "Paid" if paid >= round(flt(doc.total_estimated_amount) * pct / 100.0, 2) else "Partially Paid"
 	elif guarantee.get("method") == "Payment":
 		doc.deposit_status = "Paid"
+
+	# Link an ERPNext Customer at confirmation so corporate / travel-agent billing
+	# and pre-stay invoicing can attach now, not lazily at folio time. Non-fatal:
+	# a missing Customer Group / Territory default must not block the confirmation.
+	if not doc.erpnext_customer:
+		try:
+			from the_reezort.billing.api import _customer_by_guest_profile
+
+			customer = _customer_by_guest_profile(primary_profile)
+			if customer:
+				doc.erpnext_customer = customer
+		except Exception:
+			frappe.log_error(title="reservation.confirm: ERPNext customer link failed")
+
 	doc.save(ignore_permissions=True)
 
 	# The confirmed reservation now blocks inventory via its status, so its holds
@@ -1058,6 +1072,14 @@ def get_reservation(reservation):
 		"booking_source": doc.booking_source,
 		"check_in_ready": doc.status == "Confirmed",
 		"stay": stay,
+		"erpnext_customer": doc.erpnext_customer,
+		"erpnext_customer_name": frappe.db.get_value("Customer", doc.erpnext_customer, "customer_name")
+		if doc.erpnext_customer
+		else None,
+		"bill_to_customer": doc.bill_to_customer,
+		"bill_to_customer_name": frappe.db.get_value("Customer", doc.bill_to_customer, "customer_name")
+		if doc.bill_to_customer
+		else None,
 		"rooms": [
 			{
 				"room_type": r.room_type,
@@ -1072,6 +1094,30 @@ def get_reservation(reservation):
 			{"guest_name": g.guest_name, "email": g.email, "phone": g.phone, "is_primary_guest": g.is_primary_guest}
 			for g in doc.get("guests")
 		],
+	}
+
+
+@frappe.whitelist()
+def set_reservation_bill_to(reservation=None, bill_to_customer=None):
+	"""Set (or clear) the corporate / travel-agent bill-to Customer on a
+	reservation. When cleared, folio charges bill to the guest's own Customer."""
+	_require_permission("Reservation", "write")
+	doc = frappe.get_doc("Reservation", reservation)
+	if bill_to_customer and not frappe.db.exists("Customer", bill_to_customer):
+		frappe.throw(_("Unknown Customer: {0}").format(bill_to_customer))
+	doc.bill_to_customer = bill_to_customer or None
+	doc.save(ignore_permissions=True)
+	frappe.db.commit()
+
+	from the_reezort.audit.api import record_audit_event
+
+	record_audit_event("Reservation", reservation, "set_bill_to", "", {"bill_to_customer": bill_to_customer})
+	return {
+		"reservation": doc.name,
+		"bill_to_customer": doc.bill_to_customer,
+		"bill_to_customer_name": frappe.db.get_value("Customer", doc.bill_to_customer, "customer_name")
+		if doc.bill_to_customer
+		else None,
 	}
 
 

@@ -3,7 +3,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, CalendarDays, BedDouble, BadgeCheck, CreditCard, LogIn, ShieldAlert, CalendarClock, UserX, Undo2 } from "lucide-react";
+import { Loader2, CalendarDays, BedDouble, BadgeCheck, CreditCard, LogIn, ShieldAlert, CalendarClock, UserX, Undo2, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +47,7 @@ import {
 	markNoShow,
 	recordBookingDeposit,
 	reverseNoShow,
+	setReservationBillTo,
 	type ReservationDepositState,
 	type ReservationDetail as Detail,
 } from "@/lib/reservation-api";
@@ -69,6 +70,7 @@ export default function ReservationDetail({ reservation }: { reservation: string
 	const [depositOpen, setDepositOpen] = useState(false);
 	const [amendOpen, setAmendOpen] = useState(false);
 	const [noShowMode, setNoShowMode] = useState<null | "mark" | "reverse">(null);
+	const [billToOpen, setBillToOpen] = useState(false);
 	const [loading, setLoading] = useState(true);
 	const [busy, setBusy] = useState(false);
 
@@ -170,6 +172,10 @@ export default function ReservationDetail({ reservation }: { reservation: string
 					{ label: "Property", value: detail.resort_property },
 					{ label: "Source", value: detail.booking_source ?? "—" },
 					{ label: "Currency", value: cur },
+					{ label: "Customer", value: detail.erpnext_customer_name ?? "—" },
+					...(detail.bill_to_customer_name
+						? [{ label: "Bill-to", value: detail.bill_to_customer_name }]
+						: []),
 				]}
 				actions={
 					<>
@@ -203,6 +209,9 @@ export default function ReservationDetail({ reservation }: { reservation: string
 								<Undo2 className="size-4" /> Reverse no-show
 							</Button>
 						) : null}
+						<Button size="sm" variant="outline" onClick={() => setBillToOpen(true)} data-testid="res-bill-to">
+							<Building2 className="size-4" /> Bill-to
+						</Button>
 						{canCancel ? (
 							<Button size="sm" variant="outline" onClick={cancel} disabled={busy}>Cancel reservation</Button>
 						) : null}
@@ -304,7 +313,88 @@ export default function ReservationDetail({ reservation }: { reservation: string
 					onDone={() => { setNoShowMode(null); void reload(); }}
 				/>
 			) : null}
+
+			{billToOpen ? (
+				<BillToSheet
+					reservation={reservation}
+					guestCustomer={detail.erpnext_customer_name}
+					currentBillTo={detail.bill_to_customer}
+					onClose={() => setBillToOpen(false)}
+					onDone={() => { setBillToOpen(false); void reload(); }}
+				/>
+			) : null}
 		</WorkspacePage>
+	);
+}
+
+// ---------- corporate / TA bill-to ----------
+
+function BillToSheet({
+	reservation,
+	guestCustomer,
+	currentBillTo,
+	onClose,
+	onDone,
+}: {
+	reservation: string;
+	guestCustomer: string | null;
+	currentBillTo: string | null;
+	onClose: () => void;
+	onDone: () => void;
+}) {
+	const [customer, setCustomer] = useState(currentBillTo ?? "");
+	const [busy, setBusy] = useState(false);
+
+	async function save(value: string | null) {
+		setBusy(true);
+		try {
+			const res = await setReservationBillTo(reservation, value);
+			toast.success(value ? "Bill-to set" : "Bill-to cleared", {
+				description: res.bill_to_customer_name ?? `Bills to guest (${guestCustomer ?? "own account"})`,
+			});
+			onDone();
+		} catch (error) {
+			toast.error("Could not update bill-to", { description: error instanceof FolioApiError ? error.message : String(error) });
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	return (
+		<Sheet open onOpenChange={(o) => !o && onClose()}>
+			<SheetContent side="right" className="flex w-full flex-col gap-0 sm:max-w-md" data-testid="bill-to-sheet">
+				<SheetHeader>
+					<SheetTitle>Billing customer</SheetTitle>
+					<SheetDescription>
+						Route this reservation's charges to a corporate or travel-agent account. Leave empty to bill the guest directly.
+					</SheetDescription>
+				</SheetHeader>
+				<div className="flex flex-col gap-4 p-4">
+					<div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
+						Guest account: <span className="font-medium text-foreground">{guestCustomer ?? "—"}</span>
+					</div>
+					<div className="flex flex-col gap-1">
+						<Label>Bill-to Customer (ERPNext Customer ID)</Label>
+						<Input
+							value={customer}
+							onChange={(e) => setCustomer(e.target.value)}
+							placeholder="e.g. CUST-00042 (corporate / TA)"
+							data-testid="bill-to-input"
+						/>
+					</div>
+				</div>
+				<SheetFooter>
+					<Button onClick={() => save(customer.trim() || null)} disabled={busy} data-testid="bill-to-save">
+						{busy ? <Loader2 className="size-4 animate-spin" /> : <Building2 className="size-4" />} Save
+					</Button>
+					{currentBillTo ? (
+						<Button variant="outline" onClick={() => save(null)} disabled={busy}>Clear (bill guest)</Button>
+					) : (
+						<Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
+					)}
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
 	);
 }
 

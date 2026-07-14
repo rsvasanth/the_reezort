@@ -9,6 +9,7 @@ from the_reezort.reservation.api import (
 	create_quote_or_hold,
 	get_reservation_summary,
 	search_availability,
+	set_reservation_bill_to,
 )
 
 
@@ -85,6 +86,53 @@ class TestReservationAPI(FrappeTestCase):
 
 		self.assertEqual(result["status"], "Confirmed")
 		self.assertEqual(frappe.db.get_value("Room Hold", {"reservation": hold["reservation"]}, "status"), "Consumed")
+
+	def _confirm_fresh(self, days, booker):
+		hold = create_quote_or_hold(
+			property=self.property,
+			arrival_date=add_days(today(), days),
+			departure_date=add_days(today(), days + 2),
+			rooms=[{"room_type": self.room_type, "adults": 2, "children": 0}],
+			source="Staff",
+		)
+		frappe.db.set_value("Reservation", hold["reservation"], "deposit_policy", "None")
+		confirm_reservation(
+			reservation=hold["reservation"],
+			booker=booker,
+			guests=[{"guest_name": booker["full_name"], "is_primary_guest": True}],
+			guarantee={"method": "Manual Approval"},
+			accepted_terms=True,
+		)
+		return hold["reservation"]
+
+	def test_confirm_links_erpnext_customer(self):
+		reservation = self._confirm_fresh(30, {"full_name": "Corp Traveler", "email": "corp.traveler@example.com"})
+		customer = frappe.db.get_value("Reservation", reservation, "erpnext_customer")
+		self.assertTrue(customer, "confirmation should link an ERPNext Customer")
+		self.assertTrue(frappe.db.exists("Customer", customer))
+
+	def test_set_bill_to_customer_override(self):
+		reservation = self._confirm_fresh(40, {"full_name": "TA Guest", "email": "ta.guest@example.com"})
+		corp = frappe.get_doc(
+			{
+				"doctype": "Customer",
+				"customer_name": "ZZ Acme Corp Travel",
+				"customer_group": frappe.db.get_value("Customer Group", {"is_group": 0}, "name"),
+				"territory": frappe.db.get_value("Territory", {"is_group": 0}, "name"),
+			}
+		).insert(ignore_permissions=True).name
+
+		out = set_reservation_bill_to(reservation=reservation, bill_to_customer=corp)
+		self.assertEqual(out["bill_to_customer"], corp)
+		self.assertEqual(frappe.db.get_value("Reservation", reservation, "bill_to_customer"), corp)
+
+		cleared = set_reservation_bill_to(reservation=reservation, bill_to_customer=None)
+		self.assertIsNone(cleared["bill_to_customer"])
+
+	def test_set_bill_to_rejects_unknown_customer(self):
+		reservation = self._confirm_fresh(50, {"full_name": "Ghost Guest", "email": "ghost@example.com"})
+		with self.assertRaises(frappe.ValidationError):
+			set_reservation_bill_to(reservation=reservation, bill_to_customer="NON-EXISTENT-CUST-999")
 
 	def test_confirm_blocked_when_deposit_not_paid_under_partial_policy(self):
 		hold = create_quote_or_hold(

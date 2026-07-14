@@ -317,3 +317,42 @@ export async function confirmReservation(
 export async function cancelReservation(reservation: string, reason = "Guest Request"): Promise<{ status: string }> {
 	return call("the_reezort.reservation.api.cancel_reservation", "POST", { reservation, reason });
 }
+
+export type AmendChanges = {
+	arrival_date?: string;
+	departure_date?: string;
+	rooms?: { room_type: string; adults: number; children: number }[];
+};
+
+export async function amendReservation(input: {
+	reservation: string;
+	changes: AmendChanges;
+	reason: string;
+	allow_override?: boolean;
+}): Promise<{ reservation: string; amendment: string; status: string; total_estimated_amount: number }> {
+	return call("the_reezort.reservation.api.amend_reservation", "POST", {
+		reservation: input.reservation,
+		changes: input.changes,
+		reason: input.reason,
+		allow_override: input.allow_override ? 1 : 0,
+	});
+}
+
+export async function markNoShow(input: {
+	reservation: string;
+	reason: string;
+	forfeit_deposit?: boolean;
+}): Promise<{ reservation: string; status: string; deposit_status: string; financial_handoff_required: boolean }> {
+	return call("the_reezort.reservation.api.mark_no_show", "POST", {
+		reservation: input.reservation,
+		reason: input.reason,
+		forfeit_deposit: (input.forfeit_deposit ?? true) ? 1 : 0,
+	});
+}
+
+export async function reverseNoShow(
+	reservation: string,
+	reason: string,
+): Promise<{ reservation: string; status: string }> {
+	return call("the_reezort.reservation.api.reverse_no_show", "POST", { reservation, reason });
+}

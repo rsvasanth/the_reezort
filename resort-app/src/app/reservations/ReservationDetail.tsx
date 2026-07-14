@@ -3,7 +3,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, CalendarDays, BedDouble, BadgeCheck, CreditCard, LogIn, ShieldAlert } from "lucide-react";
+import { Loader2, CalendarDays, BedDouble, BadgeCheck, CreditCard, LogIn, ShieldAlert, CalendarClock, UserX, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -38,12 +38,15 @@ import { WorkspacePage, RecordHeader, KpiStrip } from "@/components/workspace/wo
 import { formatCurrency } from "@/components/folio/folio-format";
 import {
 	FolioApiError,
+	amendReservation,
 	cancelReservation,
 	confirmReservation,
 	ensureBookingFolio,
 	getReservation,
 	getReservationDepositState,
+	markNoShow,
 	recordBookingDeposit,
+	reverseNoShow,
 	type ReservationDepositState,
 	type ReservationDetail as Detail,
 } from "@/lib/reservation-api";
@@ -64,6 +67,8 @@ export default function ReservationDetail({ reservation }: { reservation: string
 	const [detail, setDetail] = useState<Detail | null>(null);
 	const [depositState, setDepositState] = useState<ReservationDepositState | null>(null);
 	const [depositOpen, setDepositOpen] = useState(false);
+	const [amendOpen, setAmendOpen] = useState(false);
+	const [noShowMode, setNoShowMode] = useState<null | "mark" | "reverse">(null);
 	const [loading, setLoading] = useState(true);
 	const [busy, setBusy] = useState(false);
 
@@ -142,6 +147,12 @@ export default function ReservationDetail({ reservation }: { reservation: string
 	const canCancel = detail.status !== "Cancelled" && detail.status !== "Checked In";
 	const isUnconfirmed = ["Hold", "Draft", "Deposit Pending", "Quoted"].includes(detail.status);
 	const canConfirm = isUnconfirmed && (!depositState || depositState.met);
+	const canAmend = ["Hold", "Quoted", "Draft", "Deposit Pending", "Confirmed", "Modified", "Waitlisted"].includes(
+		detail.status,
+	);
+	const arrivalPassed = !!detail.arrival_date && detail.arrival_date <= new Date().toISOString().slice(0, 10);
+	const canNoShow = ["Confirmed", "Modified", "Deposit Pending"].includes(detail.status) && arrivalPassed;
+	const isNoShow = detail.status === "No Show";
 
 	return (
 		<WorkspacePage badge="Reservation" tag="Booking" title={detail.guest} onBack={() => go("#/reservations")}>
@@ -175,6 +186,21 @@ export default function ReservationDetail({ reservation }: { reservation: string
 						{canCheckIn ? (
 							<Button size="sm" onClick={() => go(`#/check-in/${encodeURIComponent(reservation)}`)} data-testid="res-checkin">
 								<LogIn className="size-4" /> Check in
+							</Button>
+						) : null}
+						{canAmend ? (
+							<Button size="sm" variant="outline" onClick={() => setAmendOpen(true)} data-testid="res-amend">
+								<CalendarClock className="size-4" /> Amend
+							</Button>
+						) : null}
+						{canNoShow ? (
+							<Button size="sm" variant="outline" onClick={() => setNoShowMode("mark")} data-testid="res-no-show">
+								<UserX className="size-4" /> No-show
+							</Button>
+						) : null}
+						{isNoShow ? (
+							<Button size="sm" variant="outline" onClick={() => setNoShowMode("reverse")} data-testid="res-reverse-no-show">
+								<Undo2 className="size-4" /> Reverse no-show
 							</Button>
 						) : null}
 						{canCancel ? (
@@ -258,7 +284,193 @@ export default function ReservationDetail({ reservation }: { reservation: string
 					onRecorded={() => { setDepositOpen(false); void reload(); }}
 				/>
 			) : null}
+
+			{amendOpen ? (
+				<AmendReservationSheet
+					reservation={reservation}
+					arrival={detail.arrival_date ?? ""}
+					departure={detail.departure_date ?? ""}
+					onClose={() => setAmendOpen(false)}
+					onDone={() => { setAmendOpen(false); void reload(); }}
+				/>
+			) : null}
+
+			{noShowMode ? (
+				<NoShowSheet
+					reservation={reservation}
+					mode={noShowMode}
+					depositStatus={detail.deposit_status ?? null}
+					onClose={() => setNoShowMode(null)}
+					onDone={() => { setNoShowMode(null); void reload(); }}
+				/>
+			) : null}
 		</WorkspacePage>
+	);
+}
+
+// ---------- amend reservation (dates) ----------
+
+function AmendReservationSheet({
+	reservation,
+	arrival,
+	departure,
+	onClose,
+	onDone,
+}: {
+	reservation: string;
+	arrival: string;
+	departure: string;
+	onClose: () => void;
+	onDone: () => void;
+}) {
+	const [newArrival, setNewArrival] = useState(arrival);
+	const [newDeparture, setNewDeparture] = useState(departure);
+	const [reason, setReason] = useState("");
+	const [override, setOverride] = useState(false);
+	const [busy, setBusy] = useState(false);
+
+	async function submit() {
+		if (!reason.trim()) {
+			toast.error("An amendment reason is required.");
+			return;
+		}
+		if (newDeparture <= newArrival) {
+			toast.error("Departure must be after arrival.");
+			return;
+		}
+		setBusy(true);
+		try {
+			const res = await amendReservation({
+				reservation,
+				changes: { arrival_date: newArrival, departure_date: newDeparture },
+				reason: reason.trim(),
+				allow_override: override,
+			});
+			toast.success("Reservation amended", { description: `Now ${res.status} · ${formatCurrency(res.total_estimated_amount, "INR")}` });
+			onDone();
+		} catch (error) {
+			toast.error("Could not amend", { description: error instanceof FolioApiError ? error.message : String(error) });
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	return (
+		<Sheet open onOpenChange={(o) => !o && onClose()}>
+			<SheetContent side="right" className="flex w-full flex-col gap-0 sm:max-w-md" data-testid="amend-sheet">
+				<SheetHeader>
+					<SheetTitle>Amend reservation</SheetTitle>
+					<SheetDescription>Change the stay dates. Availability is re-checked for the new window.</SheetDescription>
+				</SheetHeader>
+				<div className="flex flex-col gap-4 p-4">
+					<div className="flex gap-3">
+						<div className="flex flex-1 flex-col gap-1">
+							<Label>Arrival</Label>
+							<Input type="date" value={newArrival} onChange={(e) => setNewArrival(e.target.value)} data-testid="amend-arrival" />
+						</div>
+						<div className="flex flex-1 flex-col gap-1">
+							<Label>Departure</Label>
+							<Input type="date" value={newDeparture} onChange={(e) => setNewDeparture(e.target.value)} data-testid="amend-departure" />
+						</div>
+					</div>
+					<div className="flex flex-col gap-1">
+						<Label>Reason</Label>
+						<Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why is this changing?" data-testid="amend-reason" />
+					</div>
+					<label className="flex items-center gap-2 text-sm">
+						<input type="checkbox" checked={override} onChange={(e) => setOverride(e.target.checked)} />
+						Override availability (manager)
+					</label>
+				</div>
+				<SheetFooter>
+					<Button onClick={submit} disabled={busy} data-testid="amend-submit">
+						{busy ? <Loader2 className="size-4 animate-spin" /> : <CalendarClock className="size-4" />} Save amendment
+					</Button>
+					<Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
+	);
+}
+
+// ---------- no-show / reverse ----------
+
+function NoShowSheet({
+	reservation,
+	mode,
+	depositStatus,
+	onClose,
+	onDone,
+}: {
+	reservation: string;
+	mode: "mark" | "reverse";
+	depositStatus: string | null;
+	onClose: () => void;
+	onDone: () => void;
+}) {
+	const [reason, setReason] = useState("");
+	const [forfeit, setForfeit] = useState(true);
+	const [busy, setBusy] = useState(false);
+	const hasDeposit = depositStatus === "Paid" || depositStatus === "Partially Paid";
+
+	async function submit() {
+		if (!reason.trim()) {
+			toast.error("A reason is required.");
+			return;
+		}
+		setBusy(true);
+		try {
+			if (mode === "mark") {
+				const res = await markNoShow({ reservation, reason: reason.trim(), forfeit_deposit: forfeit });
+				toast.success("Marked no-show", {
+					description: res.financial_handoff_required ? "Deposit forfeited — fee posts to billing." : `Deposit ${res.deposit_status}`,
+				});
+			} else {
+				await reverseNoShow(reservation, reason.trim());
+				toast.success("No-show reversed", { description: "Reservation back to Confirmed." });
+			}
+			onDone();
+		} catch (error) {
+			toast.error(mode === "mark" ? "Could not mark no-show" : "Could not reverse", {
+				description: error instanceof FolioApiError ? error.message : String(error),
+			});
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	return (
+		<Sheet open onOpenChange={(o) => !o && onClose()}>
+			<SheetContent side="right" className="flex w-full flex-col gap-0 sm:max-w-md" data-testid="no-show-sheet">
+				<SheetHeader>
+					<SheetTitle>{mode === "mark" ? "Mark no-show" : "Reverse no-show"}</SheetTitle>
+					<SheetDescription>
+						{mode === "mark"
+							? "Release the room inventory and record the no-show. Deposit handling per policy."
+							: "Return this reservation to Confirmed (manager action)."}
+					</SheetDescription>
+				</SheetHeader>
+				<div className="flex flex-col gap-4 p-4">
+					<div className="flex flex-col gap-1">
+						<Label>Reason</Label>
+						<Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason" data-testid="no-show-reason" />
+					</div>
+					{mode === "mark" && hasDeposit ? (
+						<label className="flex items-center gap-2 text-sm">
+							<input type="checkbox" checked={forfeit} onChange={(e) => setForfeit(e.target.checked)} />
+							Forfeit the {depositStatus?.toLowerCase()} deposit
+						</label>
+					) : null}
+				</div>
+				<SheetFooter>
+					<Button onClick={submit} disabled={busy} variant={mode === "mark" ? "destructive" : "default"} data-testid="no-show-submit">
+						{busy ? <Loader2 className="size-4 animate-spin" /> : mode === "mark" ? <UserX className="size-4" /> : <Undo2 className="size-4" />}
+						{mode === "mark" ? "Confirm no-show" : "Reverse"}
+					</Button>
+					<Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
 	);
 }
 

@@ -35,14 +35,16 @@ ERP_LINK_FIELDS = (
 REDUCTION_LINE_TYPES = {"Discount", "Adjustment", "Write-Off", "Refund"}
 
 
-def _authorize_folio_line(line_type, amount, rate, discount_amount):
+def _authorize_folio_line(line_type, amount, rate, discount_amount, guest_folio=None, approval_request=None):
 	"""Reject folio lines that move money in the guest's favour unless the caller
-	holds a finance/manager role.
+	holds a finance/manager role, and gate large reductions behind approval.
 
 	- Positive-charge line types (Charge, Tax Preview, etc.) may not carry a
 	  negative amount/rate — that would silently reduce the outstanding balance.
 	- Reduction line types (Discount / Adjustment / Write-Off / Refund) and any
 	  explicit discount_amount require a finance role.
+	- Above the `large_discount` policy threshold, the reduction also needs a
+	  manager sign-off (reuses the seeded Approval Policy; no policy → proceeds).
 	"""
 	is_reduction = (
 		line_type in REDUCTION_LINE_TYPES
@@ -57,6 +59,18 @@ def _authorize_folio_line(line_type, amount, rate, discount_amount):
 		frappe.throw(
 			_("Discounts, adjustments, refunds, and negative charges require a finance role."),
 			frappe.PermissionError,
+		)
+
+	reduction_value = max(abs(flt(amount)), flt(discount_amount))
+	if reduction_value > 0:
+		from the_reezort.approvals.api import require_approval
+
+		require_approval(
+			action="large_discount",
+			source_doctype="Folio Line",
+			source_name=guest_folio or "manual",
+			payload={"amount": reduction_value, "line_type": line_type},
+			approval_request=approval_request,
 		)
 
 
@@ -353,7 +367,7 @@ def get_or_create_folio(reservation=None, stay=None, customer=None, folio_type="
 
 
 @frappe.whitelist()
-def add_folio_line(guest_folio, payload):
+def add_folio_line(guest_folio, payload, approval_request=None):
 	_require_permission("Guest Folio", "write")
 	payload = _as_dict(payload)
 
@@ -365,7 +379,10 @@ def add_folio_line(guest_folio, payload):
 	amount = flt(amount)
 
 	line_type = payload.get("line_type") or "Charge"
-	_authorize_folio_line(line_type, amount, rate, flt(payload.get("discount_amount")))
+	_authorize_folio_line(
+		line_type, amount, rate, flt(payload.get("discount_amount")),
+		guest_folio=guest_folio, approval_request=approval_request,
+	)
 
 	line = frappe.get_doc(
 		{

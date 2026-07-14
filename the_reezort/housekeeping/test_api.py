@@ -8,6 +8,7 @@ from the_reezort.housekeeping.api import (
 	get_housekeeping_board,
 	list_my_tasks,
 	list_tasks,
+	mark_dnd_or_refused,
 	pause_task,
 	start_task,
 )
@@ -159,6 +160,26 @@ class TestHousekeepingAPI(FrappeTestCase):
 		room.reload()
 		self.assertEqual(task_doc.task_status, "In Progress")
 		self.assertEqual(room.housekeeping_status, "Dirty")
+
+	def test_mark_dnd_pauses_and_blocks_completion(self):
+		_property_doc, room = self.make_inventory_setup("MARKDND")
+		task = create_task(self.task_payload("MARKDND", room))["data"]["task"]
+		assign_task(task["name"], assigned_user="Administrator")
+		start_task(task["name"])
+
+		out = mark_dnd_or_refused(task["name"], "Refused", notes="guest sleeping")["data"]["task"]
+		self.assertEqual(out["dnd_status"], "Refused")
+		self.assertEqual(out["task_status"], "Paused")
+		# The existing DND guard now blocks completion until it's cleared.
+		with self.assertRaises(frappe.ValidationError):
+			complete_task(task["name"])
+
+	def test_mark_dnd_rejects_bad_status(self):
+		_property_doc, room = self.make_inventory_setup("BADDND")
+		task = create_task(self.task_payload("BADDND", room))["data"]["task"]
+		start_task(task["name"])
+		with self.assertRaises(frappe.ValidationError):
+			mark_dnd_or_refused(task["name"], "Sleeping")
 
 	def test_pause_and_resume_lifecycle(self):
 		_property_doc, room = self.make_inventory_setup("PAUSE")

@@ -152,6 +152,7 @@ scheduler_events = {
 	"hourly": [
 		"the_reezort.servicedesk.api.escalate_overdue_tickets",
 		"the_reezort.maintenance.api.escalate_overdue_tickets",
+		"the_reezort.guest_services.api.escalate_overdue_guest_requests",
 		"the_reezort.integrations.ota.api.retry_dead_letter",
 		"the_reezort.staff.notification_scheduler.send_task_followups",
 		"the_reezort.reservation.api.expire_stale_holds",

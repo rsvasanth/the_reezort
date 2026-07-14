@@ -181,6 +181,34 @@ def pause_task(task):
 	return _envelope({"task": _task_data(task_doc)}, next_actions=["start_task"])
 
 
+@frappe.whitelist()
+def mark_dnd_or_refused(task, dnd_status, notes=None):
+	"""Record a Do-Not-Disturb / refused-entry / access-issue so the task doesn't
+	sit In Progress forever. Pauses it (a supervisor can re-queue or reschedule);
+	the DND guard on complete_task then blocks completion until it's cleared.
+	`dnd_status` ∈ {DND, Refused, Access Issue}."""
+	_require_permission("Housekeeping Task", "write")
+	if dnd_status not in DND_BLOCKING_STATUSES:
+		frappe.throw(_("dnd_status must be one of: {0}.").format(", ".join(sorted(DND_BLOCKING_STATUSES))))
+	task_doc = _get_task(task)
+	if task_doc.task_status in {"Completed", "Cancelled"}:
+		frappe.throw(_("Task {0} is {1}; it can't be marked {2}.").format(task, task_doc.task_status, dnd_status))
+	task_doc.dnd_status = dnd_status
+	task_doc.task_status = "Paused"
+	if notes:
+		task_doc.completion_notes = "\n".join(
+			filter(None, [task_doc.completion_notes, f"[{dnd_status}] {notes}"])
+		)
+	task_doc.save(ignore_permissions=True)
+	from the_reezort.audit.api import record_audit_event
+
+	record_audit_event(
+		"Housekeeping Task", task_doc.name, f"housekeeping.{dnd_status.lower().replace(' ', '_')}",
+		notes or "", {"dnd_status": dnd_status, "room": task_doc.room},
+	)
+	return _envelope({"task": _task_data(task_doc)}, next_actions=["start_task", "assign_task"])
+
+
 def _item_key(row):
 	return (row.get("section") or "", row.get("item_label") or "")
 

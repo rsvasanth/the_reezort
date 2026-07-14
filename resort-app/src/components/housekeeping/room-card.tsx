@@ -16,6 +16,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import {
+	Ban,
 	CheckCircle,
 	ClipboardCheck,
 	Pause,
@@ -47,6 +48,7 @@ import {
 	assignTask,
 	createTask,
 	listHousekeepers,
+	markDndOrRefused,
 	pauseTask,
 	startTask,
 	FolioApiError,
@@ -129,6 +131,11 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 	async function handlePause() {
 		if (!task) return;
 		await runMutation("Pause task", () => pauseTask(task.id), "Task paused");
+	}
+
+	async function handleDnd(status: "DND" | "Refused" | "Access Issue") {
+		if (!task) return;
+		await runMutation(`Mark ${status}`, () => markDndOrRefused(task.id, status), `${status} recorded`);
 	}
 
 	// Complete and Inspect open sheets that collect notes + room photos
@@ -297,6 +304,27 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 								)}
 								{task?.status === "Paused" ? "Resume" : "Start"}
 							</Button>
+						)}
+						{showPause && (
+							<DropdownMenu>
+								<DropdownMenuTrigger asChild>
+									<Button
+										size="sm"
+										variant="outline"
+										className="h-7 text-xs"
+										disabled={busy}
+										data-testid={`dnd-${room.room_number}`}
+									>
+										<Ban className="mr-1 size-3" />
+										DND
+									</Button>
+								</DropdownMenuTrigger>
+								<DropdownMenuContent align="start">
+									<DropdownMenuItem onClick={() => handleDnd("DND")}>Do Not Disturb</DropdownMenuItem>
+									<DropdownMenuItem onClick={() => handleDnd("Refused")}>Entry refused</DropdownMenuItem>
+									<DropdownMenuItem onClick={() => handleDnd("Access Issue")}>Access issue</DropdownMenuItem>
+								</DropdownMenuContent>
+							</DropdownMenu>
 						)}
 						{showPause && (
 							<Button

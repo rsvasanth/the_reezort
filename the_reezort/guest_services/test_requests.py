@@ -225,3 +225,20 @@ class TestGuestRequests(FrappeTestCase):
         finally:
             if rule_name:
                 frappe.delete_doc("Service SLA Rule", rule_name, force=True)
+
+    # ---- SLA auto-escalation ----
+
+    def test_escalation_promotes_overdue_open_request(self):
+        name = api.create_guest_request(self._base_payload())["data"]["guest_request"]
+        frappe.db.set_value("Guest Request", name, "resolution_due_at", add_to_date(now_datetime(), hours=-2))
+        count = api.escalate_overdue_guest_requests()
+        self.assertGreaterEqual(count, 1)
+        self.assertEqual(frappe.db.get_value("Guest Request", name, "status"), "Escalated")
+        # Idempotent — an already-Escalated request isn't escalated again.
+        api.escalate_overdue_guest_requests()
+        self.assertEqual(frappe.db.get_value("Guest Request", name, "status"), "Escalated")
+
+    def test_escalation_skips_not_yet_due(self):
+        name = api.create_guest_request(self._base_payload())["data"]["guest_request"]
+        api.escalate_overdue_guest_requests()
+        self.assertNotEqual(frappe.db.get_value("Guest Request", name, "status"), "Escalated")

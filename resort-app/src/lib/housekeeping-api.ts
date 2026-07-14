@@ -423,6 +423,22 @@ export async function pauseTask(task: string): Promise<FolioApiEnvelope<TaskResu
 }
 
 /**
+ * Records a Do-Not-Disturb / refused-entry / access-issue on a task so it
+ * doesn't sit In Progress forever. Pauses the task; completion stays blocked
+ * until the DND flag is cleared.
+ */
+export async function markDndOrRefused(
+	task: string,
+	dndStatus: "DND" | "Refused" | "Access Issue",
+	notes?: string,
+): Promise<FolioApiEnvelope<TaskResult>> {
+	return callHousekeeping<TaskResult>("the_reezort.housekeeping.api.mark_dnd_or_refused", {
+		method: "POST",
+		body: { task, dnd_status: dndStatus, notes },
+	});
+}
+
+/**
  * Completes a task (status: → Completed). Optional completion_notes and
  * completion photos (after-cleaning evidence, kept on the task).
  */

@@ -388,3 +388,41 @@ def get_service_console(resort_property, filters=None):
             "vip_preparation": [],  # deferred per scope
         }
     )
+
+
+def escalate_overdue_guest_requests() -> int:
+    """Promote still-open Guest Requests past their resolution SLA to Escalated
+    and notify the assignee (or a manager if unassigned). Wired to the hourly
+    scheduler via hooks.py — mirrors maintenance/servicedesk escalation. Returns
+    the count of newly-escalated requests."""
+    now = now_datetime()
+    open_but_not_escalated = [s for s in _OPEN_STATUSES if s != "Escalated"]
+    rows = frappe.get_all(
+        "Guest Request",
+        filters={"status": ["in", open_but_not_escalated], "resolution_due_at": ["<", now]},
+        fields=["name", "assigned_to", "subject", "priority", "room"],
+    )
+    for row in rows:
+        frappe.db.set_value("Guest Request", row.name, {"status": "Escalated"}, update_modified=False)
+        try:
+            from the_reezort.staff.notify_api import notify_role, notify_user
+
+            if row.assigned_to:
+                notify_user(
+                    user=row.assigned_to,
+                    subject=_("Overdue guest request · {0}").format(row.subject or row.name),
+                    body=_("SLA breached · priority {0} · room {1}").format(row.priority or "—", row.room or "n/a"),
+                    link=f"#/guest-relations?request={row.name}",
+                    dedupe_key=f"gr-overdue:{row.name}",
+                )
+            else:
+                notify_role(
+                    role="Resort Manager",
+                    subject=_("Overdue unassigned guest request · {0}").format(row.subject or row.name),
+                    body=_("SLA breached · priority {0}").format(row.priority or "—"),
+                    link=f"#/guest-relations?request={row.name}",
+                    dedupe_key=f"gr-overdue:{row.name}",
+                )
+        except Exception:
+            pass
+    return len(rows)

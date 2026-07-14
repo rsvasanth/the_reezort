@@ -97,6 +97,28 @@ class TestFolioLineAuthorization(FrappeTestCase):
 		frappe.set_user("Administrator")  # System Manager is a finance role
 		_authorize_folio_line("Adjustment", amount=-1000, rate=-1000, discount_amount=0)
 
+	def test_large_reduction_needs_manager_approval(self):
+		from the_reezort.approvals.api import ApprovalRequired
+
+		if not frappe.db.exists("Approval Policy", {"action": "large_discount", "source_doctype": "Folio Line"}):
+			frappe.get_doc(
+				{
+					"doctype": "Approval Policy",
+					"policy_name": "large_discount test gate",
+					"action": "large_discount",
+					"approver_role": "Resort Manager",
+					"threshold_amount": 5000,
+					"source_doctype": "Folio Line",
+					"is_active": 1,
+				}
+			).insert(ignore_permissions=True)
+		frappe.set_user("Administrator")
+		# Below the 5000 threshold → allowed outright.
+		_authorize_folio_line("Discount", amount=-1000, rate=-1000, discount_amount=0, guest_folio="ZZ-FOLIO")
+		# Above threshold → manager approval required.
+		with self.assertRaises(ApprovalRequired):
+			_authorize_folio_line("Discount", amount=-9000, rate=-9000, discount_amount=0, guest_folio="ZZ-FOLIO")
+
 
 class TestKycMasking(FrappeTestCase):
 	def tearDown(self):

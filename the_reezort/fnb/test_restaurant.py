@@ -15,8 +15,10 @@ from the_reezort.fnb.restaurant import (
 	list_orders_by_state,
 	list_tables,
 	mark_kot_status,
+	merge_orders,
 	open_walk_in_order,
 	send_to_kitchen,
+	transfer_table,
 )
 from the_reezort.fnb.table_seed import seed_restaurant_tables
 from the_reezort.property.api import seed_demo_property
@@ -448,6 +450,66 @@ class TestRestaurantPos(FrappeTestCase):
 		send_to_kitchen(order["name"])
 		result = cancel_order(order["name"], reason="manager comp")
 		self.assertEqual(result["data"]["order"]["state"], "Cancelled")
+
+	# ---------- table transfer + merge (spec 006 Workflow 4) ----------
+
+	def _two_tables(self):
+		tables = frappe.get_all(
+			"Restaurant Table", filters={"outlet": self.outlet, "is_active": 1}, pluck="name", limit=2
+		)
+		self.assertEqual(len(tables), 2)
+		return tables[0], tables[1]
+
+	def test_transfer_table_moves_open_order(self):
+		t1, t2 = self._two_tables()
+		items = self._first_two_items()
+		order = open_walk_in_order(self.outlet, t1)["data"]["order"]
+		add_items(order["name"], [{"menu_item": items[0].name, "quantity": 1}])
+		out = transfer_table(order["name"], t2)["data"]["order"]
+		self.assertEqual(out["table"], t2)
+
+	def test_transfer_rejects_occupied_table(self):
+		t1, t2 = self._two_tables()
+		a = open_walk_in_order(self.outlet, t1)["data"]["order"]
+		open_walk_in_order(self.outlet, t2)  # t2 now occupied
+		with self.assertRaises(frappe.ValidationError):
+			transfer_table(a["name"], t2)
+
+	def test_transfer_rejects_settled_order(self):
+		t1, t2 = self._two_tables()
+		order = open_walk_in_order(self.outlet, t1)["data"]["order"]
+		frappe.db.set_value("Restaurant Order", order["name"], "state", "Settled")
+		with self.assertRaises(frappe.ValidationError):
+			transfer_table(order["name"], t2)
+
+	def test_merge_orders_combines_items_and_cancels_source(self):
+		t1, t2 = self._two_tables()
+		items = self._first_two_items()
+		primary = open_walk_in_order(self.outlet, t1)["data"]["order"]
+		add_items(primary["name"], [{"menu_item": items[0].name, "quantity": 1}])
+		source = open_walk_in_order(self.outlet, t2)["data"]["order"]
+		add_items(source["name"], [{"menu_item": items[1].name, "quantity": 2}])
+
+		out = merge_orders(primary["name"], source["name"])["data"]
+		self.assertEqual(out["absorbed"], source["name"])
+		self.assertEqual(len(out["order"]["items"]), 2)
+		# Source is cancelled and emptied; primary carries both lines.
+		self.assertEqual(frappe.db.get_value("Restaurant Order", source["name"], "state"), "Cancelled")
+		self.assertGreater(out["order"]["grand_total"], 0)
+
+	def test_merge_rejects_self(self):
+		t1, _ = self._two_tables()
+		order = open_walk_in_order(self.outlet, t1)["data"]["order"]
+		with self.assertRaises(frappe.ValidationError):
+			merge_orders(order["name"], order["name"])
+
+	def test_merge_rejects_settled_source(self):
+		t1, t2 = self._two_tables()
+		primary = open_walk_in_order(self.outlet, t1)["data"]["order"]
+		source = open_walk_in_order(self.outlet, t2)["data"]["order"]
+		frappe.db.set_value("Restaurant Order", source["name"], "state", "Settled")
+		with self.assertRaises(frappe.ValidationError):
+			merge_orders(primary["name"], source["name"])
 
 	def test_list_orders_by_state_filter(self):
 		table = self._any_table()

@@ -1151,6 +1151,119 @@ def cancel_order(order: str, reason: str | None = None, approval_request: str | 
 	return _envelope({"order": _order_dict(doc)})
 
 
+# ---------- table transfer + order merge (spec 006 · Workflow 4) ----------
+
+
+def _has_open_split(order: str) -> bool:
+	"""An order mid-split can't be moved or merged — money is already partitioned."""
+	return bool(
+		frappe.get_all(
+			"FnB Bill Split", filters={"restaurant_order": order}, limit=1, pluck="name"
+		)
+	)
+
+
+@frappe.whitelist()
+def transfer_table(order: str, to_table: str) -> dict:
+	"""Move an open order to a different, vacant table in the same outlet — the
+	guest changed seats. Leaves items, KOT, and totals intact."""
+	_require_permission("Restaurant Order", "write")
+	doc = _order_or_throw(order)
+	if doc.state not in OPEN_STATES:
+		frappe.throw(_("Order {0} is {1}; it can't be transferred.").format(order, doc.state))
+	if to_table == doc.restaurant_table:
+		frappe.throw(_("Order {0} is already on table {1}.").format(order, to_table))
+
+	target = frappe.db.get_value(
+		"Restaurant Table", to_table, ["name", "outlet", "is_active"], as_dict=True
+	)
+	if not target:
+		frappe.throw(_("Unknown table: {0}").format(to_table))
+	if target.outlet != doc.outlet:
+		frappe.throw(_("Table {0} belongs to a different outlet.").format(to_table))
+	if not target.is_active:
+		frappe.throw(_("Table {0} is deactivated.").format(to_table))
+
+	occupied = frappe.db.get_value(
+		"Restaurant Order",
+		{"restaurant_table": to_table, "state": ["in", list(OPEN_STATES)]},
+		"name",
+	)
+	if occupied:
+		frappe.throw(_("Table {0} already has an open order ({1}).").format(to_table, occupied))
+
+	from_table = doc.restaurant_table
+	doc.restaurant_table = to_table
+	doc.flags.ignore_permissions = True
+	doc.save()
+	record_audit_event(
+		"Restaurant Order", doc.name, "restaurant.transfer_table",
+		details={"from_table": from_table, "to_table": to_table},
+	)
+	return _envelope({"order": _order_dict(doc)})
+
+
+@frappe.whitelist()
+def merge_orders(primary_order: str, from_order: str) -> dict:
+	"""Combine two open orders into one bill — e.g. two tables joining. All items
+	from `from_order` move onto `primary_order`; the absorbed order is cancelled
+	with a pointer back. Totals recompute on the primary."""
+	_require_permission("Restaurant Order", "write")
+	if primary_order == from_order:
+		frappe.throw(_("Cannot merge an order into itself."))
+
+	primary = _order_or_throw(primary_order)
+	source = _order_or_throw(from_order)
+
+	for label, o in (("primary", primary), ("source", source)):
+		if o.state not in OPEN_STATES:
+			frappe.throw(_("The {0} order {1} is {2}; only open orders can be merged.").format(label, o.name, o.state))
+		if o.erpnext_sales_invoice or o.guest_folio:
+			frappe.throw(_("Order {0} is already (partly) settled and can't be merged.").format(o.name))
+		if _has_open_split(o.name):
+			frappe.throw(_("Order {0} has a split plan; cancel it before merging.").format(o.name))
+	if primary.outlet != source.outlet:
+		frappe.throw(_("Orders are in different outlets and can't be merged."))
+
+	moved = 0
+	for row in source.items:
+		primary.append(
+			"items",
+			{
+				"menu_item": row.menu_item,
+				"item_name": row.item_name,
+				"quantity": row.quantity,
+				"rate": flt(row.rate),
+				"chef_note": row.chef_note,
+				"line_status": row.line_status,
+				"sent_at": row.sent_at,
+				"ready_at": row.ready_at,
+				"served_at": row.served_at,
+			},
+		)
+		moved += 1
+
+	primary.flags.ignore_permissions = True
+	primary.save()  # recomputes totals
+
+	source.items = []
+	source.state = "Cancelled"
+	source.cancelled_at = now_datetime()
+	source.chef_notes = (source.chef_notes or "") + f"\n[Merged into {primary.name}]"
+	source.flags.ignore_permissions = True
+	source.save()
+
+	record_audit_event(
+		"Restaurant Order", primary.name, "restaurant.merge_orders",
+		details={"absorbed": source.name, "items_moved": moved},
+	)
+	record_audit_event(
+		"Restaurant Order", source.name, "restaurant.merged_away",
+		details={"into": primary.name},
+	)
+	return _envelope({"order": _order_dict(primary), "absorbed": source.name})
+
+
 # ---------- lookup helpers for the POS UI ----------
 
 

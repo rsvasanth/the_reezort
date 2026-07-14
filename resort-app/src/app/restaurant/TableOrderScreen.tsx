@@ -11,7 +11,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Loader2, Lock, Search, Send } from "lucide-react";
+import { ArrowLeft, ArrowRightLeft, Loader2, Lock, Search, Send } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,7 @@ import {
 } from "@/lib/restaurant-api";
 import { SettlePaymentSheet } from "@/components/fnb/settle-payment-sheet";
 import { SplitBillSheet } from "@/components/fnb/split-bill-sheet";
+import { TableMoveSheet } from "@/components/fnb/table-move-sheet";
 
 import { lineStatusTone, orderStateTone } from "./restaurant-format";
 
@@ -49,6 +50,7 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 	const [busy, setBusy] = useState(false);
 	const [settleOpen, setSettleOpen] = useState(false);
 	const [splitOpen, setSplitOpen] = useState(false);
+	const [moveOpen, setMoveOpen] = useState(false);
 
 	const loadOrder = useCallback(() => {
 		if (!orderName) {
@@ -170,6 +172,11 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 						</div>
 					</div>
 				</div>
+				{canAdd && order.table ? (
+					<Button variant="outline" size="sm" onClick={() => setMoveOpen(true)} data-testid="order-move">
+						<ArrowRightLeft className="size-4" /> Move / merge
+					</Button>
+				) : null}
 			</div>
 
 			<div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_23rem]">
@@ -314,6 +321,9 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 					onOpenChange={setSplitOpen}
 					onOrderSettled={loadOrder}
 				/>
+			) : null}
+			{order ? (
+				<TableMoveSheet order={order} open={moveOpen} onOpenChange={setMoveOpen} onDone={loadOrder} />
 			) : null}
 		</main>
 	);

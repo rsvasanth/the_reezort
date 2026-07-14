@@ -305,6 +305,20 @@ export function markKotStatus(order: string, status: "Preparing" | "Ready" | "Se
 	});
 }
 
+export function transferTable(order: string, toTable: string) {
+	return call<{ order: RestaurantOrder }>("transfer_table", {
+		method: "POST",
+		body: { order, to_table: toTable },
+	});
+}
+
+export function mergeOrders(primaryOrder: string, fromOrder: string) {
+	return call<{ order: RestaurantOrder; absorbed: string }>("merge_orders", {
+		method: "POST",
+		body: { primary_order: primaryOrder, from_order: fromOrder },
+	});
+}
+
 export function closeWalkIn(order: string, payments?: SettlePaymentInput[]) {
 	return call<{ order: RestaurantOrder; sales_invoice: string; payment_entry: string; payment_entries: string[] }>(
 		"close_walk_in",

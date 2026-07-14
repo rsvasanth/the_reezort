@@ -98,6 +98,12 @@ const CONTRACTS = [
 	// menu-management-api.ts ↔ Menu Item
 	{ file: "menu-management-api.ts", type: "MenuCategory", doctype: "menu_item", field: "category" },
 	{ file: "menu-management-api.ts", type: "MenuVegFlag", doctype: "menu_item", field: "veg_flag" },
+	// pms-api.ts ↔ Late Checkout Request / Room Move / Guest Registration Card
+	{ file: "pms-api.ts", type: "LateCheckoutRequestStatus", doctype: "late_checkout_request", field: "request_status" },
+	{ file: "pms-api.ts", type: "LateCheckoutChargePolicy", doctype: "late_checkout_request", field: "charge_policy" },
+	{ file: "pms-api.ts", type: "RoomMoveReason", doctype: "room_move", field: "reason" },
+	{ file: "pms-api.ts", type: "PurposeOfVisit", doctype: "guest_registration_card", field: "purpose_of_visit" },
+	{ file: "pms-api.ts", type: "IdType", doctype: "guest_profile", field: "id_type" },
 	// crm-api.ts ↔ Guest Profile / Guest Preference / Guest Consent /
 	//              Resort Loyalty Program / Loyalty Membership / Loyalty Transaction / Guest Feedback
 	{ file: "crm-api.ts", type: "GuestProfileStatus", doctype: "guest_profile", field: "status" },

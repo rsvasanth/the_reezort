@@ -366,3 +366,161 @@ export async function extendStay(stay: string, newDepartureDate: string): Promis
 		new_departure_date: newDepartureDate,
 	});
 }
+
+// ---------- late checkout ----------
+
+export type LateCheckoutRequestStatus = "Pending" | "Approved" | "Rejected" | "Cancelled";
+export type LateCheckoutChargePolicy = "No Charge" | "Half Day" | "Full Day" | "Custom";
+
+export type LateCheckoutRequest = {
+	name: string;
+	stay: string;
+	guest_name: string;
+	room: string | null;
+	requested_checkout_time: string;
+	request_status: LateCheckoutRequestStatus;
+	charge_policy: LateCheckoutChargePolicy | null;
+	affects_incoming: boolean;
+	requested_at: string | null;
+};
+
+export async function requestLateCheckout(
+	stay: string,
+	requestedCheckoutTime: string,
+	reason?: string
+): Promise<{ late_checkout_request: string; reused: boolean; affects_incoming: boolean }> {
+	return pmsCall("the_reezort.pms.lifecycle.request_late_checkout", "POST", {
+		stay,
+		requested_checkout_time: requestedCheckoutTime,
+		reason,
+	});
+}
+
+export async function approveLateCheckout(
+	lateCheckoutRequest: string,
+	approve: boolean,
+	chargePolicy?: LateCheckoutChargePolicy,
+	rejectionReason?: string
+): Promise<{ late_checkout_request: string; request_status: string; charge_policy: string | null }> {
+	return pmsCall("the_reezort.pms.lifecycle.approve_late_checkout", "POST", {
+		late_checkout_request: lateCheckoutRequest,
+		approve: approve ? 1 : 0,
+		charge_policy: chargePolicy,
+		rejection_reason: rejectionReason,
+	});
+}
+
+export async function listLateCheckoutRequests(
+	resortProperty?: string,
+	status?: LateCheckoutRequestStatus
+): Promise<{ requests: LateCheckoutRequest[] }> {
+	return pmsCall("the_reezort.pms.lifecycle.list_late_checkout_requests", "GET", {
+		resort_property: resortProperty,
+		status,
+	});
+}
+
+// ---------- no-show ----------
+
+export type NoShowEligible = {
+	reservation: string;
+	guest: string;
+	arrival_date: string;
+	room_type: string | null;
+	allocated_room: string | null;
+};
+
+export async function listNoShowEligible(
+	resortProperty?: string
+): Promise<{ eligible: NoShowEligible[] }> {
+	return pmsCall("the_reezort.pms.lifecycle.list_no_show_eligible", "GET", {
+		resort_property: resortProperty,
+	});
+}
+
+export async function markNoShow(
+	reservation: string,
+	reason: string,
+	feeApplicable?: boolean,
+	feeAmount?: number
+): Promise<{ no_show_record: string; reused: boolean; room_released: string | null }> {
+	return pmsCall("the_reezort.pms.lifecycle.mark_no_show", "POST", {
+		reservation,
+		reason,
+		fee_applicable: feeApplicable ? 1 : 0,
+		fee_amount: feeAmount,
+	});
+}
+
+export async function reverseNoShow(
+	noShowRecord: string,
+	reversalReason: string
+): Promise<{ no_show_record: string; no_show_status: string; reservation: string; reservation_status: string }> {
+	return pmsCall("the_reezort.pms.lifecycle.reverse_no_show", "POST", {
+		no_show_record: noShowRecord,
+		reversal_reason: reversalReason,
+	});
+}
+
+// ---------- checkout readiness ----------
+
+export type CheckoutBlocker = {
+	type: string;
+	message: string;
+	folio?: string;
+};
+
+export type CheckoutReadiness = {
+	stay: string;
+	guest: string;
+	room: string | null;
+	departure_date: string | null;
+	blockers: CheckoutBlocker[];
+	warnings: CheckoutBlocker[];
+	can_checkout: boolean;
+};
+
+export async function getCheckoutReadiness(stay: string): Promise<CheckoutReadiness> {
+	return pmsCall("the_reezort.pms.lifecycle.get_checkout_readiness", "GET", { stay });
+}
+
+// ---------- early departure ----------
+
+export async function earlyDeparture(
+	stay: string,
+	newDepartureDate: string,
+	reason?: string
+): Promise<{ stay: string; new_departure_date: string; original_departure_date: string; nights_shortened: number }> {
+	return pmsCall("the_reezort.pms.lifecycle.early_departure", "POST", {
+		stay,
+		new_departure_date: newDepartureDate,
+		reason,
+	});
+}
+
+// ---------- walk-in check-in ----------
+
+export type WalkInResult = {
+	reservation: string;
+	guest_profile: string;
+	customer: string;
+	stay: string;
+	stay_status: string;
+	folio: string;
+	current_room: string | null;
+	reused: boolean;
+};
+
+export async function walkInCheckIn(input: {
+	resort_property: string;
+	room_type: string;
+	guest_name: string;
+	nights?: number;
+	adults?: number;
+	children?: number;
+	room?: string;
+	phone?: string;
+	email?: string;
+}): Promise<WalkInResult> {
+	return pmsCall("the_reezort.pms.lifecycle.walk_in_check_in", "POST", input);
+}

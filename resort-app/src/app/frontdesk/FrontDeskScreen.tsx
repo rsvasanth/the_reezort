@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRightLeft, CalendarPlus, Loader2, LogIn, LogOut, ReceiptText, Shirt, UtensilsCrossed, Wine } from "lucide-react";
+import { ArrowRightLeft, CalendarMinus, CalendarPlus, Clock, Loader2, LogIn, LogOut, ReceiptText, Shirt, UserX, UtensilsCrossed, Wine, ClipboardCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { IrdOrderSheet } from "@/components/folio/ird-order-sheet";
@@ -41,6 +41,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+
 import { OccupancyTimeline } from "@/components/occupancy-timeline";
 import { WorkspacePage, KpiStrip } from "@/components/workspace/workspace";
 import {
@@ -50,10 +51,21 @@ import {
 	getFrontDeskBoard,
 	listVacantRoomsForMove,
 	moveGuestRoom,
+	requestLateCheckout,
+	approveLateCheckout,
+	listLateCheckoutRequests,
+	listNoShowEligible,
+	markNoShow,
+	getCheckoutReadiness,
+	earlyDeparture,
 	type FrontDeskBoard,
 	type FrontDeskInHouse,
 	type RoomMoveReason,
 	type VacantRoom,
+	type LateCheckoutRequest,
+	type NoShowEligible,
+	type CheckoutReadiness,
+	type LateCheckoutChargePolicy,
 } from "@/lib/pms-api";
 
 function reportError(error: unknown, fallback: string) {
@@ -70,10 +82,22 @@ export default function FrontDeskScreen() {
 	const [linen, setLinen] = useState<FrontDeskInHouse | null>(null);
 	const [ird, setIrd] = useState<FrontDeskInHouse | null>(null);
 	const [checkingOut, setCheckingOut] = useState<string | null>(null);
+	const [lateCheckout, setLateCheckout] = useState<FrontDeskInHouse | null>(null);
+	const [earlyDep, setEarlyDep] = useState<FrontDeskInHouse | null>(null);
+	const [readiness, setReadiness] = useState<FrontDeskInHouse | null>(null);
+	const [noShows, setNoShows] = useState<NoShowEligible[]>([]);
+	const [lateRequests, setLateRequests] = useState<LateCheckoutRequest[]>([]);
 
 	const reload = useCallback(async () => {
 		try {
-			setBoard(await getFrontDeskBoard());
+			const [boardData, noShowData, lateData] = await Promise.all([
+				getFrontDeskBoard(),
+				listNoShowEligible().catch(() => ({ eligible: [] })),
+				listLateCheckoutRequests(undefined, "Pending").catch(() => ({ requests: [] })),
+			]);
+			setBoard(boardData);
+			setNoShows(noShowData.eligible);
+			setLateRequests(lateData.requests);
 		} catch (error) {
 			reportError(error, "Could not load the front desk");
 		} finally {
@@ -216,9 +240,15 @@ export default function FrontDeskScreen() {
 												</TableCell>
 												<TableCell className="text-sm">{s.folio ?? "—"}</TableCell>
 												<TableCell className="text-right">
-													<div className="flex justify-end gap-1">
+													<div className="flex flex-wrap justify-end gap-1">
 														<Button size="sm" variant="ghost" onClick={() => setExtending(s)} data-testid={`extend-${s.stay}`}>
 															<CalendarPlus className="size-4" /> Extend
+														</Button>
+														<Button size="sm" variant="ghost" onClick={() => setEarlyDep(s)} data-testid={`early-dep-${s.stay}`}>
+															<CalendarMinus className="size-4" /> Early dep.
+														</Button>
+														<Button size="sm" variant="ghost" onClick={() => setLateCheckout(s)} data-testid={`late-co-${s.stay}`}>
+															<Clock className="size-4" /> Late C/O
 														</Button>
 														<Button size="sm" variant="ghost" onClick={() => setMoving(s)} data-testid={`move-${s.stay}`}>
 															<ArrowRightLeft className="size-4" /> Move
@@ -234,6 +264,9 @@ export default function FrontDeskScreen() {
 														</Button>
 														<Button size="sm" variant="outline" disabled={!s.folio} onClick={() => openFolio(s.folio)}>
 															<ReceiptText className="size-4" /> Open folio
+														</Button>
+														<Button size="sm" variant="ghost" onClick={() => setReadiness(s)} data-testid={`readiness-${s.stay}`}>
+															<ClipboardCheck className="size-4" /> Readiness
 														</Button>
 														<Button
 															size="sm"
@@ -253,6 +286,16 @@ export default function FrontDeskScreen() {
 							</Table>
 						</div>
 					</section>
+
+					{/* No-Show Queue */}
+					{noShows.length > 0 ? (
+						<NoShowSection eligible={noShows} onMarked={reload} />
+					) : null}
+
+					{/* Pending Late Checkout Requests */}
+					{lateRequests.length > 0 ? (
+						<LateCheckoutSection requests={lateRequests} onActioned={reload} />
+					) : null}
 				</>
 			) : (
 				<Card><CardContent className="py-8 text-sm text-muted-foreground">Could not load the front desk.</CardContent></Card>
@@ -298,6 +341,18 @@ export default function FrontDeskScreen() {
 					guestName={ird.guest}
 					onPosted={reload}
 				/>
+			) : null}
+
+			{lateCheckout ? (
+				<LateCheckoutSheet stay={lateCheckout} onClose={() => setLateCheckout(null)} onRequested={reload} />
+			) : null}
+
+			{earlyDep ? (
+				<EarlyDepartureSheet stay={earlyDep} onClose={() => setEarlyDep(null)} onDeparted={reload} />
+			) : null}
+
+			{readiness ? (
+				<CheckoutReadinessSheet stay={readiness} onClose={() => setReadiness(null)} />
 			) : null}
 		</WorkspacePage>
 	);
@@ -481,5 +536,354 @@ function ExtendSheet({
 				</SheetFooter>
 			</SheetContent>
 		</Sheet>
+	);
+}
+
+// ── Late Checkout Sheet ────────────────────────────────────────────────
+
+function LateCheckoutSheet({
+	stay,
+	onClose,
+	onRequested,
+}: {
+	stay: FrontDeskInHouse;
+	onClose: () => void;
+	onRequested: () => void;
+}) {
+	const [time, setTime] = useState("14:00");
+	const [reason, setReason] = useState("");
+	const [busy, setBusy] = useState(false);
+
+	async function save() {
+		setBusy(true);
+		try {
+			const result = await requestLateCheckout(stay.stay, time, reason || undefined);
+			toast.success(result.reused ? "Late checkout already requested" : "Late checkout requested", {
+				description: result.affects_incoming ? "Warning: conflicts with an incoming arrival" : `Requested until ${time}`,
+			});
+			onRequested();
+			onClose();
+		} catch (error) {
+			reportError(error, "Could not request late checkout");
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	return (
+		<Sheet open onOpenChange={(o) => !o && onClose()}>
+			<SheetContent className="flex w-full flex-col gap-0 sm:max-w-sm" data-testid="late-co-sheet">
+				<SheetHeader>
+					<SheetTitle>Request late checkout</SheetTitle>
+					<SheetDescription>{stay.guest} · room {stay.room ?? "—"}</SheetDescription>
+				</SheetHeader>
+				<div className="flex flex-col gap-3 px-4 py-4">
+					<div className="text-sm text-muted-foreground">Current departure: {stay.departure_date ?? "—"}</div>
+					<div className="flex flex-col gap-1.5">
+						<Label className="text-sm">Requested checkout time</Label>
+						<Input type="time" value={time} onChange={(e) => setTime(e.target.value)} data-testid="late-co-time" />
+					</div>
+					<div className="flex flex-col gap-1.5">
+						<Label className="text-sm">Reason</Label>
+						<Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Late flight" />
+					</div>
+				</div>
+				<SheetFooter>
+					<Button onClick={save} disabled={busy || !time} data-testid="late-co-confirm">
+						{busy ? <Loader2 className="size-4 animate-spin" /> : <Clock className="size-4" />} Request
+					</Button>
+					<Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
+	);
+}
+
+// ── Early Departure Sheet ──────────────────────────────────────────────
+
+function EarlyDepartureSheet({
+	stay,
+	onClose,
+	onDeparted,
+}: {
+	stay: FrontDeskInHouse;
+	onClose: () => void;
+	onDeparted: () => void;
+}) {
+	const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+	const [reason, setReason] = useState("");
+	const [busy, setBusy] = useState(false);
+
+	async function save() {
+		setBusy(true);
+		try {
+			const result = await earlyDeparture(stay.stay, date, reason || undefined);
+			toast.success("Early departure set", {
+				description: `Shortened by ${result.nights_shortened} night(s) — housekeeping notified`,
+			});
+			onDeparted();
+			onClose();
+		} catch (error) {
+			reportError(error, "Could not set early departure");
+		} finally {
+			setBusy(false);
+		}
+	}
+
+	return (
+		<Sheet open onOpenChange={(o) => !o && onClose()}>
+			<SheetContent className="flex w-full flex-col gap-0 sm:max-w-sm" data-testid="early-dep-sheet">
+				<SheetHeader>
+					<SheetTitle>Early departure</SheetTitle>
+					<SheetDescription>{stay.guest} · room {stay.room ?? "—"}</SheetDescription>
+				</SheetHeader>
+				<div className="flex flex-col gap-3 px-4 py-4">
+					<div className="text-sm text-muted-foreground">Current departure: {stay.departure_date ?? "—"}</div>
+					<div className="flex flex-col gap-1.5">
+						<Label className="text-sm">New departure date</Label>
+						<Input type="date" value={date} onChange={(e) => setDate(e.target.value)} data-testid="early-dep-date" />
+					</div>
+					<div className="flex flex-col gap-1.5">
+						<Label className="text-sm">Reason</Label>
+						<Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Change of plans" />
+					</div>
+				</div>
+				<SheetFooter>
+					<Button onClick={save} disabled={busy || !date} data-testid="early-dep-confirm">
+						{busy ? <Loader2 className="size-4 animate-spin" /> : <CalendarMinus className="size-4" />} Set early departure
+					</Button>
+					<Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
+	);
+}
+
+// ── Checkout Readiness Sheet ───────────────────────────────────────────
+
+function CheckoutReadinessSheet({
+	stay,
+	onClose,
+}: {
+	stay: FrontDeskInHouse;
+	onClose: () => void;
+}) {
+	const [data, setData] = useState<CheckoutReadiness | null>(null);
+	const [loading, setLoading] = useState(true);
+
+	useEffect(() => {
+		getCheckoutReadiness(stay.stay)
+			.then(setData)
+			.catch((e) => reportError(e, "Could not load readiness"))
+			.finally(() => setLoading(false));
+	}, [stay.stay]);
+
+	return (
+		<Sheet open onOpenChange={(o) => !o && onClose()}>
+			<SheetContent className="flex w-full flex-col gap-0 sm:max-w-md" data-testid="readiness-sheet">
+				<SheetHeader>
+					<SheetTitle>Checkout readiness</SheetTitle>
+					<SheetDescription>{stay.guest} · room {stay.room ?? "—"}</SheetDescription>
+				</SheetHeader>
+				<div className="flex flex-col gap-3 px-4 py-4">
+					{loading ? (
+						<div className="flex items-center gap-2 text-sm text-muted-foreground">
+							<Loader2 className="size-4 animate-spin" /> Checking…
+						</div>
+					) : data ? (
+						<>
+							{data.can_checkout ? (
+								<div className="flex items-center gap-2 rounded-md bg-green-50 p-3 text-sm text-green-800 dark:bg-green-950 dark:text-green-200">
+									<CheckCircle2 className="size-4" /> Ready for checkout
+								</div>
+							) : (
+								<div className="flex items-center gap-2 rounded-md bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">
+									<AlertTriangle className="size-4" /> Blocked — resolve before checkout
+								</div>
+							)}
+							{data.blockers.length > 0 ? (
+								<div className="flex flex-col gap-1">
+									<span className="text-xs font-semibold uppercase text-muted-foreground">Blockers</span>
+									{data.blockers.map((b, i) => (
+										<div key={i} className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-2 text-sm dark:border-red-900 dark:bg-red-950">
+											<AlertTriangle className="mt-0.5 size-3 shrink-0 text-red-600 dark:text-red-400" />
+											{b.message}
+										</div>
+									))}
+								</div>
+							) : null}
+							{data.warnings.length > 0 ? (
+								<div className="flex flex-col gap-1">
+									<span className="text-xs font-semibold uppercase text-muted-foreground">Warnings</span>
+									{data.warnings.map((w, i) => (
+										<div key={i} className="flex items-start gap-2 rounded-md border border-yellow-200 bg-yellow-50 p-2 text-sm dark:border-yellow-900 dark:bg-yellow-950">
+											<AlertTriangle className="mt-0.5 size-3 shrink-0 text-yellow-600 dark:text-yellow-400" />
+											{w.message}
+										</div>
+									))}
+								</div>
+							) : null}
+						</>
+					) : (
+						<div className="text-sm text-muted-foreground">Could not load readiness data.</div>
+					)}
+				</div>
+				<SheetFooter>
+					<Button variant="outline" onClick={onClose}>Close</Button>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
+	);
+}
+
+// ── No-Show Section ────────────────────────────────────────────────────
+
+function NoShowSection({ eligible, onMarked }: { eligible: NoShowEligible[]; onMarked: () => void }) {
+	const [marking, setMarking] = useState<string | null>(null);
+	const [reason, setReason] = useState("");
+
+	async function handleMark(e: NoShowEligible) {
+		if (!reason.trim()) {
+			toast.error("Please enter a reason for the no-show");
+			return;
+		}
+		setMarking(e.reservation);
+		try {
+			const result = await markNoShow(e.reservation, reason);
+			toast.success(`${e.guest} marked as no-show`, {
+				description: result.room_released ? `Room ${result.room_released} released` : undefined,
+			});
+			setReason("");
+			onMarked();
+		} catch (error) {
+			reportError(error, "Could not mark no-show");
+		} finally {
+			setMarking(null);
+		}
+	}
+
+	return (
+		<section className="flex flex-col gap-2">
+			<h2 className="flex items-center gap-2 text-sm font-semibold">
+				<UserX className="size-4 text-destructive" /> No-show review
+				<Badge variant="secondary">{eligible.length}</Badge>
+			</h2>
+			<div className="rounded-lg border">
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead>Guest</TableHead>
+							<TableHead>Arrival</TableHead>
+							<TableHead>Room type</TableHead>
+							<TableHead>Reason</TableHead>
+							<TableHead className="text-right">Action</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{eligible.map((e) => (
+							<TableRow key={e.reservation}>
+								<TableCell className="font-medium">{e.guest}</TableCell>
+								<TableCell className="text-sm">{e.arrival_date}</TableCell>
+								<TableCell className="text-sm">{e.room_type ?? "—"}</TableCell>
+								<TableCell>
+									<Input
+										value={reason}
+										onChange={(ev) => setReason(ev.target.value)}
+										placeholder="Reason…"
+										className="h-8 w-40"
+									/>
+								</TableCell>
+								<TableCell className="text-right">
+									<Button
+										size="sm"
+										variant="destructive"
+										disabled={marking === e.reservation}
+										onClick={() => handleMark(e)}
+									>
+										{marking === e.reservation ? <Loader2 className="size-4 animate-spin" /> : <UserX className="size-4" />} No-show
+									</Button>
+								</TableCell>
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
+			</div>
+		</section>
+	);
+}
+
+// ── Late Checkout Pending Section ──────────────────────────────────────
+
+function LateCheckoutSection({ requests, onActioned }: { requests: LateCheckoutRequest[]; onActioned: () => void }) {
+	const [actioning, setActioning] = useState<string | null>(null);
+
+	async function handleApprove(req: LateCheckoutRequest, approve: boolean, chargePolicy?: LateCheckoutChargePolicy) {
+		setActioning(req.name);
+		try {
+			await approveLateCheckout(req.name, approve, chargePolicy);
+			toast.success(approve ? "Late checkout approved" : "Late checkout rejected");
+			onActioned();
+		} catch (error) {
+			reportError(error, "Could not process late checkout");
+		} finally {
+			setActioning(null);
+		}
+	}
+
+	return (
+		<section className="flex flex-col gap-2">
+			<h2 className="flex items-center gap-2 text-sm font-semibold">
+				<Clock className="size-4 text-amber-600" /> Pending late checkouts
+				<Badge variant="secondary">{requests.length}</Badge>
+			</h2>
+			<div className="rounded-lg border">
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead>Guest</TableHead>
+							<TableHead>Room</TableHead>
+							<TableHead>Requested until</TableHead>
+							<TableHead>Conflict</TableHead>
+							<TableHead className="text-right">Action</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{requests.map((r) => (
+							<TableRow key={r.name}>
+								<TableCell className="font-medium">{r.guest_name}</TableCell>
+								<TableCell className="text-sm">{r.room ?? "—"}</TableCell>
+								<TableCell className="text-sm">{r.requested_checkout_time}</TableCell>
+								<TableCell>
+									{r.affects_incoming ? (
+										<Badge variant="destructive">Incoming arrival</Badge>
+									) : (
+										<span className="text-sm text-muted-foreground">None</span>
+									)}
+								</TableCell>
+								<TableCell className="text-right">
+									<div className="flex justify-end gap-1">
+										<Button
+											size="sm"
+											disabled={actioning === r.name}
+											onClick={() => handleApprove(r, true, "No Charge")}
+										>
+											{actioning === r.name ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />} Approve
+										</Button>
+										<Button
+											size="sm"
+											variant="destructive"
+											disabled={actioning === r.name}
+											onClick={() => handleApprove(r, false)}
+										>
+											Reject
+										</Button>
+									</div>
+								</TableCell>
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
+			</div>
+		</section>
 	);
 }

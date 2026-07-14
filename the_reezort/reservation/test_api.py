@@ -171,6 +171,22 @@ class TestReservationAPI(FrappeTestCase):
 		self._seed_override_policy(auto_role="System Manager")
 		_authorize_override("RES-AUTO", ["DLX"])
 
+	# ---------- forecast report ----------
+
+	def test_forecast_counts_arrivals_in_window(self):
+		from the_reezort.reservation.api import get_reservation_forecast
+
+		reservation = self._confirm_fresh(6, {"full_name": "Forecast Guest", "email": "forecast@example.com"})
+		arrival = str(frappe.db.get_value("Reservation", reservation, "arrival_date"))
+
+		out = get_reservation_forecast(resort_property=self.property, start_date=str(today()), days=14)
+		self.assertEqual(len(out["forecast"]), 14)
+		day = next((d for d in out["forecast"] if d["date"] == arrival), None)
+		self.assertIsNotNone(day, "the arrival day should be a bucket in the window")
+		self.assertGreaterEqual(day["arrivals"], 1)
+		self.assertGreaterEqual(day["rooms"], 1)
+		self.assertGreaterEqual(out["totals"]["arrivals"], 1)
+
 	def test_confirm_blocked_when_deposit_not_paid_under_partial_policy(self):
 		hold = create_quote_or_hold(
 			property=self.property,

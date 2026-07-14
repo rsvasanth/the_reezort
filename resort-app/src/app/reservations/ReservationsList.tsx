@@ -10,7 +10,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Loader2, Plus, Search, X } from "lucide-react";
+import { CalendarClock, ChevronLeft, ChevronRight, Loader2, Plus, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { RoomThumb } from "@/components/property/room-thumb";
@@ -139,9 +139,14 @@ export default function ReservationsList() {
 			title="Reservations"
 			subtitle="Booking pipeline — confirmed bookings appear at the front desk."
 			actions={
-				<Button onClick={() => go("#/reservations/new")} data-testid="new-booking">
-					<Plus className="size-4" /> New booking
-				</Button>
+				<div className="flex items-center gap-2">
+					<Button variant="outline" onClick={() => go("#/reservations/forecast")} data-testid="forecast-link">
+						<CalendarClock className="size-4" /> Forecast
+					</Button>
+					<Button onClick={() => go("#/reservations/new")} data-testid="new-booking">
+						<Plus className="size-4" /> New booking
+					</Button>
+				</div>
 			}
 		>
 			<KpiStrip items={kpis} />

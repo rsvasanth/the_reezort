@@ -1276,6 +1276,97 @@ def list_reservations(
 # ---------- occupancy timeline (Gantt view for Front Desk) ----------
 
 @frappe.whitelist()
+def get_reservation_forecast(resort_property=None, start_date=None, days=14):
+	"""Forward-looking reservations report: per-day arrivals + room nights +
+	estimated revenue across the window, plus a deposit-pending follow-up list
+	(bookings that still need a deposit chase). Read-only."""
+	from frappe.utils import add_days, getdate, today
+
+	_require_permission("Reservation", "read")
+	start = getdate(start_date) if start_date else getdate(today())
+	days = max(1, int(days or 14))
+	end = add_days(start, days - 1)
+
+	if not resort_property:
+		resort_property = frappe.db.get_value("Resort Property", {"is_active": 1}, "name")
+
+	res_filters = {
+		"status": ["in", ["Confirmed", "Modified", "Deposit Pending"]],
+		"arrival_date": ["between", [str(start), str(end)]],
+	}
+	if resort_property:
+		res_filters["resort_property"] = resort_property
+	rows = frappe.get_all(
+		"Reservation",
+		filters=res_filters,
+		fields=[
+			"name", "arrival_date", "departure_date", "status",
+			"total_estimated_amount", "deposit_status", "staying_guest_profile",
+		],
+		order_by="arrival_date asc",
+	)
+
+	# Non-cancelled room count per reservation (single batched query).
+	room_counts = {}
+	names = [r.name for r in rows]
+	if names:
+		for rr in frappe.get_all(
+			"Reservation Room",
+			filters={"parent": ["in", names], "status": ["!=", "Cancelled"]},
+			fields=["parent"],
+		):
+			room_counts[rr.parent] = room_counts.get(rr.parent, 0) + 1
+
+	# Dense per-day buckets so the report always spans the full window.
+	buckets = {
+		str(add_days(start, i)): {"date": str(add_days(start, i)), "arrivals": 0, "rooms": 0, "revenue": 0.0}
+		for i in range(days)
+	}
+	for r in rows:
+		bucket = buckets.get(str(r.arrival_date))
+		if not bucket:
+			continue
+		bucket["arrivals"] += 1
+		bucket["rooms"] += room_counts.get(r.name, 1)
+		bucket["revenue"] += flt(r.total_estimated_amount)
+	forecast = [buckets[str(add_days(start, i))] for i in range(days)]
+
+	deposit_follow_up = []
+	for r in rows:
+		if not (r.status == "Deposit Pending" or r.deposit_status == "Partially Paid"):
+			continue
+		guest = (
+			frappe.db.get_value("Guest Profile", r.staying_guest_profile, "guest_full_name")
+			if r.staying_guest_profile
+			else None
+		)
+		deposit_follow_up.append(
+			{
+				"reservation": r.name,
+				"guest": guest or "Guest",
+				"arrival_date": str(r.arrival_date) if r.arrival_date else None,
+				"total_estimated_amount": flt(r.total_estimated_amount),
+				"deposit_status": r.deposit_status or "—",
+			}
+		)
+
+	return {
+		"resort_property": resort_property,
+		"start_date": str(start),
+		"end_date": str(end),
+		"days": days,
+		"forecast": forecast,
+		"deposit_follow_up": deposit_follow_up,
+		"totals": {
+			"arrivals": sum(b["arrivals"] for b in forecast),
+			"rooms": sum(b["rooms"] for b in forecast),
+			"revenue": sum(b["revenue"] for b in forecast),
+			"deposit_pending": len(deposit_follow_up),
+		},
+	}
+
+
+@frappe.whitelist()
 def get_occupancy_timeline(start_date=None, days=14, resort_property=None):
 	"""Rooms × days grid with reservation blocks + open task chips for a Gantt view.
 

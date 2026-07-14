@@ -361,6 +361,34 @@ export async function reverseNoShow(
 	return call("the_reezort.reservation.api.reverse_no_show", "POST", { reservation, reason });
 }
 
+export type ForecastDay = { date: string; arrivals: number; rooms: number; revenue: number };
+
+export type DepositFollowUp = {
+	reservation: string;
+	guest: string;
+	arrival_date: string | null;
+	total_estimated_amount: number;
+	deposit_status: string;
+};
+
+export type ReservationForecast = {
+	resort_property: string | null;
+	start_date: string;
+	end_date: string;
+	days: number;
+	forecast: ForecastDay[];
+	deposit_follow_up: DepositFollowUp[];
+	totals: { arrivals: number; rooms: number; revenue: number; deposit_pending: number };
+};
+
+export async function getReservationForecast(params?: {
+	resort_property?: string;
+	start_date?: string;
+	days?: number;
+}): Promise<ReservationForecast> {
+	return call("the_reezort.reservation.api.get_reservation_forecast", "GET", params ?? {});
+}
+
 export async function setReservationBillTo(
 	reservation: string,
 	billToCustomer: string | null,

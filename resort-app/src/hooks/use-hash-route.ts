@@ -43,6 +43,7 @@ export type ParsedRoute =
 	| { kind: "billing" }
 	| { kind: "frontdesk" }
 	| { kind: "reservations"; id: string | null }
+	| { kind: "reservation-forecast" }
 	| { kind: "checkin"; reservation: string | null }
 	| { kind: "mytasks" }
 	| { kind: "tasks" }
@@ -95,6 +96,7 @@ export function parseHashRoute(hash: string): ParsedRoute {
 
 	if (path === "/frontdesk") return { kind: "frontdesk" };
 
+	if (path === "/reservations/forecast") return { kind: "reservation-forecast" };
 	const reservationsMatch = path.match(/^\/reservations(?:\/(.*))?$/);
 	if (reservationsMatch) {
 		const id = reservationsMatch[1];

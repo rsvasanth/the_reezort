@@ -35,6 +35,7 @@ import DirectBillScreen from "@/app/billing/DirectBillScreen";
 import CashierCloseScreen from "@/app/backoffice/CashierCloseScreen";
 import FrontDeskScreen from "@/app/frontdesk/FrontDeskScreen";
 import ReservationsScreen from "@/app/reservations/ReservationsScreen";
+import ReservationForecastScreen from "@/app/reservations/ReservationForecast";
 import RestaurantFloor from "@/app/restaurant/RestaurantFloor";
 import TableOrderScreen from "@/app/restaurant/TableOrderScreen";
 import KitchenScreen from "@/app/restaurant/KitchenScreen";
@@ -286,6 +287,14 @@ function AuthGate() {
 		return (
 			<AppShell>
 				<FrontDeskScreen />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "reservation-forecast") {
+		return (
+			<AppShell>
+				<ReservationForecastScreen />
 			</AppShell>
 		);
 	}

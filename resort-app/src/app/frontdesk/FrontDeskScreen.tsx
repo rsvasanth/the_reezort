@@ -58,6 +58,7 @@ import {
 	markNoShow,
 	getCheckoutReadiness,
 	earlyDeparture,
+	type ArrivalReadiness,
 	type FrontDeskBoard,
 	type FrontDeskInHouse,
 	type RoomMoveReason,
@@ -169,12 +170,13 @@ export default function FrontDeskScreen() {
 										<TableHead>Room type</TableHead>
 										<TableHead>Arrival</TableHead>
 										<TableHead>Nights</TableHead>
+										<TableHead>Readiness</TableHead>
 										<TableHead className="text-right">Action</TableHead>
 									</TableRow>
 								</TableHeader>
 								<TableBody>
 									{board.arrivals.length === 0 ? (
-										<TableRow><TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">No arrivals pending.</TableCell></TableRow>
+										<TableRow><TableCell colSpan={6} className="py-6 text-center text-sm text-muted-foreground">No arrivals pending.</TableCell></TableRow>
 									) : (
 										board.arrivals.map((a) => (
 											<TableRow key={a.reservation} data-testid={`arrival-${a.reservation}`}>
@@ -189,6 +191,7 @@ export default function FrontDeskScreen() {
 												</TableCell>
 												<TableCell className="text-sm">{a.arrival_date ?? "—"}</TableCell>
 												<TableCell className="text-sm">{a.nights ?? "—"}</TableCell>
+												<TableCell><ArrivalReadinessBadges readiness={a.readiness} /></TableCell>
 												<TableCell className="text-right">
 													<Button
 														size="sm"
@@ -733,6 +736,37 @@ function CheckoutReadinessSheet({
 				</SheetFooter>
 			</SheetContent>
 		</Sheet>
+	);
+}
+
+// ── Arrival readiness badges ───────────────────────────────────────────
+
+const SETTLED_DEPOSIT = new Set(["Paid", "Not Required", "Waived"]);
+
+function ArrivalReadinessBadges({ readiness }: { readiness: ArrivalReadiness }) {
+	if (readiness.clear) {
+		return (
+			<div className="flex flex-wrap items-center gap-1">
+				<Badge variant="secondary" className="gap-1">✓ Ready</Badge>
+				<Badge variant={readiness.registration === "signed" ? "secondary" : "outline"} className="text-[11px]">
+					Reg {readiness.registration === "signed" ? "✓" : "pending"}
+				</Badge>
+			</div>
+		);
+	}
+	const depositOk = SETTLED_DEPOSIT.has(readiness.deposit);
+	return (
+		<div className="flex flex-wrap items-center gap-1">
+			<Badge variant={readiness.kyc === "verified" ? "secondary" : "destructive"} className="text-[11px]">
+				KYC {readiness.kyc === "verified" ? "✓" : readiness.kyc}
+			</Badge>
+			<Badge variant={depositOk ? "secondary" : "destructive"} className="text-[11px]">
+				{readiness.deposit}
+			</Badge>
+			<Badge variant={readiness.registration === "signed" ? "secondary" : "outline"} className="text-[11px]">
+				Reg {readiness.registration === "signed" ? "✓" : "pending"}
+			</Badge>
+		</div>
 	);
 }
 

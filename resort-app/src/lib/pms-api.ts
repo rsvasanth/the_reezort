@@ -24,6 +24,13 @@ export type CheckInResult = {
 	reused: boolean;
 };
 
+export type ArrivalReadiness = {
+	kyc: "verified" | "pending" | "none";
+	deposit: string;
+	registration: "signed" | "pending";
+	clear: boolean;
+};
+
 export type FrontDeskArrival = {
 	reservation: string;
 	guest: string;
@@ -33,6 +40,8 @@ export type FrontDeskArrival = {
 	room_type_image: string | null;
 	nights: number | null;
 	due_today: boolean;
+	booking_source: string | null;
+	readiness: ArrivalReadiness;
 };
 
 export type FrontDeskInHouse = {

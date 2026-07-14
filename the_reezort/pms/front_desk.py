@@ -34,17 +34,57 @@ def get_front_desk_board(resort_property=None):
 	res_filters = {"status": ["in", ["Confirmed", "Modified"]]}
 	if resort_property:
 		res_filters["resort_property"] = resort_property
-	arrivals = []
-	for r in frappe.get_all(
+	res_rows = frappe.get_all(
 		"Reservation",
 		filters=res_filters,
-		fields=["name", "arrival_date", "departure_date", "staying_guest_profile"],
+		fields=["name", "arrival_date", "departure_date", "staying_guest_profile", "deposit_status", "booking_source"],
 		order_by="arrival_date asc",
-	):
+	)
+
+	# Batch the readiness look-ups so the board pre-screens arrivals for check-in
+	# blockers (KYC, deposit, registration) without an N+1 query per row.
+	res_names = [r.name for r in res_rows]
+	profile_names = [r.staying_guest_profile for r in res_rows if r.staying_guest_profile]
+	kyc_by_profile = {
+		g.name: bool(g.kyc_verified)
+		for g in (
+			frappe.get_all("Guest Profile", filters={"name": ["in", profile_names]}, fields=["name", "kyc_verified"])
+			if profile_names
+			else []
+		)
+	}
+	signed_reservations = {
+		c.reservation
+		for c in (
+			frappe.get_all(
+				"Guest Registration Card",
+				filters={"reservation": ["in", res_names]},
+				fields=["reservation", "signature", "terms_accepted"],
+			)
+			if res_names
+			else []
+		)
+		if c.signature and c.terms_accepted
+	}
+	settled_deposit = {"Paid", "Not Required", "Waived"}
+
+	arrivals = []
+	for r in res_rows:
 		room_type_row = frappe.get_all(
 			"Reservation Room", filters={"parent": r.name}, fields=["room_type"], limit=1
 		)
 		room_type = room_type_row[0].room_type if room_type_row else None
+		kyc_verified = kyc_by_profile.get(r.staying_guest_profile, False)
+		registration_signed = r.name in signed_reservations
+		deposit_status = r.deposit_status or "None"
+		readiness = {
+			"kyc": "verified" if kyc_verified else ("pending" if r.staying_guest_profile else "none"),
+			"deposit": deposit_status,
+			"registration": "signed" if registration_signed else "pending",
+			# No pre-arrival blocker: KYC on file + deposit settled. (Registration
+			# is captured at the desk, so it isn't part of the clear signal.)
+			"clear": bool(kyc_verified) and deposit_status in settled_deposit,
+		}
 		arrivals.append(
 			{
 				"reservation": r.name,
@@ -55,6 +95,8 @@ def get_front_desk_board(resort_property=None):
 				"room_type_image": frappe.db.get_value("Room Type", room_type, "image") if room_type else None,
 				"nights": date_diff(r.departure_date, r.arrival_date) if (r.arrival_date and r.departure_date) else None,
 				"due_today": bool(r.arrival_date and getdate(r.arrival_date) <= today_d),
+				"booking_source": r.booking_source,
+				"readiness": readiness,
 			}
 		)
 

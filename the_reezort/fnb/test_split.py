@@ -162,7 +162,7 @@ class TestSplitBill(FrappeTestCase):
 		# Folio carries the room portion's charge line.
 		lines = frappe.get_all(
 			"Folio Line",
-			filters={"guest_folio": room["split"]["guest_folio"], "source_doctype": "F&B Bill Split"},
+			filters={"guest_folio": room["split"]["guest_folio"], "source_doctype": "FnB Bill Split"},
 			pluck="name",
 		)
 		self.assertTrue(lines)

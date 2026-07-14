@@ -63,14 +63,14 @@
   {"fieldname": "guest_folio", "fieldtype": "Link", "label": "Guest Folio", "options": "Guest Folio", "read_only": 1},
   {"fieldname": "settled_at", "fieldtype": "Datetime", "label": "Settled At", "read_only": 1},
   {"fieldname": "items_section", "fieldtype": "Section Break", "label": "Allocated Items"},
-  {"description": "Item allocations for Item / Seat / Custom splits (empty for Amount / Percentage)", "fieldname": "split_items", "fieldtype": "Table", "label": "Split Items", "options": "F&B Bill Split Item"}
+  {"description": "Item allocations for Item / Seat / Custom splits (empty for Amount / Percentage)", "fieldname": "split_items", "fieldtype": "Table", "label": "Split Items", "options": "FnB Bill Split Item"}
  ],
  "index_web_pages_for_search": 1,
  "links": [],
  "modified": "2026-07-14 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "THE REEZORT",
- "name": "F&B Bill Split",
+ "name": "FnB Bill Split",
  "owner": "Administrator",
  "permissions": [
   {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},

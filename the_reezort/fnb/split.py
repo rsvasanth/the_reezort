@@ -116,7 +116,7 @@ def _resolve_portions(order, split_type: str, splits: list[dict]) -> list[dict]:
 	"""Validate the plan and compute each portion's allocations + totals.
 
 	Raises ValidationError on any coverage mismatch. Returns a list of dicts
-	ready to persist as F&B Bill Split records.
+	ready to persist as FnB Bill Split records.
 	"""
 	if not splits:
 		frappe.throw(_("A split plan needs at least one portion."))
@@ -222,9 +222,9 @@ def _split_dict(doc) -> dict:
 
 def _list_for_order(order_name: str) -> list[dict]:
 	names = frappe.get_all(
-		"F&B Bill Split", filters={"restaurant_order": order_name}, pluck="name", order_by="creation asc"
+		"FnB Bill Split", filters={"restaurant_order": order_name}, pluck="name", order_by="creation asc"
 	)
-	return [_split_dict(frappe.get_doc("F&B Bill Split", n)) for n in names]
+	return [_split_dict(frappe.get_doc("FnB Bill Split", n)) for n in names]
 
 
 # --------------------------------------------------------------------------- #
@@ -233,9 +233,9 @@ def _list_for_order(order_name: str) -> list[dict]:
 
 @frappe.whitelist()
 def create_split_plan(order: str, split_type: str, splits: list[dict] | str) -> dict:
-	"""Partition an unpaid order into Draft F&B Bill Split records. Re-planning
+	"""Partition an unpaid order into Draft FnB Bill Split records. Re-planning
 	is allowed until the first portion is settled; it replaces the Draft plan."""
-	_require_permission("F&B Bill Split", "create")
+	_require_permission("FnB Bill Split", "create")
 	doc = _order_or_throw(order)
 	if doc.state in {"Settled", "Cancelled"}:
 		frappe.throw(_("Order {0} is {1}; it cannot be split.").format(order, doc.state))
@@ -249,12 +249,12 @@ def create_split_plan(order: str, split_type: str, splits: list[dict] | str) -> 
 	# Reject a re-plan once anything has been settled — you cannot re-slice money
 	# that has already posted.
 	existing = frappe.get_all(
-		"F&B Bill Split", filters={"restaurant_order": order}, fields=["name", "split_status"]
+		"FnB Bill Split", filters={"restaurant_order": order}, fields=["name", "split_status"]
 	)
 	if any(s.split_status == "Settled" for s in existing):
 		frappe.throw(_("Order {0} has settled splits; cancel them before re-planning.").format(order))
 	for s in existing:
-		frappe.delete_doc("F&B Bill Split", s.name, force=True, ignore_permissions=True)
+		frappe.delete_doc("FnB Bill Split", s.name, force=True, ignore_permissions=True)
 
 	resolved = _resolve_portions(doc, split_type, splits)
 	currency = doc.currency or "INR"
@@ -264,7 +264,7 @@ def create_split_plan(order: str, split_type: str, splits: list[dict] | str) -> 
 		mode = portion.get("settlement_mode") or "Direct"
 		split_doc = frappe.get_doc(
 			{
-				"doctype": "F&B Bill Split",
+				"doctype": "FnB Bill Split",
 				"restaurant_order": order,
 				"split_type": split_type,
 				"split_label": portion.get("label") or f"Split {idx + 1}",
@@ -295,21 +295,21 @@ def create_split_plan(order: str, split_type: str, splits: list[dict] | str) -> 
 
 @frappe.whitelist()
 def list_splits(order: str) -> dict:
-	_require_permission("F&B Bill Split", "read")
+	_require_permission("FnB Bill Split", "read")
 	return _envelope({"order": order, "splits": _list_for_order(order)})
 
 
 @frappe.whitelist()
 def cancel_split_plan(order: str) -> dict:
 	"""Discard the Draft plan (only if nothing has settled yet)."""
-	_require_permission("F&B Bill Split", "delete")
+	_require_permission("FnB Bill Split", "delete")
 	rows = frappe.get_all(
-		"F&B Bill Split", filters={"restaurant_order": order}, fields=["name", "split_status"]
+		"FnB Bill Split", filters={"restaurant_order": order}, fields=["name", "split_status"]
 	)
 	if any(r.split_status == "Settled" for r in rows):
 		frappe.throw(_("Cannot cancel — order {0} already has settled splits.").format(order))
 	for r in rows:
-		frappe.delete_doc("F&B Bill Split", r.name, force=True, ignore_permissions=True)
+		frappe.delete_doc("FnB Bill Split", r.name, force=True, ignore_permissions=True)
 	record_audit_event("Restaurant Order", order, "fnb.cancel_split_plan", details={"removed": len(rows)})
 	return _envelope({"order": order, "splits": []})
 
@@ -319,8 +319,8 @@ def settle_split(split: str, payments: list[dict] | str | None = None, stay: str
 	"""Settle ONE portion. Direct → Sales Invoice + Payment Entry; Room → folio
 	charge lines. When the last open portion settles, the parent order flips to
 	Settled and BOM stock is consumed once for the whole order."""
-	_require_permission("F&B Bill Split", "write")
-	split_doc = frappe.get_doc("F&B Bill Split", split)
+	_require_permission("FnB Bill Split", "write")
+	split_doc = frappe.get_doc("FnB Bill Split", split)
 	if split_doc.split_status == "Settled":
 		return _envelope({"split": _split_dict(split_doc), "reused": True})
 	if split_doc.split_status == "Cancelled":
@@ -339,7 +339,7 @@ def settle_split(split: str, payments: list[dict] | str | None = None, stay: str
 	split_doc.flags.ignore_permissions = True
 	split_doc.save(ignore_permissions=True)
 	record_audit_event(
-		"F&B Bill Split", split_doc.name, "fnb.settle_split",
+		"FnB Bill Split", split_doc.name, "fnb.settle_split",
 		details={
 			"order": order.name,
 			"mode": split_doc.settlement_mode,
@@ -498,7 +498,7 @@ def _settle_room(split_doc, order, stay: str | None) -> None:
 						"guest_folio": folio,
 						"line_type": "Charge",
 						"source_module": "Restaurant",
-						"source_doctype": "F&B Bill Split",
+						"source_doctype": "FnB Bill Split",
 						"source_name": split_doc.name,
 						"source_row_id": row.name,
 						"idempotency_key": f"fnb-split:{split_doc.name}:{row.name}",
@@ -518,7 +518,7 @@ def _settle_room(split_doc, order, stay: str | None) -> None:
 					"guest_folio": folio,
 					"line_type": "Charge",
 					"source_module": "Restaurant",
-					"source_doctype": "F&B Bill Split",
+					"source_doctype": "FnB Bill Split",
 					"source_name": split_doc.name,
 					"idempotency_key": f"fnb-split:{split_doc.name}:share",
 					"service_date": today(),
@@ -540,7 +540,7 @@ def _settle_room(split_doc, order, stay: str | None) -> None:
 					"guest_folio": folio,
 					"line_type": "Charge",
 					"source_module": "Restaurant",
-					"source_doctype": "F&B Bill Split",
+					"source_doctype": "FnB Bill Split",
 					"source_name": split_doc.name,
 					"idempotency_key": f"fnb-split:{split_doc.name}:service",
 					"service_date": today(),
@@ -560,7 +560,7 @@ def _finalize_if_complete(order) -> bool:
 	"""If every split for the order is Settled, mark the order Settled and
 	consume BOM stock once for the whole order. Returns True when it finalizes."""
 	statuses = frappe.get_all(
-		"F&B Bill Split", filters={"restaurant_order": order.name}, pluck="split_status"
+		"FnB Bill Split", filters={"restaurant_order": order.name}, pluck="split_status"
 	)
 	if not statuses or any(s != "Settled" for s in statuses):
 		return False

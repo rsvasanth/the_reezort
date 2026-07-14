@@ -133,6 +133,29 @@ export type RestaurantOrder = {
 	items: RestaurantOrderItem[];
 };
 
+// Kitchen Display payload — the money-stripped view the KDS receives.
+// Mirrors backend `_kitchen_order_dict`: financial totals are never sent to
+// the kitchen role (spec 006, spec.md:829). RestaurantOrder is a superset, so
+// full orders (e.g. mock data) remain assignable to this shape.
+export type KitchenTicketItem = Omit<RestaurantOrderItem, "rate" | "amount">;
+
+export type KitchenTicket = Omit<
+	RestaurantOrder,
+	| "subtotal"
+	| "discount_amount"
+	| "service_charge_pct"
+	| "service_charge_amount"
+	| "total_taxes"
+	| "grand_total"
+	| "currency"
+	| "waiter_user"
+	| "guest_folio"
+	| "settled_at"
+	| "erpnext_sales_invoice"
+	| "erpnext_payment_entry"
+	| "items"
+> & { items: KitchenTicketItem[] };
+
 export type TableOpenOrder = {
 	name: string;
 	state: RestaurantOrderState;
@@ -269,7 +292,7 @@ export function sendToKitchen(order: string) {
 }
 
 export function listActiveKots(outlet: string) {
-	return call<{ outlet: string; orders: RestaurantOrder[] }>("list_active_kots", {
+	return call<{ outlet: string; orders: KitchenTicket[] }>("list_active_kots", {
 		method: "GET",
 		params: { outlet },
 	});

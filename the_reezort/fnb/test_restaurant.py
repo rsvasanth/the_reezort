@@ -4,6 +4,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import flt
 
+from the_reezort.approvals.api import ApprovalRequired
 from the_reezort.fnb.api import seed_fnb_catalog
 from the_reezort.fnb.restaurant import (
 	add_items,
@@ -363,6 +364,89 @@ class TestRestaurantPos(FrappeTestCase):
 		mark_kot_status(order["name"], "Ready")
 		mark_kot_status(order["name"], "Served")
 		result = cancel_order(order["name"], reason="Guest comp'd — manager sign-off")
+		self.assertEqual(result["data"]["order"]["state"], "Cancelled")
+
+	# ---------- KDS financial-leak guard (spec.md:829) ----------
+
+	def test_kds_payload_hides_financial_totals(self):
+		"""The kitchen role must never see money (spec 006, spec.md:829). The
+		KDS payload carries prep data only — no order totals, no per-item price."""
+		table = self._any_table()
+		items = self._first_two_items()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		add_items(order["name"], [{"menu_item": items[0].name, "quantity": 2}])
+		send_to_kitchen(order["name"])
+		kot = list_active_kots(self.outlet)["data"]["orders"][0]
+		for money_field in (
+			"subtotal",
+			"discount_amount",
+			"service_charge_amount",
+			"total_taxes",
+			"grand_total",
+			"currency",
+		):
+			self.assertNotIn(money_field, kot)
+		self.assertTrue(kot["items"])
+		for line in kot["items"]:
+			self.assertNotIn("rate", line)
+			self.assertNotIn("amount", line)
+			# Prep data the kitchen DOES need is still present.
+			self.assertIn("item_name", line)
+			self.assertIn("line_status", line)
+
+	# ---------- post-KOT void approval gate (spec.md:179) ----------
+
+	def _seed_void_policy(self, auto_role=None, threshold=0):
+		"""Create an active restaurant_void Approval Policy for the current test.
+		FrappeTestCase rolls each test back, so no explicit teardown is needed."""
+		return frappe.get_doc(
+			{
+				"doctype": "Approval Policy",
+				"policy_name": f"restaurant_void test {auto_role or 'none'}",
+				"action": "restaurant_void",
+				"approver_role": "Resort Manager",
+				"auto_approve_for_role": auto_role,
+				"threshold_amount": threshold,
+				"source_doctype": "Restaurant Order",
+				"is_active": 1,
+			}
+		).insert(ignore_permissions=True)
+
+	def test_post_kot_void_requires_approval(self):
+		"""Voiding an order the kitchen has already seen needs manager sign-off
+		when a restaurant_void policy is active (spec 006, spec.md:179)."""
+		self._seed_void_policy()
+		table = self._any_table()
+		items = self._first_two_items()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		add_items(order["name"], [{"menu_item": items[0].name, "quantity": 1}])
+		send_to_kitchen(order["name"])
+		with self.assertRaises(ApprovalRequired):
+			cancel_order(order["name"], reason="waiter tried to void a fired ticket")
+		# The order must remain in its pre-void state.
+		self.assertEqual(get_order(order["name"])["data"]["order"]["state"], "Sent to Kitchen")
+
+	def test_draft_void_is_free_even_with_policy(self):
+		"""A Draft order (nothing sent to the kitchen) cancels without approval —
+		the gate is specific to post-KOT voids."""
+		self._seed_void_policy()
+		table = self._any_table()
+		items = self._first_two_items()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		add_items(order["name"], [{"menu_item": items[0].name, "quantity": 1}])
+		result = cancel_order(order["name"], reason="guest left before ordering")
+		self.assertEqual(result["data"]["order"]["state"], "Cancelled")
+
+	def test_post_kot_void_proceeds_when_auto_approved(self):
+		"""With an auto-approve role the requester holds, the void proceeds —
+		the manager-self-serve path (still audited)."""
+		self._seed_void_policy(auto_role="System Manager")  # Administrator holds it
+		table = self._any_table()
+		items = self._first_two_items()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		add_items(order["name"], [{"menu_item": items[0].name, "quantity": 1}])
+		send_to_kitchen(order["name"])
+		result = cancel_order(order["name"], reason="manager comp")
 		self.assertEqual(result["data"]["order"]["state"], "Cancelled")
 
 	def test_list_orders_by_state_filter(self):

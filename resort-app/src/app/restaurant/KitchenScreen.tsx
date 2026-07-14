@@ -29,7 +29,7 @@ import {
 	listActiveKots,
 	markKotStatus,
 	pickDineInOutlet,
-	type RestaurantOrder,
+	type KitchenTicket,
 } from "@/lib/restaurant-api";
 
 import { formatElapsed, lineStatusTone, orderStateTone } from "./restaurant-format";
@@ -41,7 +41,7 @@ const REFRESH_MS = 20000;
 export default function KitchenScreen() {
 	const [outlets, setOutlets] = useState<FnbOutlet[]>([]);
 	const [outlet, setOutlet] = useState<string>("");
-	const [orders, setOrders] = useState<RestaurantOrder[]>([]);
+	const [orders, setOrders] = useState<KitchenTicket[]>([]);
 	const [state, setState] = useState<LoadState>("loading");
 	const [busy, setBusy] = useState<string | null>(null);
 
@@ -86,7 +86,7 @@ export default function KitchenScreen() {
 		return () => window.clearInterval(t);
 	}, [outlet, load]);
 
-	async function advance(order: RestaurantOrder, status: "Preparing" | "Ready" | "Served") {
+	async function advance(order: KitchenTicket, status: "Preparing" | "Ready" | "Served") {
 		// Guard against a double-tap firing the same transition twice — the second
 		// would hit the backend with a now-invalid same-state transition.
 		if (busy) return;
@@ -159,9 +159,9 @@ function KotTicket({
 	busy,
 	onAdvance,
 }: {
-	order: RestaurantOrder;
+	order: KitchenTicket;
 	busy: boolean;
-	onAdvance: (order: RestaurantOrder, status: "Preparing" | "Ready" | "Served") => void;
+	onAdvance: (order: KitchenTicket, status: "Preparing" | "Ready" | "Served") => void;
 }) {
 	const tone = orderStateTone(order.state);
 	const elapsed = formatElapsed(order.sent_to_kitchen_at ?? order.opened_at);
@@ -234,7 +234,7 @@ function KotTicket({
 	);
 }
 
-function nextAction(state: RestaurantOrder["state"]): { status: "Preparing" | "Ready" | "Served"; label: string } | null {
+function nextAction(state: KitchenTicket["state"]): { status: "Preparing" | "Ready" | "Served"; label: string } | null {
 	switch (state) {
 		case "Sent to Kitchen":
 			return { status: "Preparing", label: "Start preparing" };

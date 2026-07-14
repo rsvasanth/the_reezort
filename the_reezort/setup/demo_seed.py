@@ -565,12 +565,16 @@ def lock_desk_access():
 
 
 DEFAULT_APPROVAL_POLICIES = (
-	# (action,        threshold, approver_role,     source_doctype)
-	("void",           10000,    "Resort Manager",  "Folio Line"),
-	("transfer",       10000,    "Resort Manager",  "Folio Line"),
-	("credit_note",    5000,     "Resort Manager",  "Folio Line"),
-	("refund",         5000,     "Resort Manager",  "Folio Line"),
-	("large_discount", 5000,     "Resort Manager",  "Folio Line"),
+	# (action,             threshold, approver_role,     source_doctype)
+	("void",                10000,    "Resort Manager",  "Folio Line"),
+	("transfer",            10000,    "Resort Manager",  "Folio Line"),
+	("credit_note",         5000,     "Resort Manager",  "Folio Line"),
+	("refund",              5000,     "Resort Manager",  "Folio Line"),
+	("large_discount",      5000,     "Resort Manager",  "Folio Line"),
+	# F&B POS control gates (spec 006). Threshold 0 → every post-KOT void and
+	# every >24h backdate needs manager sign-off, regardless of ticket value.
+	("restaurant_void",     0,        "Resort Manager",  "Restaurant Order"),
+	("restaurant_backdate", 0,        "Resort Manager",  "Restaurant Order"),
 )
 
 

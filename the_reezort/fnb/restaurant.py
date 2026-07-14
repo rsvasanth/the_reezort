@@ -251,6 +251,64 @@ def _order_item_dict(row) -> dict:
 	}
 
 
+def _kitchen_item_dict(row) -> dict:
+	"""Kitchen-facing row — what to cook and how, with NO pricing.
+
+	The KDS is used by the kitchen role, which spec 006 (spec.md:829) forbids
+	from seeing financial totals. This is the money-stripped sibling of
+	`_order_item_dict`: no `rate`/`amount`, but the full imagery + prep packet.
+	"""
+	menu_meta = frappe.db.get_value(
+		"Menu Item",
+		row.menu_item,
+		["image", "veg_flag", "spice_level", "category"],
+		as_dict=True,
+	) or {}
+	return {
+		"name": row.name,
+		"menu_item": row.menu_item,
+		"item_name": row.item_name,
+		"quantity": row.quantity,
+		"line_status": row.line_status,
+		"chef_note": row.chef_note,
+		"sent_at": str(row.sent_at) if row.sent_at else None,
+		"ready_at": str(row.ready_at) if row.ready_at else None,
+		"served_at": str(row.served_at) if row.served_at else None,
+		"image": menu_meta.get("image"),
+		"veg_flag": menu_meta.get("veg_flag"),
+		"spice_level": menu_meta.get("spice_level"),
+		"category": menu_meta.get("category"),
+	}
+
+
+def _kitchen_order_dict(doc) -> dict:
+	"""Kitchen-facing order — ticket header + prep timers, NO money fields.
+
+	Deliberately omits subtotal / discount / service charge / taxes /
+	grand_total and per-item pricing so financial totals never reach the
+	kitchen role over the wire (spec 006, spec.md:829).
+	"""
+	return {
+		"name": doc.name,
+		"outlet": doc.outlet,
+		"table": doc.restaurant_table,
+		"bill_type": doc.bill_type or "Walk-in",
+		"stay": doc.stay,
+		"state": doc.state,
+		"kot_number": doc.kot_number,
+		"kitchen_section": doc.kitchen_section,
+		"party_size": doc.party_size,
+		"guest_name": doc.guest_name,
+		"opened_at": str(doc.opened_at) if doc.opened_at else None,
+		"sent_to_kitchen_at": str(doc.sent_to_kitchen_at) if doc.sent_to_kitchen_at else None,
+		"ready_at": str(doc.ready_at) if doc.ready_at else None,
+		"served_at": str(doc.served_at) if doc.served_at else None,
+		"chef_notes": doc.chef_notes,
+		"guest_note": doc.guest_note,
+		"items": [_kitchen_item_dict(row) for row in (doc.items or [])],
+	}
+
+
 def _order_dict(doc) -> dict:
 	return {
 		"name": doc.name,
@@ -369,6 +427,7 @@ def open_walk_in_order(
 	party_size: int = 2,
 	guest_name: str | None = None,
 	opened_at: str | None = None,
+	approval_request: str | None = None,
 ) -> dict:
 	"""Create a Draft Restaurant Order. Idempotent per (outlet, table, waiter, opened_at)."""
 	_require_permission("Restaurant Order", "create")
@@ -401,17 +460,15 @@ def open_walk_in_order(
 		opened_at_dt = opened_at
 	hours_back = (now_datetime() - opened_at_dt).total_seconds() / 3600
 	if hours_back > BACKDATE_HOURS:
-		try:
-			from the_reezort.compliance.approvals import require_approval
+		from the_reezort.approvals.api import require_approval
 
-			require_approval(
-				gate="restaurant_backdate",
-				subject_doctype="Restaurant Order",
-				subject_name=f"{outlet}-{opened_at_dt.isoformat()}",
-				payload={"outlet": outlet, "hours_back": hours_back},
-			)
-		except ImportError:
-			pass
+		require_approval(
+			action="restaurant_backdate",
+			source_doctype="Restaurant Order",
+			source_name=f"{outlet}-{opened_at_dt.isoformat()}",
+			payload={"outlet": outlet, "hours_back": hours_back},
+			approval_request=approval_request,
+		)
 
 	key = _idempotency_key(outlet, table, frappe.session.user, str(opened_at_dt))
 	existing_name = frappe.db.get_value("Restaurant Order", {"idempotency_key": key}, "name")
@@ -580,7 +637,8 @@ def list_active_kots(outlet: str) -> dict:
 		pluck="name",
 		order_by="sent_to_kitchen_at asc",
 	)
-	orders = [_order_dict(frappe.get_doc("Restaurant Order", n)) for n in names]
+	# Kitchen-scoped payload — no financial totals reach the KDS (spec.md:829).
+	orders = [_kitchen_order_dict(frappe.get_doc("Restaurant Order", n)) for n in names]
 	return _envelope({"outlet": outlet, "orders": orders})
 
 
@@ -1052,12 +1110,31 @@ def post_order_to_room(order: str, stay: str) -> dict:
 
 
 @frappe.whitelist()
-def cancel_order(order: str, reason: str | None = None) -> dict:
-	"""Cancel an open order. Kitchen-side cancellations before Settled."""
+def cancel_order(order: str, reason: str | None = None, approval_request: str | None = None) -> dict:
+	"""Cancel an open order. Kitchen-side cancellations before Settled.
+
+	Voiding an order the kitchen has already seen (anything past Draft) is a
+	financial-control event — it destroys committed food and revenue — so it is
+	routed through the approval framework (spec 006, spec.md:179). A Draft order
+	cancels freely; a post-KOT void needs manager sign-off per the active
+	`restaurant_void` Approval Policy (its threshold decides which voids block).
+	"""
 	_require_permission("Restaurant Order", "write")
 	doc = _order_or_throw(order)
 	prior_state = doc.state
 	_assert_transition(doc, "Cancelled")
+
+	if prior_state != "Draft":
+		from the_reezort.approvals.api import require_approval
+
+		require_approval(
+			action="restaurant_void",
+			source_doctype="Restaurant Order",
+			source_name=doc.name,
+			payload={"amount": flt(doc.grand_total), "reason": reason, "from_state": prior_state},
+			approval_request=approval_request,
+		)
+
 	doc.state = "Cancelled"
 	doc.cancelled_at = now_datetime()
 	if reason:

@@ -134,6 +134,43 @@ class TestReservationAPI(FrappeTestCase):
 		with self.assertRaises(frappe.ValidationError):
 			set_reservation_bill_to(reservation=reservation, bill_to_customer="NON-EXISTENT-CUST-999")
 
+	# ---------- overbooking override approval gate (spec 002) ----------
+
+	def _seed_override_policy(self, auto_role=None):
+		return frappe.get_doc(
+			{
+				"doctype": "Approval Policy",
+				"policy_name": f"reservation_override test {auto_role or 'none'}",
+				"action": "reservation_override",
+				"approver_role": "Resort Manager",
+				"auto_approve_for_role": auto_role,
+				"threshold_amount": 0,
+				"source_doctype": "Reservation",
+				"is_active": 1,
+			}
+		).insert(ignore_permissions=True)
+
+	def test_override_gate_is_noop_without_policy(self):
+		from the_reezort.reservation.api import _authorize_override
+
+		# No policy configured → override proceeds silently (backward compatible).
+		_authorize_override("RES-NOPOLICY", ["DLX"])
+
+	def test_override_gate_requires_approval_with_policy(self):
+		from the_reezort.approvals.api import ApprovalRequired
+		from the_reezort.reservation.api import _authorize_override
+
+		self._seed_override_policy()
+		with self.assertRaises(ApprovalRequired):
+			_authorize_override("RES-GATED", ["DLX"])
+
+	def test_override_gate_auto_approves_for_role(self):
+		from the_reezort.reservation.api import _authorize_override
+
+		# Administrator holds System Manager → auto-approved, no raise.
+		self._seed_override_policy(auto_role="System Manager")
+		_authorize_override("RES-AUTO", ["DLX"])
+
 	def test_confirm_blocked_when_deposit_not_paid_under_partial_policy(self):
 		hold = create_quote_or_hold(
 			property=self.property,

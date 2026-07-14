@@ -575,6 +575,9 @@ DEFAULT_APPROVAL_POLICIES = (
 	# every >24h backdate needs manager sign-off, regardless of ticket value.
 	("restaurant_void",     0,        "Resort Manager",  "Restaurant Order"),
 	("restaurant_backdate", 0,        "Resort Manager",  "Restaurant Order"),
+	# Reservation overbooking override (spec 002). Threshold 0 → any availability
+	# override on confirm / amend needs manager sign-off.
+	("reservation_override", 0,       "Resort Manager",  "Reservation"),
 )
 
 

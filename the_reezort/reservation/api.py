@@ -648,9 +648,26 @@ def get_reservation_deposit_state(reservation):
 	}
 
 
+def _authorize_override(reservation, shortfall, approval_request=None):
+	"""An availability / overbooking override is a managerial decision — route it
+	through the approval framework so it's audited and, above the active
+	`reservation_override` policy, needs manager sign-off. With no policy
+	configured this is a no-op (backward compatible)."""
+	from the_reezort.approvals.api import require_approval
+
+	require_approval(
+		action="reservation_override",
+		source_doctype="Reservation",
+		source_name=reservation or "new",
+		payload={"shortfall": list(shortfall)},
+		approval_request=approval_request,
+	)
+
+
 @frappe.whitelist()
 def confirm_reservation(
-	reservation=None, booker=None, guests=None, guarantee=None, accepted_terms=False, allow_override=False
+	reservation=None, booker=None, guests=None, guarantee=None, accepted_terms=False, allow_override=False,
+	approval_request=None,
 ):
 	_require_permission("Reservation", "write")
 
@@ -665,18 +682,18 @@ def confirm_reservation(
 	# exist. If the hold expired, re-validate live availability (excluding this
 	# reservation's own usage). A manager can override with allow_override=1.
 	allow_override = bool(int(allow_override or 0)) if str(allow_override).isdigit() else bool(allow_override)
-	if not allow_override:
-		hold_active = bool(_reservation_active_holds(reservation))
-		if not hold_active:
-			available = _available_counts_excluding(
-				doc.resort_property, doc.arrival_date, doc.departure_date, reservation
-			)
-			shortfall = [
-				room_type
-				for room_type, count in _requested_counts(doc).items()
-				if available.get(room_type, 0) < count
-			]
-			if shortfall:
+	hold_active = bool(_reservation_active_holds(reservation))
+	if not hold_active:
+		available = _available_counts_excluding(
+			doc.resort_property, doc.arrival_date, doc.departure_date, reservation
+		)
+		shortfall = [
+			room_type
+			for room_type, count in _requested_counts(doc).items()
+			if available.get(room_type, 0) < count
+		]
+		if shortfall:
+			if not allow_override:
 				frappe.throw(
 					_(
 						"The hold has expired and {0} is no longer available for these dates. "
@@ -684,6 +701,8 @@ def confirm_reservation(
 					).format(", ".join(shortfall)),
 					frappe.ValidationError,
 				)
+			# Overbooking override — audited + gated by the reservation_override policy.
+			_authorize_override(reservation, shortfall, approval_request)
 
 	# Owner policy: a Partial/Full deposit must be paid before confirmation.
 	pct = DEPOSIT_POLICY_PERCENT.get(doc.deposit_policy or "None", 0)
@@ -797,7 +816,7 @@ def cancel_reservation(reservation=None, reason="Guest Request", requested_depos
 
 
 @frappe.whitelist()
-def amend_reservation(reservation=None, changes=None, reason=None, allow_override=False):
+def amend_reservation(reservation=None, changes=None, reason=None, allow_override=False, approval_request=None):
 	"""Amend a reservation's dates and/or per-row room type, re-validating
 	availability and recalculating the estimate. Records an audit trail.
 
@@ -840,14 +859,16 @@ def amend_reservation(reservation=None, changes=None, reason=None, allow_overrid
 	# Re-validate availability for the amended dates/types, excluding this
 	# reservation's own current usage. Manager override skips the check.
 	allow_override = bool(int(allow_override or 0)) if str(allow_override).isdigit() else bool(allow_override)
-	if not allow_override:
-		available = _available_counts_excluding(doc.resort_property, new_arrival, new_departure, reservation)
-		shortfall = [rt for rt, count in requested.items() if not rt or available.get(rt, 0) < count]
-		if shortfall:
+	available = _available_counts_excluding(doc.resort_property, new_arrival, new_departure, reservation)
+	shortfall = [rt for rt, count in requested.items() if not rt or available.get(rt, 0) < count]
+	if shortfall:
+		if not allow_override:
 			frappe.throw(
 				_("Not available for the amended dates: {0}.").format(", ".join(map(str, shortfall))),
 				frappe.ValidationError,
 			)
+		# Overbooking override — audited + gated by the reservation_override policy.
+		_authorize_override(reservation, shortfall, approval_request)
 
 	nights = date_diff(new_departure, new_arrival)
 	doc.arrival_date = new_arrival

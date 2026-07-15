@@ -138,3 +138,33 @@ export function guestRequestBooking(input: {
 export function guestLookupBooking(reference: string, email: string): Promise<BookingLookup> {
 	return call<BookingLookup>("guest_lookup_booking", "GET", { reference, email });
 }
+
+export type SiteVilla = {
+	room_type: string;
+	name: string;
+	description: string | null;
+	image: string | null;
+	max_occupancy: number | null;
+	bed_configuration: string | null;
+	view_tags: string[];
+	amenities: string[];
+	from_rate: number | null;
+};
+
+export type SiteContent = {
+	property: string;
+	property_name: string;
+	hero_image: string | null;
+	address: string | null;
+	phone: string | null;
+	email: string | null;
+	check_in_time: string | null;
+	check_out_time: string | null;
+	villas: SiteVilla[];
+	dining: { outlet_name: string; outlet_type: string }[];
+	gallery: string[];
+};
+
+export function guestSiteContent(): Promise<SiteContent> {
+	return call<SiteContent>("guest_site_content", "GET");
+}

@@ -243,3 +243,82 @@ def guest_lookup_booking(reference=None, email=None):
 		"currency": doc.currency,
 		"total_estimated_amount": flt(doc.total_estimated_amount),
 	}
+
+
+@frappe.whitelist(allow_guest=True)
+def guest_site_content():
+	"""Everything the public marketing site needs in one call: property story,
+	villas (room types with descriptions/amenities and a from-rate), dining
+	outlets, and gallery images. Guest-safe fields only."""
+	property = _default_property()
+	if not property:
+		frappe.throw(_("No property is available."))
+
+	prop = frappe.db.get_value(
+		"Resort Property", property,
+		["name", "property_name", "image", "address", "phone", "email",
+		 "default_check_in_time", "default_check_out_time"],
+		as_dict=True,
+	)
+
+	# From-rate per villa over a near-term window (7→9 days out).
+	arrival, departure = today(), None
+	arrival = frappe.utils.add_days(today(), 7)
+	departure = frappe.utils.add_days(today(), 9)
+	rate_by_type = {}
+	try:
+		for row in _availability_rows(property, arrival, departure):
+			nights = 2
+			rate_by_type[row["room_type"]] = flt(row["total_amount"]) / nights
+	except Exception:
+		pass
+
+	villas = []
+	for rt in frappe.get_all(
+		"Room Type",
+		filters={"resort_property": property, "is_active": 1},
+		fields=[
+			"name", "room_type_name", "description", "image",
+			"standard_adults", "standard_children", "max_occupancy",
+			"bed_configuration", "view_tags", "default_amenities",
+		],
+		order_by="room_type_name asc",
+	):
+		villas.append(
+			{
+				"room_type": rt.name,
+				"name": rt.room_type_name,
+				"description": rt.description,
+				"image": rt.image,
+				"max_occupancy": rt.max_occupancy,
+				"bed_configuration": rt.bed_configuration,
+				"view_tags": [t.strip() for t in (rt.view_tags or "").replace("\n", ",").split(",") if t.strip()],
+				"amenities": [a.strip() for a in (rt.default_amenities or "").replace("\n", ",").split(",") if a.strip()],
+				"from_rate": flt(rate_by_type.get(rt.name)) or None,
+			}
+		)
+
+	dining = frappe.get_all(
+		"FnB Outlet",
+		filters={"resort_property": property, "is_active": 1},
+		fields=["outlet_name", "outlet_type"],
+		order_by="is_default desc, outlet_name asc",
+	)
+
+	gallery = [v["image"] for v in villas if v["image"]]
+	if prop.image:
+		gallery.insert(0, prop.image)
+
+	return {
+		"property": prop.name,
+		"property_name": prop.property_name,
+		"hero_image": prop.image or (gallery[0] if gallery else None),
+		"address": prop.address,
+		"phone": prop.phone,
+		"email": prop.email,
+		"check_in_time": str(prop.default_check_in_time) if prop.default_check_in_time else None,
+		"check_out_time": str(prop.default_check_out_time) if prop.default_check_out_time else None,
+		"villas": villas,
+		"dining": dining,
+		"gallery": gallery[:8],
+	}

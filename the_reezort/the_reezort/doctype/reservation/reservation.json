@@ -73,7 +73,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Booking Source",
-   "options": "Direct\nStaff\nCorporate\nTravel Agent\nOTA\nEvent\nWalk In",
+   "options": "Direct\nStaff\nCorporate\nTravel Agent\nOTA\nEvent\nWalk In\nWebsite",
    "reqd": 1
   },
   {

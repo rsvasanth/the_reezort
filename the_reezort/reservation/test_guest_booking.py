@@ -111,3 +111,35 @@ class TestGuestBooking(FrappeTestCase):
 		# Wrong email → generic not-found (no enumeration).
 		with self.assertRaises(frappe.ValidationError):
 			guest_lookup_booking(reference=booked["reference"], email="attacker@example.com")
+
+	# ---- online deposit ----
+
+	def test_deposit_due_is_policy_percent_of_estimate(self):
+		from the_reezort.reservation.guest_booking import _deposit_due
+
+		booked = guest_request_booking(
+			property=self.property,
+			arrival_date=self.arrival,
+			departure_date=self.departure,
+			room_type=self.room_type,
+			booker=self._booker(email="deposit.web@example.com"),
+		)
+		doc = frappe.get_doc("Reservation", booked["reference"])
+		self.assertEqual(doc.deposit_policy, "Partial")
+		due, required, paid = _deposit_due(doc)
+		self.assertAlmostEqual(required, round(float(doc.total_estimated_amount) * 0.2, 2), delta=0.01)
+		self.assertEqual(paid, 0)
+		self.assertEqual(due, required)
+
+	def test_deposit_order_rejects_wrong_email(self):
+		from the_reezort.reservation.guest_booking import guest_deposit_order
+
+		booked = guest_request_booking(
+			property=self.property,
+			arrival_date=self.arrival,
+			departure_date=self.departure,
+			room_type=self.room_type,
+			booker=self._booker(email="pay.web@example.com"),
+		)
+		with self.assertRaises(frappe.ValidationError):
+			guest_deposit_order(reference=booked["reference"], email="attacker@example.com")

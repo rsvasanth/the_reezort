@@ -29,6 +29,8 @@ import {
 
 import {
 	GuestBookingError,
+	guestCaptureDeposit,
+	guestDepositOrder,
 	guestLookupBooking,
 	guestRequestBooking,
 	guestSearch,
@@ -36,9 +38,11 @@ import {
 	type BookingLookup,
 	type BookingOffer,
 	type BookingRequestResult,
+	type GuestDepositResult,
 	type SearchResult,
 	type SiteContent,
 } from "@/lib/guest-booking-api";
+import { openRazorpayCheckout } from "@/lib/razorpay";
 
 const GOLD = "#b08d57";
 const INK = "#1c1917";
@@ -188,7 +192,7 @@ export default function BookingFlow() {
 						onConfirm={requestBooking}
 					/>
 				) : view === "done" && confirmation ? (
-					<Done confirmation={confirmation} onHome={() => setView("site")} />
+					<Done confirmation={confirmation} booker={booker} onHome={() => setView("site")} />
 				) : view === "lookup" ? (
 					<Lookup />
 				) : null}
@@ -620,17 +624,62 @@ function Details(props: {
 	);
 }
 
-function Done({ confirmation, onHome }: { confirmation: BookingRequestResult; onHome: () => void }) {
+function Done({
+	confirmation,
+	booker,
+	onHome,
+}: {
+	confirmation: BookingRequestResult;
+	booker: { full_name: string; email: string; phone: string };
+	onHome: () => void;
+}) {
+	const [payBusy, setPayBusy] = useState(false);
+	const [payError, setPayError] = useState<string | null>(null);
+	const [paid, setPaid] = useState<GuestDepositResult | null>(null);
+
+	async function payDeposit() {
+		setPayError(null);
+		setPayBusy(true);
+		try {
+			const order = await guestDepositOrder(confirmation.reference, booker.email);
+			const result = await openRazorpayCheckout({
+				order,
+				guestName: booker.full_name,
+				guestEmail: booker.email,
+				guestPhone: booker.phone,
+				description: `Deposit · ${confirmation.reference}`,
+			});
+			const captured = await guestCaptureDeposit({
+				reference: confirmation.reference,
+				email: booker.email,
+				razorpay_order_id: result.order_id,
+				razorpay_payment_id: result.payment_id,
+				razorpay_signature: result.signature,
+			});
+			setPaid(captured);
+		} catch (e) {
+			const msg = errMessage(e);
+			if (!msg.toLowerCase().includes("cancel")) setPayError(msg);
+		} finally {
+			setPayBusy(false);
+		}
+	}
+
 	return (
 		<div className="mx-auto max-w-xl py-10 text-center">
 			<div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-full" style={{ backgroundColor: `${GOLD}1a`, color: GOLD }}>
 				<Check className="size-8" />
 			</div>
-			<h2 className="font-display text-3xl font-light">Your villa is held</h2>
+			<h2 className="font-display text-3xl font-light">{paid ? "Your stay is secured" : "Your villa is held"}</h2>
 			<p className="mx-auto mt-3 max-w-md text-sm" style={{ color: MUTED }}>
-				Thank you, {confirmation.guest_name}. We've reserved the <strong>{confirmation.room_type_name}</strong> for{" "}
-				{prettyDate(confirmation.arrival_date)} – {prettyDate(confirmation.departure_date)}. A confirmation and secure
-				deposit link are on their way to your inbox.
+				{paid ? (
+					<>Deposit of <strong>{inr(paid.amount)}</strong> received — thank you, {confirmation.guest_name}. We'll
+					confirm your <strong>{confirmation.room_type_name}</strong> and be in touch shortly.</>
+				) : (
+					<>Thank you, {confirmation.guest_name}. We've reserved the <strong>{confirmation.room_type_name}</strong> for{" "}
+					{prettyDate(confirmation.arrival_date)} – {prettyDate(confirmation.departure_date)}. Secure it now with a
+					deposit, or we'll email you a payment link.</>
+				)}
 			</p>
 			<div className="mx-auto mt-8 w-fit rounded-2xl border border-[#e7e2d9] bg-white px-10 py-6 shadow-sm">
 				<p className="text-[0.7rem] uppercase tracking-widest" style={{ color: MUTED }}>Booking reference</p>
@@ -638,10 +687,23 @@ function Done({ confirmation, onHome }: { confirmation: BookingRequestResult; on
 				<p className="mt-3 text-sm" style={{ color: MUTED }}>
 					Estimated total <span className="font-medium" style={{ color: INK }}>{inr(confirmation.estimated_total)}</span>
 				</p>
+				{paid ? (
+					<p className="mt-1 text-sm" style={{ color: MUTED }}>
+						Deposit paid <span className="font-medium" style={{ color: INK }}>{inr(paid.deposit_paid)}</span>
+					</p>
+				) : null}
 			</div>
-			<button className="mt-8 text-sm underline underline-offset-4 hover:text-[#1c1917]" style={{ color: MUTED }} onClick={onHome}>
-				Back to the resort
-			</button>
+			{payError ? <div className="mx-auto mt-5 max-w-md"><Notice text={payError} /></div> : null}
+			{!paid ? (
+				<button className={`${goldBtn} mt-7`} style={{ backgroundColor: GOLD }} onClick={payDeposit} disabled={payBusy} data-testid="book-pay-deposit">
+					{payBusy ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />} Secure with deposit
+				</button>
+			) : null}
+			<div>
+				<button className="mt-6 text-sm underline underline-offset-4 hover:text-[#1c1917]" style={{ color: MUTED }} onClick={onHome}>
+					Back to the resort
+				</button>
+			</div>
 		</div>
 	);
 }

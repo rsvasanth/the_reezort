@@ -168,3 +168,36 @@ export type SiteContent = {
 export function guestSiteContent(): Promise<SiteContent> {
 	return call<SiteContent>("guest_site_content", "GET");
 }
+
+// ---------- online deposit (Razorpay) ----------
+
+import type { RazorpayOrder } from "@/lib/razorpay";
+
+export type GuestDepositOrder = RazorpayOrder & {
+	reference: string;
+	deposit_due: number;
+	deposit_required: number;
+	deposit_paid: number;
+};
+
+export type GuestDepositResult = {
+	reference: string;
+	amount: number;
+	deposit_paid: number;
+	deposit_outstanding: number;
+	deposit_status: "Paid" | "Partially Paid";
+};
+
+export function guestDepositOrder(reference: string, email: string): Promise<GuestDepositOrder> {
+	return call<GuestDepositOrder>("guest_deposit_order", "POST", { reference, email });
+}
+
+export function guestCaptureDeposit(input: {
+	reference: string;
+	email: string;
+	razorpay_order_id: string;
+	razorpay_payment_id: string;
+	razorpay_signature: string;
+}): Promise<GuestDepositResult> {
+	return call<GuestDepositResult>("guest_capture_deposit", "POST", input);
+}

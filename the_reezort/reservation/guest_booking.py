@@ -7,18 +7,21 @@ and never confirm a reservation or take payment directly — a booking request
 lands as a Hold that staff confirm and collect the deposit for through the
 existing back-office flow.
 
-Abuse guardrails (v1): strict input validation, single room type per request,
-a small per-guest active-hold cap, and an email-gated lookup. NOTE: true
-per-IP rate limiting is a hardening follow-up — add `frappe.rate_limit` at the
-HTTP layer before promoting this widely.
+Abuse guardrails: per-IP rate limits on every endpoint (frappe.rate_limiter),
+strict input validation, single room type per request, a per-guest active-hold
+cap, and email-gated lookup/deposit. The online deposit path verifies the
+Razorpay HMAC signature and re-derives the captured amount from Razorpay's API
+— client-supplied amounts are never trusted.
 """
 
 from __future__ import annotations
 
 import re
+from contextlib import contextmanager
 
 import frappe
 from frappe import _
+from frappe.rate_limiter import rate_limit
 from frappe.utils import add_to_date, flt, getdate, now_datetime, today
 
 from the_reezort.reservation.api import (
@@ -65,6 +68,7 @@ def _safe_offer(row, adults, children):
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=30, seconds=300)
 def guest_search(property=None, arrival_date=None, departure_date=None, adults=2, children=0):
 	"""Public availability search — returns only bookable room types with a
 	guest-safe price, image, and capacity fit."""
@@ -107,6 +111,7 @@ def _validate_booker(booker):
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=5, seconds=3600)
 def guest_request_booking(
 	property=None, arrival_date=None, departure_date=None, room_type=None,
 	quantity=1, adults=2, children=0, booker=None,
@@ -158,6 +163,7 @@ def guest_request_booking(
 			"resort_property": property,
 			"status": "Hold",
 			"booking_source": "Website",
+			"deposit_policy": "Partial",
 			"arrival_date": arrival_date,
 			"departure_date": departure_date,
 			"currency": _property_currency(property),
@@ -209,6 +215,7 @@ def guest_request_booking(
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=15, seconds=600)
 def guest_lookup_booking(reference=None, email=None):
 	"""Look up a booking's status. Email-gated: the caller must supply the
 	booker's email so a bare reference can't be enumerated."""
@@ -246,6 +253,7 @@ def guest_lookup_booking(reference=None, email=None):
 
 
 @frappe.whitelist(allow_guest=True)
+@rate_limit(limit=60, seconds=300)
 def guest_site_content():
 	"""Everything the public marketing site needs in one call: property story,
 	villas (room types with descriptions/amenities and a from-rate), dining
@@ -328,4 +336,139 @@ def guest_site_content():
 		"villas": villas,
 		"dining": dining,
 		"gallery": gallery[:8],
+	}
+
+
+# --------------------------------------------------------------------------- #
+#  online deposit — Razorpay, email-verified, amounts re-derived server-side
+# --------------------------------------------------------------------------- #
+
+
+@contextmanager
+def _as_system():
+	"""Elevate AFTER our own checks (email match + Razorpay HMAC + authoritative
+	amount) — the folio/deposit internals are staff-permission-gated and this
+	whitelisted endpoint is the trusted service boundary for the guest path."""
+	user = frappe.session.user
+	frappe.set_user("Administrator")
+	try:
+		yield
+	finally:
+		frappe.set_user(user)
+
+
+def _verified_booking(reference, email):
+	"""Resolve a booking by reference, gated on the booker's email. Generic
+	not-found message either way so references can't be enumerated."""
+	not_found = _("No booking found for that reference and email.")
+	if not reference or not email or not frappe.db.exists("Reservation", reference):
+		frappe.throw(not_found)
+	doc = frappe.get_doc("Reservation", reference)
+	profile_email = (
+		frappe.db.get_value("Guest Profile", doc.booker_guest_profile, "email")
+		if doc.booker_guest_profile
+		else None
+	)
+	if not profile_email or profile_email.strip().lower() != str(email).strip().lower():
+		frappe.throw(not_found)
+	return doc
+
+
+def _deposit_due(doc):
+	"""Outstanding deposit for a booking: policy percent of the estimate
+	(website bookings carry Partial = 20%) minus what's already paid."""
+	from the_reezort.reservation.api import DEPOSIT_POLICY_PERCENT, _deposit_paid_on_reservation
+
+	pct = DEPOSIT_POLICY_PERCENT.get(doc.deposit_policy or "None", 0) or 20
+	required = round(flt(doc.total_estimated_amount) * pct / 100.0, 2)
+	paid = flt(_deposit_paid_on_reservation(doc.name))
+	return max(required - paid, 0), required, paid
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=10, seconds=3600)
+def guest_deposit_order(reference=None, email=None):
+	"""Create a Razorpay order for a booking's outstanding deposit so the guest
+	can secure the hold online. Amount is computed server-side from the
+	reservation's own deposit policy — never taken from the client."""
+	doc = _verified_booking(reference, email)
+	if doc.status not in {"Hold", "Deposit Pending"}:
+		frappe.throw(_("This booking is {0}; the deposit step no longer applies.").format(doc.status))
+
+	due, required, paid = _deposit_due(doc)
+	if due <= 0:
+		frappe.throw(_("The deposit for this booking is already covered."))
+
+	from the_reezort.billing.razorpay_gateway import _create_order
+
+	order = _create_order(
+		due,
+		doc.currency or "INR",
+		f"WEB-DEP-{doc.name}",
+		{"reservation": doc.name, "intent": "website_deposit"},
+	)
+	order.update({"reference": doc.name, "deposit_due": due, "deposit_required": required, "deposit_paid": paid})
+	return order
+
+
+@frappe.whitelist(allow_guest=True)
+@rate_limit(limit=10, seconds=3600)
+def guest_capture_deposit(
+	reference=None, email=None, razorpay_order_id=None, razorpay_payment_id=None, razorpay_signature=None,
+):
+	"""Verify a Razorpay deposit payment and post it to the booking's folio.
+
+	Defence in depth: booker-email gate, HMAC signature verification, and the
+	captured amount re-fetched from Razorpay's API (client-supplied amounts are
+	never trusted). Idempotent on the Razorpay payment id."""
+	doc = _verified_booking(reference, email)
+
+	from the_reezort.billing.razorpay_gateway import (
+		_authoritative_amount,
+		_ensure_razorpay_mode_of_payment,
+		verify_signature,
+	)
+
+	if not verify_signature(razorpay_order_id, razorpay_payment_id, razorpay_signature):
+		frappe.throw(_("Payment verification failed."))
+	amount = _authoritative_amount(razorpay_payment_id, razorpay_order_id)
+	if amount <= 0:
+		frappe.throw(_("Payment amount could not be verified."))
+
+	from the_reezort.billing.api import get_or_create_folio
+	from the_reezort.billing.deposits import record_deposit
+	from the_reezort.reservation.api import _deposit_paid_on_reservation
+
+	with _as_system():
+		mode = _ensure_razorpay_mode_of_payment()
+		folio = get_or_create_folio(reservation=doc.name)["data"]["folio"]["name"]
+		record_deposit(
+			guest_folio=folio,
+			amount=amount,
+			mode_of_payment=mode,
+			reference_no=razorpay_payment_id,
+			idempotency_key=f"web-deposit:{razorpay_payment_id}",
+		)
+
+	due, _required, paid = _deposit_due(doc)
+	if due <= 0:
+		frappe.db.set_value("Reservation", doc.name, "deposit_status", "Paid")
+	else:
+		frappe.db.set_value(
+			"Reservation", doc.name, {"status": "Deposit Pending", "deposit_status": "Partially Paid"}
+		)
+	frappe.db.commit()
+
+	from the_reezort.audit.api import record_audit_event
+
+	record_audit_event(
+		"Reservation", doc.name, "guest_booking.deposit_captured", "",
+		{"amount": amount, "payment_id": razorpay_payment_id, "paid_total": paid},
+	)
+	return {
+		"reference": doc.name,
+		"amount": amount,
+		"deposit_paid": paid,
+		"deposit_outstanding": due,
+		"deposit_status": "Paid" if due <= 0 else "Partially Paid",
 	}

@@ -67,7 +67,8 @@ export type ParsedRoute =
 	| { kind: "crm" }
 	| { kind: "guest"; id: string | null }
 	| { kind: "condition"; stay: string | null }
-	| { kind: "direct-bill" };
+	| { kind: "direct-bill" }
+	| { kind: "book" };
 
 export function parseHashRoute(hash: string): ParsedRoute {
 	const path = hash.startsWith("#") ? hash.slice(1) : hash;
@@ -93,6 +94,7 @@ export function parseHashRoute(hash: string): ParsedRoute {
 
 	if (path === "/billing") return { kind: "billing" };
 	if (path === "/direct-bill") return { kind: "direct-bill" };
+	if (path === "/book" || path.startsWith("/book?")) return { kind: "book" };
 
 	if (path === "/frontdesk") return { kind: "frontdesk" };
 

@@ -32,6 +32,7 @@ import AuditTrailScreen from "@/app/compliance/AuditTrailScreen";
 import ServiceDeskScreen from "@/app/servicedesk/ServiceDeskScreen";
 import BillingOverviewScreen from "@/app/billing/BillingOverviewScreen";
 import DirectBillScreen from "@/app/billing/DirectBillScreen";
+import BookingFlow from "@/app/book/BookingFlow";
 import CashierCloseScreen from "@/app/backoffice/CashierCloseScreen";
 import FrontDeskScreen from "@/app/frontdesk/FrontDeskScreen";
 import ReservationsScreen from "@/app/reservations/ReservationsScreen";
@@ -214,6 +215,11 @@ function AuthGate() {
 		const target = defaultLandingRoute(profile);
 		if (target) window.location.hash = target;
 	}, [currentUser, profile, hash]);
+
+	// Public guest booking — reachable without a login/session.
+	if (route.kind === "book") {
+		return <BookingFlow />;
+	}
 
 	if (isLoading) {
 		return <FullScreenLoader />;

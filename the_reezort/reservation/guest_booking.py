@@ -280,10 +280,17 @@ def guest_site_content():
 		fields=[
 			"name", "room_type_name", "description", "image",
 			"standard_adults", "standard_children", "max_occupancy",
-			"bed_configuration", "view_tags", "default_amenities",
+			"bed_configuration", "view_tags",
 		],
 		order_by="room_type_name asc",
 	):
+		# default_amenities is a child Table (Room Type Amenity), not a column.
+		amenities = frappe.get_all(
+			"Room Type Amenity",
+			filters={"parent": rt.name, "is_guest_visible": 1},
+			pluck="amenity",
+			order_by="idx asc",
+		)
 		villas.append(
 			{
 				"room_type": rt.name,
@@ -293,7 +300,7 @@ def guest_site_content():
 				"max_occupancy": rt.max_occupancy,
 				"bed_configuration": rt.bed_configuration,
 				"view_tags": [t.strip() for t in (rt.view_tags or "").replace("\n", ",").split(",") if t.strip()],
-				"amenities": [a.strip() for a in (rt.default_amenities or "").replace("\n", ",").split(",") if a.strip()],
+				"amenities": amenities,
 				"from_rate": flt(rate_by_type.get(rt.name)) or None,
 			}
 		)

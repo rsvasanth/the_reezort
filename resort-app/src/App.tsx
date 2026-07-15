@@ -32,6 +32,7 @@ import AuditTrailScreen from "@/app/compliance/AuditTrailScreen";
 import ServiceDeskScreen from "@/app/servicedesk/ServiceDeskScreen";
 import BillingOverviewScreen from "@/app/billing/BillingOverviewScreen";
 import DirectBillScreen from "@/app/billing/DirectBillScreen";
+import ChargeToRoomScreen from "@/app/billing/ChargeToRoomScreen";
 import BookingFlow from "@/app/book/BookingFlow";
 import CashierCloseScreen from "@/app/backoffice/CashierCloseScreen";
 import FrontDeskScreen from "@/app/frontdesk/FrontDeskScreen";
@@ -285,6 +286,14 @@ function AuthGate() {
 		return (
 			<AppShell>
 				<DirectBillScreen />
+			</AppShell>
+		);
+	}
+
+	if (route.kind === "charge-room") {
+		return (
+			<AppShell>
+				<ChargeToRoomScreen />
 			</AppShell>
 		);
 	}

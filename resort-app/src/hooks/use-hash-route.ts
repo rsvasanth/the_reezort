@@ -68,6 +68,7 @@ export type ParsedRoute =
 	| { kind: "guest"; id: string | null }
 	| { kind: "condition"; stay: string | null }
 	| { kind: "direct-bill" }
+	| { kind: "charge-room" }
 	| { kind: "book" };
 
 export function parseHashRoute(hash: string): ParsedRoute {
@@ -94,6 +95,7 @@ export function parseHashRoute(hash: string): ParsedRoute {
 
 	if (path === "/billing") return { kind: "billing" };
 	if (path === "/direct-bill") return { kind: "direct-bill" };
+	if (path === "/charge-room") return { kind: "charge-room" };
 	if (path === "/book" || path.startsWith("/book?")) return { kind: "book" };
 
 	if (path === "/frontdesk") return { kind: "frontdesk" };

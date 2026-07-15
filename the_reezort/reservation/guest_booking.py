@@ -19,7 +19,7 @@ import re
 
 import frappe
 from frappe import _
-from frappe.utils import flt, getdate, today
+from frappe.utils import add_to_date, flt, getdate, now_datetime, today
 
 from the_reezort.reservation.api import (
 	_availability_rows,
@@ -149,6 +149,9 @@ def guest_request_booking(
 	row = available[room_type]
 	nights = (getdate(departure_date) - getdate(arrival_date)).days
 	per_room = flt(row["total_amount"])
+	# A website request Hold lives longer than a live 15-min staff hold — give
+	# the front office 48h to confirm and collect the deposit.
+	hold_expires_at = add_to_date(now_datetime(), hours=48)
 	reservation = frappe.get_doc(
 		{
 			"doctype": "Reservation",
@@ -158,6 +161,7 @@ def guest_request_booking(
 			"arrival_date": arrival_date,
 			"departure_date": departure_date,
 			"currency": _property_currency(property),
+			"hold_expires_at": hold_expires_at,
 			"booker_guest_profile": profile,
 			"staying_guest_profile": profile,
 			"rooms": [
@@ -185,6 +189,7 @@ def guest_request_booking(
 			"end_date": departure_date,
 			"quantity": quantity,
 			"status": "Active",
+			"expires_at": hold_expires_at,
 			"source": "Online",
 		}
 	).insert(ignore_permissions=True)

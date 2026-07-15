@@ -207,3 +207,39 @@ class TestGetGuest360(FrappeTestCase):
     def test_360_nonexistent_profile_raises(self):
         with self.assertRaises(frappe.exceptions.DoesNotExistError):
             crm_api.get_guest_360("DOES-NOT-EXIST")
+
+
+class TestListGuestProfiles(FrappeTestCase):
+    """Regression: the Guests directory must never show a blank row. A profile
+    with only guest_full_name/email/phone set (e.g. a legacy record predating
+    the full_name sync hook, or one only reachable via those fields) must still
+    surface a name and a contact via the display_name/display_contact fallback."""
+
+    def test_legacy_profile_without_full_name_still_displays(self):
+        doc = frappe.get_doc(
+            {
+                "doctype": "Guest Profile",
+                "guest_full_name": "Legacy Only Guest",
+                "phone": "+919800011122",
+            }
+        )
+        # Bypass the controller's full_name sync to simulate a pre-hook legacy
+        # record where only guest_full_name/phone ended up populated.
+        doc.flags.ignore_validate = True
+        doc.insert(ignore_permissions=True)
+        self.assertFalse(doc.full_name)
+
+        rows = crm_api.list_guest_profiles(search="Legacy Only Guest")["data"]["guests"]
+        match = next((r for r in rows if r["name"] == doc.name), None)
+        self.assertIsNotNone(match)
+        self.assertEqual(match["display_name"], "Legacy Only Guest")
+        self.assertEqual(match["display_contact"], "+919800011122")
+
+    def test_list_includes_lifetime_stays_and_last_stay(self):
+        doc = _make_profile("Stays Field Guest", email="stays.field@example.com")
+        frappe.db.set_value("Guest Profile", doc.name, {"lifetime_stays": 3, "last_stay_date": "2026-01-01"})
+        rows = crm_api.list_guest_profiles(search="Stays Field Guest")["data"]["guests"]
+        match = next((r for r in rows if r["name"] == doc.name), None)
+        self.assertIsNotNone(match)
+        self.assertEqual(match["lifetime_stays"], 3)
+        self.assertEqual(str(match["last_stay_date"]), "2026-01-01")

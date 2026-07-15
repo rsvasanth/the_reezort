@@ -76,7 +76,7 @@ export default function BookingFlow() {
 	const [arrival, setArrival] = useState(today(7));
 	const [departure, setDeparture] = useState(today(9));
 	const [adults, setAdults] = useState(2);
-	const [children, setChildren] = useState(0);
+	const [childCount, setChildCount] = useState(0);
 
 	const [result, setResult] = useState<SearchResult | null>(null);
 	const [offer, setOffer] = useState<BookingOffer | null>(null);
@@ -98,7 +98,7 @@ export default function BookingFlow() {
 		}
 		setBusy(true);
 		try {
-			const res = await guestSearch({ arrival_date: arrival, departure_date: departure, adults, children });
+			const res = await guestSearch({ arrival_date: arrival, departure_date: departure, adults, children: childCount });
 			setResult(res);
 			setView("rooms");
 			window.scrollTo({ top: 0 });
@@ -125,7 +125,7 @@ export default function BookingFlow() {
 				room_type: offer.room_type,
 				quantity: 1,
 				adults,
-				children,
+				children: childCount,
 				booker,
 			});
 			setConfirmation(res);
@@ -145,13 +145,13 @@ export default function BookingFlow() {
 				arrival={arrival}
 				departure={departure}
 				adults={adults}
-				children={children}
+				childCount={childCount}
 				busy={busy}
 				error={error}
 				setArrival={setArrival}
 				setDeparture={setDeparture}
 				setAdults={setAdults}
-				setChildren={setChildren}
+				setChildCount={setChildCount}
 				onSearch={search}
 				onLookup={() => setView("lookup")}
 			/>
@@ -248,13 +248,13 @@ function SitePage(props: {
 	arrival: string;
 	departure: string;
 	adults: number;
-	children: number;
+	childCount: number;
 	busy: boolean;
 	error: string | null;
 	setArrival: (v: string) => void;
 	setDeparture: (v: string) => void;
 	setAdults: (v: number) => void;
-	setChildren: (v: number) => void;
+	setChildCount: (v: number) => void;
 	onSearch: () => void;
 	onLookup: () => void;
 }) {
@@ -327,7 +327,7 @@ function SitePage(props: {
 								<input type="number" min={1} value={props.adults} onChange={(e) => props.setAdults(Number(e.target.value) || 1)} className={inputCls} />
 							</Field>
 							<Field label="Children">
-								<input type="number" min={0} value={props.children} onChange={(e) => props.setChildren(Number(e.target.value) || 0)} className={inputCls} />
+								<input type="number" min={0} value={props.childCount} onChange={(e) => props.setChildCount(Number(e.target.value) || 0)} className={inputCls} />
 							</Field>
 							<div className="flex items-end">
 								<button className={`${goldBtn} w-full`} style={{ backgroundColor: GOLD }} onClick={props.onSearch} disabled={props.busy} data-testid="book-search">

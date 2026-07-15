@@ -505,6 +505,20 @@ def _get_or_create_guest_profile(booker):
 		existing = frappe.db.get_value("Guest Profile", {"phone": booker.get("phone")}, "name")
 
 	if existing:
+		# A profile matched by phone (or a stale profile from an earlier partial
+		# capture) may be missing the email/phone this caller just supplied —
+		# backfill it. Otherwise an email-gated guest lookup/deposit can never
+		# match this profile again even though the guest gave a valid email.
+		profile = frappe.get_doc("Guest Profile", existing)
+		changed = False
+		if booker.get("email") and not profile.email:
+			profile.email = booker.get("email")
+			changed = True
+		if booker.get("phone") and not profile.phone:
+			profile.phone = booker.get("phone")
+			changed = True
+		if changed:
+			profile.save(ignore_permissions=True)
 		return existing
 
 	doc = frappe.get_doc(

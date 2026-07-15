@@ -296,9 +296,9 @@ function GuestsTab() {
 									className="cursor-pointer hover:bg-muted/50"
 									onClick={() => navigateTo(g.name)}
 								>
-									<TableCell className="font-medium">{g.full_name}</TableCell>
+									<TableCell className="font-medium">{g.display_name}</TableCell>
 									<TableCell className="text-sm text-muted-foreground">
-										{g.primary_email ?? g.primary_phone ?? "—"}
+										{g.display_contact ?? "—"}
 									</TableCell>
 									<TableCell>
 										<VipBadge level={g.vip_level} />

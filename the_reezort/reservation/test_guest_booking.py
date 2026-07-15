@@ -143,3 +143,30 @@ class TestGuestBooking(FrappeTestCase):
 		)
 		with self.assertRaises(frappe.ValidationError):
 			guest_deposit_order(reference=booked["reference"], email="attacker@example.com")
+
+	def test_request_backfills_email_on_phone_matched_profile(self):
+		"""Regression: a Guest Profile created earlier with only a phone number
+		(no email) must get the email backfilled when a later booking supplies
+		one — otherwise the email-gated lookup/deposit endpoints can never match
+		this guest again even though they gave a valid email on this booking."""
+		phone = "+919812340099"
+		stale = frappe.get_doc(
+			{"doctype": "Guest Profile", "guest_full_name": "Phone Only Guest", "phone": phone}
+		).insert(ignore_permissions=True)
+		self.assertFalse(stale.email)
+
+		booked = guest_request_booking(
+			property=self.property,
+			arrival_date=self.arrival,
+			departure_date=self.departure,
+			room_type=self.room_type,
+			booker={"full_name": "Phone Only Guest", "email": "backfill.web@example.com", "phone": phone},
+		)
+		res = frappe.get_doc("Reservation", booked["reference"])
+		self.assertEqual(res.booker_guest_profile, stale.name)
+		stale.reload()
+		self.assertEqual(stale.email, "backfill.web@example.com")
+
+		# The lookup now succeeds with the backfilled email.
+		found = guest_lookup_booking(reference=booked["reference"], email="backfill.web@example.com")
+		self.assertEqual(found["reference"], booked["reference"])

@@ -222,13 +222,22 @@ export type Guest360 = {
 export type GuestProfileListItem = {
 	name: string;
 	full_name: string;
+	guest_full_name: string | null;
 	primary_email: string | null;
 	primary_phone: string | null;
+	email: string | null;
+	phone: string | null;
 	status: GuestProfileStatus;
 	vip_level: VipLevel | null;
 	do_not_contact: boolean;
 	lifetime_stays: number;
 	last_stay_date: string | null;
+	// Server-computed fallbacks — Guest Profile has two parallel field pairs
+	// (full_name/guest_full_name, primary_email/email, primary_phone/phone)
+	// populated by different creation paths; always prefer these over the
+	// raw fields above so the directory never shows a blank row.
+	display_name: string;
+	display_contact: string | null;
 };
 
 export type GuestProfileListResult = {

@@ -481,10 +481,16 @@ def list_guest_profiles(search=None, limit=50):
 		filters=filters,
 		or_filters=or_filters,
 		fields=["name", "full_name", "guest_full_name", "primary_email", "email",
-		        "primary_phone", "phone", "vip_level", "status", "do_not_contact"],
+		        "primary_phone", "phone", "vip_level", "status", "do_not_contact",
+		        "lifetime_stays", "last_stay_date"],
 		order_by="modified desc",
 		limit=int(limit),
 	)
 	for r in rows:
+		# Two parallel field pairs exist on Guest Profile (full_name/
+		# guest_full_name, primary_email/email, primary_phone/phone) because
+		# different creation paths populate different ones — always fall back
+		# across both so the directory never shows a blank row for a real guest.
 		r["display_name"] = r.get("full_name") or r.get("guest_full_name") or r["name"]
+		r["display_contact"] = r.get("primary_email") or r.get("email") or r.get("primary_phone") or r.get("phone")
 	return _envelope({"guests": rows, "total": len(rows)})

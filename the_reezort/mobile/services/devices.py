@@ -10,7 +10,7 @@ import frappe
 from frappe import _
 from frappe.utils import now_datetime
 
-from the_reezort.mobile.services.auth import _revoke_token_chain
+from the_reezort.mobile.services.auth import _revoke_token_chain, assert_not_version_blocked
 from the_reezort.utils import envelope
 
 REVOKE_REASONS = (
@@ -26,6 +26,7 @@ REVOKE_REASONS = (
 @frappe.whitelist()
 def register_device_token(device_id, fcm_token):
 	"""Called after login and on every FCM token rotation."""
+	assert_not_version_blocked()
 	name = frappe.db.get_value(
 		"Mobile Device", {"device_id": device_id, "user": frappe.session.user, "is_active": 1}, "name"
 	)

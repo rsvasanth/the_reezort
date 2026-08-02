@@ -103,24 +103,43 @@ def register_session(device):
 	fingerprint = token_fingerprint(token) if token else None
 
 	# Version gate. It runs *after* authentication now, so a blocked build
-	# already holds a token — showing a wall would leave that token usable by a
-	# client that simply skips this call. The token has to die.
+	# already holds a token — showing a wall alone would leave that token usable
+	# by a client that simply skips this call.
+	#
+	# But revoking on the spot would strand a non-empty outbox: the attendant's
+	# completed rooms would be unsendable, and `max_outbox_age_hours` would then
+	# discard them. So the token survives for draining only, and dies once the
+	# outbox is empty or the grace window expires. This is the one place the
+	# version gate and the offline guarantee genuinely conflict, and the offline
+	# guarantee wins.
 	floor = _blocked_version(app, device.get("app_version") or "0")
 	if floor:
-		_revoke_token_chain(user, None, fingerprint)
+		device_row = frappe.db.get_value(
+			"Mobile Device", {"device_id": device_id, "app": app, "user": user}, "name"
+		)
+		if device_row:
+			frappe.db.set_value(
+				"Mobile Device", device_row,
+				{"version_blocked_at": now_datetime(), "oauth_token_fingerprint": fingerprint,
+				 "revoke_reason": "Version Blocked"},
+			)
+		else:
+			# Nothing queued on a device we have never seen, so nothing to drain.
+			_revoke_token_chain(user, None, fingerprint)
 		frappe.db.commit()
 		return {
 			"ok": False,
-			"data": {},
+			"data": {"drain_only": bool(device_row), "device": device_row},
 			"warnings": [],
 			"blockers": [
 				{
 					"type": "version_blocked",
 					"message": _("This build is no longer supported. Update to {0} or later.").format(floor),
 					"minimum_version": floor,
+					"drain_only": bool(device_row),
 				}
 			],
-			"next_actions": [],
+			"next_actions": ["finish_drain"] if device_row else [],
 		}
 
 	# A shared handset handed between attendants must not keep the previous
@@ -187,9 +206,120 @@ def _session_payload(device_doc=None) -> dict:
 	}
 
 
+def current_device():
+	"""The Mobile Device backing this request, resolved by token fingerprint."""
+	token = current_bearer_token()
+	if not token:
+		return None
+	name = frappe.db.get_value(
+		"Mobile Device",
+		{"oauth_token_fingerprint": token_fingerprint(token), "user": frappe.session.user},
+		"name",
+	)
+	return frappe.get_doc("Mobile Device", name) if name else None
+
+
+def assert_not_version_blocked():
+	"""Guard for every endpoint that is not part of draining.
+
+	A version-blocked build keeps `sync_push` and `attach_mobile_file` so its
+	queued work can land. Everything else — fresh reads, new device tokens — is
+	refused, because letting a stale build keep working against a changed
+	contract is exactly what the gate exists to stop.
+	"""
+	device = current_device()
+	if device and device.version_blocked_at:
+		frappe.throw(
+			_("This build is no longer supported. Finish syncing, then update."),
+			frappe.PermissionError,
+		)
+
+
+@frappe.whitelist()
+def rotate_session(device_id):
+	"""Called by the client after a successful token refresh.
+
+	Frappe issues a **new** `OAuth Bearer Token` row per refresh and revokes
+	nothing, so without this a handset accumulates live credentials — every one
+	of them a working key to the resort's operational data on a phone the resort
+	does not own. Revoking the previous row here keeps it to exactly one.
+
+	The client has to tell us, because the refresh happens at Frappe's own token
+	endpoint and nothing in it identifies the device.
+	"""
+	token = current_bearer_token()
+	if not token:
+		frappe.throw(_("rotate_session requires a bearer token"))
+
+	name = frappe.db.get_value(
+		"Mobile Device", {"device_id": device_id, "user": frappe.session.user, "is_active": 1}, "name"
+	)
+	if not name:
+		frappe.throw(_("No active device {0} for this user").format(device_id))
+
+	doc = frappe.get_doc("Mobile Device", name)
+	new_fingerprint = token_fingerprint(token)
+	revoked = 0
+	if doc.oauth_token_fingerprint and doc.oauth_token_fingerprint != new_fingerprint:
+		revoked = _revoke_token_chain(
+			frappe.session.user, doc.oauth_client, doc.oauth_token_fingerprint
+		)
+
+	doc.oauth_token_fingerprint = new_fingerprint
+	doc.last_seen_at = now_datetime()
+	doc.save(ignore_permissions=True)
+	return envelope({"device": doc.name, "previous_tokens_revoked": revoked})
+
+
+@frappe.whitelist()
+def finish_drain(device_id):
+	"""The version-blocked client reports an empty outbox. Its token dies now."""
+	name = frappe.db.get_value(
+		"Mobile Device", {"device_id": device_id, "user": frappe.session.user}, "name"
+	)
+	if not name:
+		frappe.throw(_("No registered device {0} for this user").format(device_id))
+
+	doc = frappe.get_doc("Mobile Device", name)
+	revoked = _revoke_token_chain(
+		frappe.session.user, doc.oauth_client, doc.oauth_token_fingerprint
+	)
+	doc.is_active = 0
+	doc.revoked_at = now_datetime()
+	doc.revoke_reason = "Version Blocked"
+	doc.fcm_token = None
+	doc.save(ignore_permissions=True)
+	return envelope({"device": doc.name, "tokens_revoked": revoked})
+
+
+def revoke_expired_version_blocks():
+	"""Scheduled. A client that never finished draining loses its token anyway.
+
+	Without this, a handset that was blocked and then put in a drawer keeps a
+	live credential indefinitely — refresh tokens do not expire in Frappe.
+	"""
+	grace = _settings().version_block_grace_minutes or 120
+	cutoff = frappe.utils.add_to_date(now_datetime(), minutes=-grace)
+	rows = frappe.get_all(
+		"Mobile Device",
+		filters={"is_active": 1, "version_blocked_at": ["<", cutoff]},
+		fields=["name", "user", "oauth_client", "oauth_token_fingerprint"],
+	)
+	for row in rows:
+		_revoke_token_chain(row["user"], row["oauth_client"], row["oauth_token_fingerprint"])
+		frappe.db.set_value(
+			"Mobile Device", row["name"],
+			{"is_active": 0, "revoked_at": now_datetime(), "revoke_reason": "Version Blocked",
+			 "fcm_token": None},
+		)
+	frappe.db.commit()
+	return len(rows)
+
+
 @frappe.whitelist()
 def get_bootstrap():
 	"""Cold start and resume-after-background."""
+	assert_not_version_blocked()
 	return envelope(_session_payload())
 
 

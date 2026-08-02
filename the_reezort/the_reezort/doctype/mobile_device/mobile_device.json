@@ -23,7 +23,8 @@
   "registered_at",
   "last_seen_at",
   "revoked_at",
-  "revoke_reason"
+  "revoke_reason",
+  "version_blocked_at"
  ],
  "fields": [
   {
@@ -133,6 +134,13 @@
    "fieldtype": "Select",
    "label": "Revoke Reason",
    "options": "\nUser Logout\nAdmin Revoke\nToken Invalid\nVersion Blocked\nInactivity\nDevice Lost"
+  },
+  {
+   "description": "Set when the version gate fired. The device may drain its outbox until the grace window expires.",
+   "fieldname": "version_blocked_at",
+   "fieldtype": "Datetime",
+   "label": "Version Blocked At",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 0,

@@ -14,6 +14,7 @@ from frappe import _
 from frappe.utils import now_datetime
 
 from the_reezort.mobile.allowlist import get_action
+from the_reezort.mobile.services.auth import assert_not_version_blocked
 from the_reezort.utils import as_list, envelope
 
 # Collections sync_pull can serve, mapped to their loader. Anything else is an
@@ -222,6 +223,10 @@ def sync_pull(collections=None, since=None):
 	optimisation (AD-016-007): whatever this returns may sit on a phone the
 	resort does not own and cannot wipe.
 	"""
+	# A fresh read is not draining. A stale build must not pull new work against
+	# a contract it no longer understands.
+	assert_not_version_blocked()
+
 	requested = as_list(collections) or list(PULLABLE)
 	unknown = [c for c in requested if c not in PULLABLE]
 	if unknown:

@@ -21,6 +21,7 @@
   "photo_max_dimension_px",
   "photo_jpeg_quality",
   "sync_log_retention_days",
+  "version_block_grace_minutes",
   "sec_push",
   "push_quiet_hours_start",
   "push_quiet_hours_end",
@@ -140,6 +141,14 @@
    "fieldname": "feature_flags",
    "fieldtype": "Long Text",
    "label": "Feature Flags"
+  },
+  {
+   "default": "120",
+   "description": "How long a version-blocked build may keep draining its outbox before its token is revoked.",
+   "fieldname": "version_block_grace_minutes",
+   "fieldtype": "Int",
+   "label": "Version Block Grace Minutes",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 0,

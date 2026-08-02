@@ -175,6 +175,9 @@ scheduler_events = {
 		# refresh, with rotation leaving the old ones Active. A full floor of
 		# handsets generates tens of thousands of rows a month.
 		"the_reezort.mobile.services.push.purge_oauth_tokens",
+		# A handset blocked by the version gate and then left in a drawer would
+		# otherwise keep a live credential: Frappe refresh tokens never expire.
+		"the_reezort.mobile.services.auth.revoke_expired_version_blocks",
 	],
 }
 
@@ -186,9 +189,13 @@ scheduler_events = {
 # Overriding Methods
 # ------------------------------
 #
-# override_whitelisted_methods = {
-# 	"frappe.desk.doctype.event.event.get_events": "the_reezort.event.get_events"
-# }
+# Frappe ships no rate limit on the OAuth2 endpoints, which are allow_guest by
+# definition and therefore the obvious place to farm authorization codes. The
+# overrides are thin decorators that delegate straight through to core.
+override_whitelisted_methods = {
+	"frappe.integrations.oauth2.authorize": "the_reezort.mobile.oauth_guard.authorize",
+	"frappe.integrations.oauth2.get_token": "the_reezort.mobile.oauth_guard.get_token",
+}
 #
 # each overriding function accepts a `data` argument;
 # generated from the base implementation of the doctype dashboard,

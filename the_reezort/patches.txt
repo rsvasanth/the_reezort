@@ -4,3 +4,4 @@
 
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
+the_reezort.patches.v1.set_mobile_settings_defaults

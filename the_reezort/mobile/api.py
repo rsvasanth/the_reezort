@@ -6,9 +6,11 @@ has one stable import path even if a service is split later.
 """
 
 from the_reezort.mobile.services.auth import (  # noqa: F401
+	finish_drain,
 	get_bootstrap,
 	mobile_logout,
 	register_session,
+	rotate_session,
 )
 from the_reezort.mobile.services.devices import (  # noqa: F401
 	list_my_devices,
@@ -20,3 +22,5 @@ from the_reezort.mobile.services.sync import (  # noqa: F401
 	sync_pull,
 	sync_push,
 )
+
+from the_reezort.mobile.setup import seed_mobile  # noqa: F401

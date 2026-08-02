@@ -65,14 +65,40 @@ describe("nextBatch", () => {
 		expect(nextBatch(rows, 6_000, 10).map((r) => r.id)).toEqual([1, 2]);
 	});
 
-	it("does not re-send rows already in flight", () => {
-		expect(nextBatch([row({ id: 1, state: "in_flight" })], 0, 10)).toEqual([]);
+	it("does not re-send a row still inside its in-flight lease", () => {
+		expect(nextBatch([row({ id: 1, state: "in_flight", retryAfter: 5_000 })], 0, 10)).toEqual([]);
 	});
 
 	it("respects the batch cap", () => {
 		const rows = [row({ id: 1 }), row({ id: 2 }), row({ id: 3 })];
 
 		expect(nextBatch(rows, 0, 2).map((r) => r.id)).toEqual([1, 2]);
+	});
+
+	it("does NOT let an already-applied row block later work on the same target", () => {
+		// Applied rows are never deleted, so treating them as blockers meant the
+		// first successful sync for a room permanently stopped every later change
+		// to that room — the queue silently dying the moment it first worked.
+		const rows = [row({ id: 1, state: "applied" }), row({ id: 2 })];
+
+		expect(nextBatch(rows, 0, 10).map((r) => r.id)).toEqual([2]);
+	});
+
+	it("recovers a row stranded in_flight by a crash", () => {
+		// Android kills backgrounded apps routinely. A row marked in_flight and
+		// never answered for must be retried, or the attendant's work sits there
+		// until max_outbox_age_hours discards it.
+		const rows = [row({ id: 1, state: "in_flight", retryAfter: 5_000 })];
+
+		expect(nextBatch(rows, 1_000, 10)).toEqual([]);
+		expect(nextBatch(rows, 6_000, 10).map((r) => r.id)).toEqual([1]);
+	});
+
+	it("re-sends an in_flight row carrying no lease at all", () => {
+		// Shouldn't happen once markInFlight always writes a lease, but a legacy or
+		// half-written row must fail toward retrying: the server is idempotent, and
+		// stranding an attendant's work is the worse outcome.
+		expect(nextBatch([row({ id: 1, state: "in_flight" })], 0, 10).map((r) => r.id)).toEqual([1]);
 	});
 
 	it("stops at the first blocked row for the same target", () => {

@@ -143,9 +143,18 @@ export function createOutboxRepository(sql: SqlExecutor) {
 
 		get: byId,
 
-		async markInFlight(ids: readonly number[]): Promise<void> {
+		/**
+		 * Claim rows for a send, with a lease.
+		 *
+		 * The lease is what lets a crashed drain recover: without it a row marked
+		 * in_flight and never answered for is skipped by every later pass.
+		 */
+		async markInFlight(ids: readonly number[], leaseUntil: number): Promise<void> {
 			for (const id of ids) {
-				await sql.run("UPDATE outbox SET state = 'in_flight' WHERE id = ?", [id]);
+				await sql.run("UPDATE outbox SET state = 'in_flight', retry_after = ? WHERE id = ?", [
+					leaseUntil,
+					id,
+				]);
 			}
 		},
 

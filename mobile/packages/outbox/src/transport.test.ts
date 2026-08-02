@@ -132,7 +132,10 @@ describe("drainOnce", () => {
 
 		await drainOnce(store as never, call as never, 0);
 
-		expect(store.markInFlight).toHaveBeenCalledWith([1]);
+		// The lease is what lets a crashed drain recover the row.
+		expect(store.markInFlight).toHaveBeenCalledWith([1], expect.any(Number));
+		const [, leaseUntil] = store.markInFlight.mock.calls[0] as unknown as [number[], number];
+		expect(leaseUntil).toBeGreaterThan(0);
 	});
 
 	it("does not call the server when there is nothing to send", async () => {

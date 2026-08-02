@@ -10,7 +10,7 @@
  */
 import type { SyncStatus } from "@reezort/domain-types";
 
-import { nextBatch } from "./drain";
+import { IN_FLIGHT_LEASE_MS, nextBatch } from "./drain";
 import type { OutboxRow, SyncResult } from "./types";
 
 /** One entry of the `operations` array `sync_push` reads. */
@@ -94,7 +94,7 @@ export function fromWireResult(wire: WireResult): SyncResult {
 /** What the outbox needs from a repository in order to drain. */
 interface DrainableRepository {
 	list(): Promise<OutboxRow[]>;
-	markInFlight(ids: readonly number[]): Promise<void>;
+	markInFlight(ids: readonly number[], leaseUntil: number): Promise<void>;
 	applyResults(results: readonly SyncResult[], now: number): Promise<void>;
 }
 
@@ -118,7 +118,7 @@ export async function drainOnce(
 	const batch = nextBatch(await repo.list(), now, limit);
 	if (!batch.length) return [];
 
-	await repo.markInFlight(batch.map((row) => row.id));
+	await repo.markInFlight(batch.map((row) => row.id), now + IN_FLIGHT_LEASE_MS);
 
 	const response = await call<Envelope<{ results: WireResult[] }>>(SYNC_PUSH, {
 		operations: batch.map(toWireOperation),

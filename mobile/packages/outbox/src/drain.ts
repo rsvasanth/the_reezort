@@ -12,6 +12,14 @@ const BASE_DELAY_MS = 2_000;
 const MAX_DELAY_MS = 5 * 60_000;
 
 /**
+ * How long a row may sit `in_flight` before another pass may re-send it.
+ *
+ * Long enough that a slow request on bad signal is not duplicated, short enough
+ * that a crashed drain recovers within a round rather than a shift.
+ */
+export const IN_FLIGHT_LEASE_MS = 60_000;
+
+/**
  * Exponential backoff, capped at five minutes.
  *
  * The cap matters more than the curve. Uncapped doubling puts attempt 12 about
@@ -37,11 +45,19 @@ export function nextBatch(rows: readonly OutboxRow[], now: number, limit: number
 	const batch: OutboxRow[] = [];
 
 	for (const row of ordered) {
+		// Applied rows are finished. They are not deleted, so treating them as
+		// blockers meant the first successful sync for a room permanently stopped
+		// every later change to it — the queue dying the moment it first worked.
+		if (row.state === "applied") continue;
+
 		const target = `${row.targetDoctype ?? ""}:${row.targetName ?? ""}`;
+		// `retryAfter` governs both cases: a backoff delay for a failed row, and a
+		// lease for one in flight. Android kills backgrounded apps mid-drain
+		// routinely, so a row nobody ever answers for has to come back rather than
+		// sit until max_outbox_age_hours discards the attendant's work. Re-sending
+		// is safe — the server is idempotent on client_request_id.
 		const ready =
 			!blockedTargets.has(target) &&
-			row.state !== "in_flight" &&
-			row.state !== "applied" &&
 			!needsReview(row.state) &&
 			(row.retryAfter === undefined || row.retryAfter <= now);
 

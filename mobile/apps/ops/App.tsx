@@ -13,6 +13,7 @@ import {
 	Text,
 } from "react-native-paper";
 import { StatusBar } from "expo-status-bar";
+import { Alert } from "react-native";
 
 import { SessionExpiredError } from "@reezort/api-client";
 import type { OutboxSummary } from "@reezort/outbox";
@@ -21,6 +22,7 @@ import { login, LoginCancelled } from "./src/auth/login";
 import { secureTokenStore } from "./src/auth/secureTokenStore";
 import { oauthConfig } from "./src/config";
 import { deleteLocalDatabase } from "./src/outbox/expoSqlite";
+import { ConflictReview } from "./src/screens/ConflictReview";
 import {
 	client,
 	drain,
@@ -47,6 +49,7 @@ export default function App() {
 	const [summary, setSummary] = useState<OutboxSummary | null>(null);
 	const [note, setNote] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	const [reviewing, setReviewing] = useState(false);
 
 	const refreshSummary = useCallback(async () => {
 		setSummary(await outbox.summary());
@@ -90,17 +93,35 @@ export default function App() {
 		}
 	};
 
-	const onSignOut = async () => {
-		// AD-016-007: nothing readable survives on a handset the resort does not
-		// own. A non-empty outbox must warn first — that confirmation lands with
-		// the real logout flow; this skeleton reports the loss instead of hiding it.
-		const pending = await outbox.summary();
+	const wipe = async () => {
 		await secureTokenStore.clear();
+		// Drops the database file rather than deleting rows: SQLite leaves deleted
+		// content in freed pages until they are reused, and AD-016-007 asks for
+		// nothing readable left on a handset the resort does not own.
 		await deleteLocalDatabase();
 		setUser(null);
 		setTasks([]);
 		setSummary(null);
-		setNote(pending.pending ? `Signed out with ${pending.pending} unsynced` : null);
+		setReviewing(false);
+	};
+
+	const onSignOut = async () => {
+		const pending = await outbox.summary();
+		const unsent = pending.pending + pending.needsReview + pending.failed;
+		if (unsent === 0) {
+			await wipe();
+			return;
+		}
+		// Queued work is never silently discarded. The attendant has to be told
+		// what they are about to lose and say so explicitly.
+		Alert.alert(
+			"Sign out with unsynced work?",
+			`${unsent} change${unsent === 1 ? "" : "s"} ${unsent === 1 ? "has" : "have"} not reached the server. Signing out deletes ${unsent === 1 ? "it" : "them"} for good.`,
+			[
+				{ text: "Stay signed in", style: "cancel" },
+				{ text: "Sign out and lose them", style: "destructive", onPress: () => void wipe() },
+			],
+		);
 	};
 
 	const onQueue = async (task: HousekeepingTask) => {
@@ -171,9 +192,24 @@ export default function App() {
 								/>
 								<Card.Actions>
 									<Button onPress={onDrain}>Sync now</Button>
+									{summary && summary.needsReview > 0 ? (
+										<Button mode="contained-tonal" onPress={() => setReviewing(true)}>
+											Review {summary.needsReview}
+										</Button>
+									) : null}
 									<Button onPress={onSignOut}>Sign out</Button>
 								</Card.Actions>
 							</Card>
+
+							{reviewing ? (
+								<ConflictReview
+									onResolved={async () => {
+										await refreshSummary();
+										setNote("Resolved. It will sync on the next drain.");
+									}}
+									onClose={() => setReviewing(false)}
+								/>
+							) : null}
 
 							<Text variant="titleMedium" style={styles.block}>
 								My tasks

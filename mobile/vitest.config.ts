@@ -10,9 +10,11 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
 	test: {
 		environment: "node",
-		include: ["packages/*/src/**/*.test.ts"],
+		// Apps are included for pure-TypeScript modules only (copy, derivation).
+		// React Native component tests need jest-expo and do not belong here.
+		include: ["packages/*/src/**/*.test.ts", "apps/*/src/**/*.test.ts"],
 		coverage: {
-			include: ["packages/*/src/**/*.ts"],
+			include: ["packages/*/src/**/*.ts", "apps/*/src/**/*.ts"],
 			exclude: ["packages/*/src/**/*.test.ts"],
 		},
 	},

@@ -9,6 +9,7 @@
     "check:contracts": "node ../resort-app/scripts/check-doctype-parity.mjs",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
+    "test:live": "vitest run packages/outbox/src/live.test.ts",
     "test:watch": "vitest",
     "ops": "yarn workspace @reezort/ops start",
     "guest": "yarn workspace @reezort/guest start"

@@ -12,6 +12,15 @@
  * expo-sqlite adapter belongs in the ops app.
  */
 export { SCHEMA } from "./schema";
+export {
+	drainOnce,
+	fromWireResult,
+	toWireOperation,
+	SYNC_PUSH,
+	type WireOperation,
+	type WireResult,
+} from "./transport";
+export { createOutboxRepository, type EnqueueInput, type OutboxSummary, type SqlExecutor } from "./repository";
 export { applySyncResult, nextBatch, retryDelayMs } from "./drain";
 export { keepMine, keepServer, type KeepMinePlan, type KeepServerPlan } from "./resolve";
 export {

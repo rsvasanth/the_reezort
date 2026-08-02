@@ -10,12 +10,17 @@
  * a wrong union is worse than a missing one.
  */
 
-/** Server-issued credentials, held in Android Keystore via expo-secure-store. */
+/**
+ * The signed-in user, as returned by `register_session`.
+ *
+ * Deliberately carries no credentials. Tokens live in `TokenSet`
+ * (`@reezort/api-client`), held in Android Keystore via expo-secure-store and
+ * never surfaced to screens — see AD-016-002.
+ */
 export interface MobileSession {
-	readonly apiKey: string;
-	readonly apiSecret: string;
 	readonly user: string;
 	readonly fullName: string;
+	/** UI gating only. Server-side permission remains the enforcement truth. */
 	readonly roles: readonly string[];
 	/** Server clock at login, for detecting device clock skew on queued writes. */
 	readonly serverTime: string;

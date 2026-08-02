@@ -1,0 +1,15 @@
+{
+  "name": "reezort-mobile",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "check:contracts": "node ../resort-app/scripts/check-doctype-parity.mjs",
+    "typecheck": "tsc -b --pretty false",
+    "ops": "yarn workspace @reezort/ops start",
+    "guest": "yarn workspace @reezort/guest start"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.2",
+    "@types/react": "~19.1.0"
+  }
+}

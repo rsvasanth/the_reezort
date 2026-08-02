@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Reezort",
+    "slug": "reezort-guest",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "android": {
+      "package": "com.thereezort.guest",
+      "minSdkVersion": 29,
+      "edgeToEdgeEnabled": true
+    }
+  }
+}

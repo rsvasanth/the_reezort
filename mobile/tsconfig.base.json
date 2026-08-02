@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "lib": ["ESNext", "DOM"],
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noUncheckedIndexedAccess": true,
+    "paths": {
+      "@reezort/api-client": ["./packages/api-client/src"],
+      "@reezort/domain-types": ["./packages/domain-types/src"],
+      "@reezort/outbox": ["./packages/outbox/src"],
+      "@reezort/ui": ["./packages/ui/src"]
+    }
+  }
+}

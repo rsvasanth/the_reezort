@@ -2,6 +2,8 @@ import { DatabaseSync } from "node:sqlite";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { describe, expect, it, beforeAll } from "vitest";
 
+import { createCacheRepository } from "./cache";
+import { syncPullOnce } from "./pullTransport";
 import { createOutboxRepository, type SqlExecutor } from "./repository";
 import { keepMine } from "./resolve";
 import { drainOnce } from "./transport";
@@ -241,6 +243,33 @@ live("outbox against a real bench", () => {
 		// server applies it rather than replaying the recorded Conflict.
 		expect(results[0]?.status).toBe("Applied");
 		expect((await repo.list())[0]?.state).toBe("applied");
+	}, 30_000);
+
+	it("caches the caller's work, then evicts it when reassigned away", async () => {
+		// The whole point of watermarks + known + tombstones. Proven against the
+		// real server rather than a stub, because the shape of that exchange is
+		// exactly what a stub would get wrong.
+		const executor = nodeSqlite();
+		const cache = createCacheRepository(executor);
+		await cache.init();
+
+		await syncPullOnce(cache, call, ["housekeeping_tasks"], Date.now());
+		const cached = await cache.knownIds("housekeeping_tasks");
+		expect(cached).toContain(taskName);
+		expect(Object.keys(await cache.watermarks())).toContain("housekeeping_tasks");
+
+		// A supervisor takes the task off this attendant.
+		await admin(`/api/resource/Housekeeping Task/${taskName}`, {
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ assigned_user: "maintenance@thereezort.com" }),
+		});
+
+		await syncPullOnce(cache, call, ["housekeeping_tasks"], Date.now());
+
+		// Without the tombstone it would sit on the handset indefinitely — somebody
+		// else's work on a phone the resort does not control.
+		expect(await cache.knownIds("housekeeping_tasks")).not.toContain(taskName);
 	}, 30_000);
 
 	it("replays a repeated key as its original outcome, not as success", async () => {

@@ -27,8 +27,10 @@ import { ConflictReview } from "./src/screens/ConflictReview";
 import {
 	client,
 	drainAll,
+	cache,
 	outbox,
-	pullTasks,
+	cachedTasks,
+	refreshTasks,
 	queueCompletionWithPhoto,
 	queueTransition,
 	registerSession,
@@ -61,10 +63,15 @@ export default function App() {
 		setError(null);
 		try {
 			await outbox.init();
+			await cache.init();
+			// Show whatever the device already holds before touching the network.
+			// An attendant opening the app in a corridor gets their round, not a
+			// spinner that resolves into an error.
+			setTasks(await cachedTasks());
 			const who = await client.call<string>("frappe.auth.get_logged_user");
 			setUser(who);
 			await registerSession(APP_VERSION);
-			setTasks(await pullTasks());
+			setTasks(await refreshTasks());
 			await refreshSummary();
 		} catch (cause) {
 			// No session yet is the normal cold start, not something to shout about.
@@ -146,7 +153,7 @@ export default function App() {
 			const parts = Object.entries(counts).map(([status, n]) => `${n} ${status.toLowerCase()}`);
 			if (photos.length) parts.push(`${photos.length} photo${photos.length === 1 ? "" : "s"}`);
 			setNote(parts.length ? parts.join(" · ") : "Nothing to sync");
-			setTasks(await pullTasks());
+			setTasks(await refreshTasks());
 			await refreshSummary();
 		} catch (cause) {
 			setError(cause instanceof Error ? cause.message : String(cause));

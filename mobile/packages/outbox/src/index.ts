@@ -13,6 +13,8 @@
  */
 export { SCHEMA } from "./schema";
 export { eligibleUploads } from "./uploads";
+export { createCacheRepository, type CacheRepository } from "./cache";
+export { syncPullOnce, SYNC_PULL, type PullOutcome } from "./pullTransport";
 export { drainUploads, ATTACH_FILE, type UploadReader } from "./uploadTransport";
 export {
 	drainOnce,

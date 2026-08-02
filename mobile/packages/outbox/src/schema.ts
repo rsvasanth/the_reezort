@@ -35,6 +35,15 @@ CREATE TABLE IF NOT EXISTS pending_upload (
 CREATE INDEX IF NOT EXISTS pending_upload_outbox ON pending_upload (outbox_id);
 CREATE TABLE IF NOT EXISTS cache_meta (
   collection TEXT PRIMARY KEY,
-  last_synced_at TEXT NOT NULL
+  watermark TEXT,
+  last_synced_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS cache_document (
+  collection TEXT NOT NULL,
+  name TEXT NOT NULL,
+  data_json TEXT NOT NULL,
+  cached_at INTEGER NOT NULL,
+  PRIMARY KEY (collection, name)
+);
+CREATE INDEX IF NOT EXISTS cache_document_cached_at ON cache_document (cached_at);
 `;

@@ -9,7 +9,13 @@ import * as SecureStore from "expo-secure-store";
 import { randomUUID } from "expo-crypto";
 
 import { createClient, type FrappeClient } from "@reezort/api-client";
-import { createOutboxRepository, drainOnce, drainUploads } from "@reezort/outbox";
+import {
+	createCacheRepository,
+	createOutboxRepository,
+	drainOnce,
+	drainUploads,
+	syncPullOnce,
+} from "@reezort/outbox";
 
 import { expoSqlExecutor } from "./outbox/expoSqlite";
 import { capturePhoto, photoReader } from "./photos";
@@ -19,6 +25,19 @@ import { oauthConfig } from "./config";
 const DEVICE_ID_KEY = "reezort.ops.device_id";
 
 export const outbox = createOutboxRepository(expoSqlExecutor);
+export const cache = createCacheRepository(expoSqlExecutor);
+
+/**
+ * How far back the device keeps cached work.
+ *
+ * AD-016-007 asks for cached documents outside the working window to be purged
+ * on each successful sync — on a handset the resort does not own, holding less
+ * is a security control, not a storage tweak. Two shifts covers a round that
+ * spans midnight without keeping last week's rooms.
+ */
+const WORKING_WINDOW_MS = 36 * 60 * 60 * 1000;
+
+const PULL_COLLECTIONS = ["housekeeping_tasks", "rooms_summary"] as const;
 
 /**
  * A stable per-install id, in secure storage.
@@ -65,11 +84,23 @@ export interface HousekeepingTask {
 	readonly modified: string;
 }
 
-export async function pullTasks(): Promise<HousekeepingTask[]> {
-	const envelope = await client.call<{
-		data: { collections: { housekeeping_tasks?: HousekeepingTask[] } };
-	}>("the_reezort.mobile.api.sync_pull", { collections: ["housekeeping_tasks"] });
-	return envelope.data.collections.housekeeping_tasks ?? [];
+/** The cached list. Works with no signal, which is the whole point. */
+export async function cachedTasks(): Promise<HousekeepingTask[]> {
+	return cache.list<HousekeepingTask>("housekeeping_tasks");
+}
+
+/**
+ * Refresh the cache from the server, then read back from it.
+ *
+ * Incremental: stored watermarks go up as `since`, held ids go up as `known`,
+ * and tombstones evict work reassigned away. A task that leaves the attendant
+ * would otherwise sit on the handset indefinitely.
+ */
+export async function refreshTasks(): Promise<HousekeepingTask[]> {
+	const now = Date.now();
+	await syncPullOnce(cache, client.call.bind(client), [...PULL_COLLECTIONS], now);
+	await cache.purgeOlderThan(now - WORKING_WINDOW_MS);
+	return cachedTasks();
 }
 
 /**

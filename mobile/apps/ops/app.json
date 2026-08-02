@@ -15,7 +15,9 @@
     "plugins": [
       "expo-secure-store",
       "expo-web-browser",
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-build-properties",
+      "./plugins/withBenchCleartext"
     ],
     "extra": {
       "apiBaseUrl": "http://100.106.191.3:8004",

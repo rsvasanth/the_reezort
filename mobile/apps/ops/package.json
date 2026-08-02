@@ -5,8 +5,9 @@
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "typecheck": "tsc --noEmit"
+    "android": "expo run:android",
+    "typecheck": "tsc --noEmit",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@reezort/api-client": "*",
@@ -14,6 +15,7 @@
     "@reezort/ui": "*",
     "expo": "~54.0.0",
     "expo-auth-session": "~7.0.11",
+    "expo-build-properties": "~1.0.10",
     "expo-crypto": "~15.0.9",
     "expo-secure-store": "~15.0.8",
     "expo-sqlite": "~16.0.10",

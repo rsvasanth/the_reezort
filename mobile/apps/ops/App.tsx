@@ -22,12 +22,14 @@ import { login, LoginCancelled } from "./src/auth/login";
 import { secureTokenStore } from "./src/auth/secureTokenStore";
 import { oauthConfig } from "./src/config";
 import { deleteLocalDatabase } from "./src/outbox/expoSqlite";
+import { deleteAllPhotos } from "./src/photos";
 import { ConflictReview } from "./src/screens/ConflictReview";
 import {
 	client,
-	drain,
+	drainAll,
 	outbox,
 	pullTasks,
+	queueCompletionWithPhoto,
 	queueTransition,
 	registerSession,
 	type HousekeepingTask,
@@ -99,6 +101,8 @@ export default function App() {
 		// content in freed pages until they are reused, and AD-016-007 asks for
 		// nothing readable left on a handset the resort does not own.
 		await deleteLocalDatabase();
+		// Queued readiness photos are guest-room imagery. They go with everything else.
+		await deleteAllPhotos();
 		setUser(null);
 		setTasks([]);
 		setSummary(null);
@@ -134,18 +138,14 @@ export default function App() {
 	const onDrain = async () => {
 		setBusy(true);
 		try {
-			const results = await drain();
-			const counts = results.reduce<Record<string, number>>(
+			const { writes, photos } = await drainAll();
+			const counts = writes.reduce<Record<string, number>>(
 				(acc, r) => ({ ...acc, [r.status]: (acc[r.status] ?? 0) + 1 }),
 				{},
 			);
-			setNote(
-				results.length
-					? Object.entries(counts)
-							.map(([status, n]) => `${n} ${status.toLowerCase()}`)
-							.join(" · ")
-					: "Nothing to sync",
-			);
+			const parts = Object.entries(counts).map(([status, n]) => `${n} ${status.toLowerCase()}`);
+			if (photos.length) parts.push(`${photos.length} photo${photos.length === 1 ? "" : "s"}`);
+			setNote(parts.length ? parts.join(" · ") : "Nothing to sync");
 			setTasks(await pullTasks());
 			await refreshSummary();
 		} catch (cause) {

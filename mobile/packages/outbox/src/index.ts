@@ -12,6 +12,8 @@
  * expo-sqlite adapter belongs in the ops app.
  */
 export { SCHEMA } from "./schema";
+export { eligibleUploads } from "./uploads";
+export { drainUploads, ATTACH_FILE, type UploadReader } from "./uploadTransport";
 export {
 	drainOnce,
 	fromWireResult,

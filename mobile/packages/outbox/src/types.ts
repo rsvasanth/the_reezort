@@ -57,6 +57,14 @@ export interface ConflictDetail {
 
 export interface PendingUpload {
 	readonly id: number;
+	/**
+	 * Idempotency key for `attach_mobile_file`, generated at capture.
+	 *
+	 * Not the content hash: the same photograph attached to two different rooms
+	 * would collide, and the second attach would come back Duplicate and silently
+	 * never happen.
+	 */
+	readonly clientRequestId: string;
 	readonly outboxId: number;
 	readonly localUri: string;
 	readonly contentHash: string;

@@ -9,9 +9,10 @@ import * as SecureStore from "expo-secure-store";
 import { randomUUID } from "expo-crypto";
 
 import { createClient, type FrappeClient } from "@reezort/api-client";
-import { createOutboxRepository, drainOnce } from "@reezort/outbox";
+import { createOutboxRepository, drainOnce, drainUploads } from "@reezort/outbox";
 
 import { expoSqlExecutor } from "./outbox/expoSqlite";
+import { capturePhoto, photoReader } from "./photos";
 import { secureTokenStore } from "./auth/secureTokenStore";
 import { oauthConfig } from "./config";
 
@@ -94,4 +95,34 @@ export async function queueTransition(
 
 export async function drain() {
 	return drainOnce(outbox, client.call.bind(client), Date.now());
+}
+
+/**
+ * Queue a completion with its readiness photo.
+ *
+ * The photo is enqueued behind the write, so the upload worker cannot attach it
+ * before the document reaches the state it documents.
+ */
+export async function queueCompletionWithPhoto(task: HousekeepingTask): Promise<boolean> {
+	const photo = await capturePhoto();
+	if (!photo) return false;
+
+	const row = await outbox.enqueue({
+		clientRequestId: randomUUID(),
+		action: "housekeeping.complete_task",
+		payload: {},
+		targetDoctype: "Housekeeping Task",
+		targetName: task.name,
+		baseModified: task.modified,
+		createdAt: Date.now(),
+	});
+	await outbox.queueUpload(row.id, photo.localUri, photo.contentHash, photo.clientRequestId);
+	return true;
+}
+
+/** Drain writes first, then the photos those writes made attachable. */
+export async function drainAll() {
+	const writes = await drainOnce(outbox, client.call.bind(client), Date.now());
+	const photos = await drainUploads(outbox, client.call.bind(client), photoReader);
+	return { writes, photos };
 }

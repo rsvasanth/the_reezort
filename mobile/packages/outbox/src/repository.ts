@@ -185,28 +185,68 @@ export function createOutboxRepository(sql: SqlExecutor) {
 			await persist(keepMine(row, newClientRequestId).row);
 		},
 
-		async queueUpload(outboxId: number, localUri: string, contentHash: string): Promise<void> {
+		async queueUpload(
+			outboxId: number,
+			localUri: string,
+			contentHash: string,
+			clientRequestId: string,
+		): Promise<void> {
 			await sql.run(
-				"INSERT INTO pending_upload (outbox_id, local_uri, content_hash) VALUES (?, ?, ?)",
-				[outboxId, localUri, contentHash],
+				`INSERT INTO pending_upload (client_request_id, outbox_id, local_uri, content_hash)
+				 VALUES (?, ?, ?, ?)`,
+				[clientRequestId, outboxId, localUri, contentHash],
 			);
+		},
+
+		/** Every queued photo, for the drain worker to filter. */
+		async listUploads(): Promise<PendingUpload[]> {
+			const rows = await sql.all<{
+				id: number; client_request_id: string; outbox_id: number; local_uri: string;
+				content_hash: string; state: string; attempts: number;
+			}>(
+				`SELECT id, client_request_id, outbox_id, local_uri, content_hash, state, attempts
+				 FROM pending_upload ORDER BY outbox_id ASC, id ASC`,
+			);
+			return rows.map((r) => ({
+				id: r.id, clientRequestId: r.client_request_id, outboxId: r.outbox_id,
+				localUri: r.local_uri, contentHash: r.content_hash,
+				state: r.state as PendingUpload["state"], attempts: r.attempts,
+			}));
+		},
+
+		async markUploadState(
+			id: number,
+			state: PendingUpload["state"],
+			bumpAttempts = false,
+		): Promise<void> {
+			await sql.run(
+				`UPDATE pending_upload SET state = ?, attempts = attempts + ? WHERE id = ?`,
+				[state, bumpAttempts ? 1 : 0, id],
+			);
+		},
+
+		/** Called once the server confirms the attachment. */
+		async deleteUpload(id: number): Promise<void> {
+			await sql.run("DELETE FROM pending_upload WHERE id = ?", [id]);
 		},
 
 		async uploadsFor(outboxId: number): Promise<PendingUpload[]> {
 			const rows = await sql.all<{
 				id: number;
+				client_request_id: string;
 				outbox_id: number;
 				local_uri: string;
 				content_hash: string;
 				state: string;
 				attempts: number;
 			}>(
-				`SELECT id, outbox_id, local_uri, content_hash, state, attempts
+				`SELECT id, client_request_id, outbox_id, local_uri, content_hash, state, attempts
 				 FROM pending_upload WHERE outbox_id = ? ORDER BY id ASC`,
 				[outboxId],
 			);
 			return rows.map((r) => ({
 				id: r.id,
+				clientRequestId: r.client_request_id,
 				outboxId: r.outbox_id,
 				localUri: r.local_uri,
 				contentHash: r.content_hash,

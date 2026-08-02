@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS outbox (
 CREATE INDEX IF NOT EXISTS outbox_state_id ON outbox (state, id);
 CREATE TABLE IF NOT EXISTS pending_upload (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  client_request_id TEXT NOT NULL UNIQUE,
   outbox_id INTEGER NOT NULL REFERENCES outbox(id) ON DELETE CASCADE,
   local_uri TEXT NOT NULL,
   content_hash TEXT NOT NULL,

@@ -125,7 +125,7 @@ describe("applyResults", () => {
 describe("resolveKeepServer", () => {
 	it("deletes the row and its queued photos together", async () => {
 		const row = await repo.enqueue({ ...input, clientRequestId: "req-1", createdAt: 1 });
-		await repo.queueUpload(row.id, "file:///tmp/a.jpg", "hash-a");
+		await repo.queueUpload(row.id, "file:///tmp/a.jpg", "hash-a", `upload-${row.id}`);
 		await repo.applyResults(
 			[{ clientRequestId: "req-1", status: "Conflict", serverModified: "2026-08-02 09:15:40" }],
 			0,
@@ -146,7 +146,7 @@ describe("resolveKeepServer", () => {
 		const bare = createOutboxRepository(nodeSqlite({ swallowPragma: true }));
 		await bare.init();
 		const row = await bare.enqueue({ ...input, clientRequestId: "req-1", createdAt: 1 });
-		await bare.queueUpload(row.id, "file:///tmp/a.jpg", "hash-a");
+		await bare.queueUpload(row.id, "file:///tmp/a.jpg", "hash-a", `upload-${row.id}`);
 		await bare.applyResults(
 			[{ clientRequestId: "req-1", status: "Conflict", serverModified: "2026-08-02 09:15:40" }],
 			0,
@@ -161,7 +161,7 @@ describe("resolveKeepServer", () => {
 describe("resolveKeepMine", () => {
 	it("rebases, re-keys, and keeps the photo attached", async () => {
 		const row = await repo.enqueue({ ...input, clientRequestId: "req-original", createdAt: 1 });
-		await repo.queueUpload(row.id, "file:///tmp/a.jpg", "hash-a");
+		await repo.queueUpload(row.id, "file:///tmp/a.jpg", "hash-a", `upload-${row.id}`);
 		await repo.applyResults(
 			[
 				{
@@ -217,7 +217,7 @@ describe("wipe", () => {
 		// AD-016-007: logout and remote revoke must destroy local data on a handset
 		// the resort does not own.
 		const row = await repo.enqueue({ ...input, clientRequestId: "a", createdAt: 1 });
-		await repo.queueUpload(row.id, "file:///tmp/a.jpg", "hash-a");
+		await repo.queueUpload(row.id, "file:///tmp/a.jpg", "hash-a", `upload-${row.id}`);
 
 		await repo.wipe();
 

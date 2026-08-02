@@ -6,7 +6,7 @@ into the *existing* 003–015 services. No business rule is reimplemented here; 
 a rule changes it changes once and both clients get it.
 """
 
-import hashlib
+import base64
 import json
 
 import frappe
@@ -300,7 +300,20 @@ def attach_mobile_file(client_request_id, doctype, name, filename, content):
 	if existing:
 		return envelope({"status": "Duplicate", "file_url": existing.error_message or None})
 
-	content_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
+	# Hash exactly what Frappe hashes, or the guard silently never matches.
+	# `File.content_hash` is MD5 over the *decoded* bytes
+	# (`frappe/core/doctype/file/utils.py:get_content_hash`); hashing the base64
+	# text instead produced a second attachment for byte-identical photos, which
+	# is precisely the duplicate this endpoint exists to prevent.
+	from frappe.core.doctype.file.utils import get_content_hash
+
+	payload = content.split(",", 1)[1] if content.startswith("data:") else content
+	try:
+		raw = base64.b64decode(payload)
+	except Exception:
+		frappe.throw(_("Attachment content must be base64"))
+
+	content_hash = get_content_hash(raw)
 	duplicate = frappe.db.get_value(
 		"File",
 		{"attached_to_doctype": doctype, "attached_to_name": name, "content_hash": content_hash},
@@ -317,7 +330,9 @@ def attach_mobile_file(client_request_id, doctype, name, filename, content):
 
 	if duplicate:
 		log.sync_status = "Duplicate"
+		log.error_message = f"content_hash {content_hash}"
 		log.insert(ignore_permissions=True)
+		frappe.db.commit()
 		return envelope({"status": "Duplicate", "file_url": duplicate})
 
 	file_doc = frappe.get_doc(
@@ -335,6 +350,7 @@ def attach_mobile_file(client_request_id, doctype, name, filename, content):
 	log.sync_status = "Applied"
 	log.applied_at = now_datetime()
 	log.insert(ignore_permissions=True)
+	frappe.db.commit()
 	return envelope({"status": "Applied", "file_url": file_doc.file_url})
 
 

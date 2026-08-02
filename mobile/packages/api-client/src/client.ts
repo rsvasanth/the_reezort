@@ -13,6 +13,20 @@ export interface FrappeClient {
 	call<T>(method: string, body?: unknown): Promise<T>;
 }
 
+export interface ClientHooks {
+	/**
+	 * Called after a successful token refresh, before the retry.
+	 *
+	 * Frappe issues a new `OAuth Bearer Token` row per refresh and revokes
+	 * nothing, so a handset quietly accumulates live credentials — each one a
+	 * working key to operational data on a phone the resort does not own. The ops
+	 * app uses this to call `rotate_session`, which revokes the superseded row.
+	 * Nothing in Frappe's token endpoint identifies the device, so the client is
+	 * the only thing that can say which one rotated.
+	 */
+	onRefreshed?: (tokens: TokenSet) => Promise<void>;
+}
+
 interface FrappeEnvelope<T> {
 	readonly message?: T;
 	readonly exception?: string;
@@ -34,6 +48,7 @@ export function createClient(
 	config: OAuthConfig,
 	store: TokenStore,
 	doFetch: Fetch,
+	hooks: ClientHooks = {},
 ): FrappeClient {
 	/**
 	 * The in-flight refresh, shared by every caller that needs one.
@@ -64,6 +79,15 @@ export function createClient(
 
 				const next = await refreshTokens(config, (current ?? stale).refreshToken, doFetch);
 				await store.save(next);
+				if (hooks.onRefreshed) {
+					try {
+						await hooks.onRefreshed(next);
+					} catch {
+						// Bookkeeping is not worth losing the attendant's request over.
+						// Worst case the server holds one stale token, which the
+						// scheduled purge collects.
+					}
+				}
 				return next;
 			} catch (cause) {
 				// Only an explicit rejection by the server is terminal: that is

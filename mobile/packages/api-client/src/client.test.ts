@@ -222,6 +222,45 @@ describe("createClient", () => {
 		expect(store.current).toBeNull();
 	});
 
+	it("notifies onRefreshed so the server can revoke the superseded token", async () => {
+		// Frappe issues a new bearer token per refresh and revokes nothing, so a
+		// handset accumulates live credentials unless it tells the server which
+		// device just rotated. Nothing in Frappe's token endpoint identifies the
+		// device, so this callback is the only place that can.
+		const store = memoryStore(tokens("1", Date.now() + HOUR));
+		const onRefreshed = vi.fn(async () => {});
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(json({}, 401))
+			.mockResolvedValueOnce(json(refreshResponse))
+			.mockResolvedValueOnce(json({ message: "ok" }));
+		const client = createClient(CONFIG, store, fetchMock, { onRefreshed });
+
+		await client.call("whoami");
+
+		expect(onRefreshed).toHaveBeenCalledWith(
+			expect.objectContaining({ accessToken: "at-2" }),
+		);
+	});
+
+	it("does not let a failing onRefreshed break the call it interrupted", async () => {
+		// Bookkeeping is not worth losing an attendant's request over. Worst case
+		// the server holds one stale token, which the scheduled purge collects.
+		const store = memoryStore(tokens("1", Date.now() + HOUR));
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(json({}, 401))
+			.mockResolvedValueOnce(json(refreshResponse))
+			.mockResolvedValueOnce(json({ message: "ok" }));
+		const client = createClient(CONFIG, store, fetchMock, {
+			onRefreshed: async () => {
+				throw new Error("network blip");
+			},
+		});
+
+		await expect(client.call("whoami")).resolves.toBe("ok");
+	});
+
 	it("does not retry indefinitely when the retry also 401s", async () => {
 		const store = memoryStore(tokens("1", Date.now() + HOUR));
 		const fetchMock = vi

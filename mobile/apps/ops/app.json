@@ -2,6 +2,7 @@
   "expo": {
     "name": "Reezort Ops",
     "slug": "reezort-ops",
+    "scheme": "reezort",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
@@ -10,6 +11,14 @@
       "package": "com.thereezort.ops",
       "minSdkVersion": 29,
       "edgeToEdgeEnabled": true
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-web-browser"
+    ],
+    "extra": {
+      "apiBaseUrl": "http://100.106.191.3:8004",
+      "oauthClientId": "51hu0mjubv"
     }
   }
 }

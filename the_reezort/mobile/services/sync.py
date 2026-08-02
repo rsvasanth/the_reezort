@@ -21,6 +21,12 @@ from the_reezort.utils import as_list, envelope
 # error rather than an empty list — a typo must not look like "no work today".
 PULLABLE = ("housekeeping_tasks", "maintenance_tickets", "rooms_summary")
 
+# The only documents a mobile client may attach to. Mirrors the sync_push
+# allowlist: the app photographs room readiness, inspections and tickets, and
+# nothing else. An open `doctype` parameter is an open write to every record in
+# the system.
+ATTACHABLE_DOCTYPES = ("Housekeeping Task", "Room Inspection", "Maintenance Ticket")
+
 
 def _settings():
 	return frappe.get_cached_doc("Mobile Settings")
@@ -296,6 +302,25 @@ def attach_mobile_file(client_request_id, doctype, name, filename, content):
 	same readiness photo on a room record, so the same `client_request_id` or the
 	same content hash short-circuits.
 	"""
+	# Permission first, before anything reads or writes on the caller's behalf.
+	#
+	# `ignore_permissions=False` on the insert below looks like the guard, but is
+	# not: Frappe's File.has_permission short-circuits on create
+	# (`frappe/core/doctype/file/file.py`) and checks only generic File-create
+	# permission, never the document being attached to. Without this check a
+	# housekeeping token could plant attachments on reservations, folios, or User
+	# records — verified before it was added.
+	if doctype not in ATTACHABLE_DOCTYPES:
+		frappe.throw(
+			_("Attachments are not accepted for {0}").format(doctype), frappe.PermissionError
+		)
+	if not frappe.db.exists(doctype, name):
+		frappe.throw(_("{0} {1} not found").format(doctype, name))
+	if not frappe.has_permission(doctype, "write", doc=name):
+		frappe.throw(
+			_("Not permitted to attach to {0} {1}").format(doctype, name), frappe.PermissionError
+		)
+
 	existing = _existing_log(client_request_id)
 	if existing:
 		return envelope({"status": "Duplicate", "file_url": existing.error_message or None})

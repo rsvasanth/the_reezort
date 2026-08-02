@@ -64,14 +64,25 @@ def revoke_device(device_id, reason="Admin Revoke"):
 		if row["user"] != frappe.session.user and not is_admin:
 			frappe.throw(_("Not permitted to revoke another user's device"), frappe.PermissionError)
 		revoked_tokens += _revoke_token_chain(
-			row["user"], row["oauth_client"], row["oauth_token_fingerprint"]
+			row["user"], row["oauth_client"], row["oauth_token_fingerprint"],
+			exclude_device=row["name"],
 		)
 		frappe.db.set_value(
 			"Mobile Device", row["name"],
 			{"is_active": 0, "fcm_token": None, "revoked_at": now_datetime(), "revoke_reason": reason},
 		)
 
-	return envelope({"devices_revoked": len(rows), "tokens_revoked": revoked_tokens})
+	# Zero tokens revoked against a device that was active is an anomaly worth
+	# surfacing, not a success: it means the handset held nothing we could find,
+	# and whoever pressed the button believes the phone is now dead.
+	warnings = (
+		[]
+		if revoked_tokens
+		else [_("No live tokens matched this device. Verify it cannot still reach the API.")]
+	)
+	return envelope(
+		{"devices_revoked": len(rows), "tokens_revoked": revoked_tokens}, warnings=warnings
+	)
 
 
 @frappe.whitelist()

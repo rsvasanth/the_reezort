@@ -53,15 +53,47 @@ def token_fingerprint(token: str) -> str:
 	return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
-def _revoke_token_chain(user: str, oauth_client: str | None, fingerprint: str | None) -> int:
-	"""Revoke this device's bearer tokens — and only this device's.
+def _revoke_token_chain(
+	user: str,
+	oauth_client: str | None,
+	fingerprint: str | None,
+	exclude_device: str | None = None,
+) -> int:
+	"""Revoke the tokens belonging to one device, failing safe when unsure.
 
-	Frappe's refresh rotation does not invalidate prior tokens and has no reuse
-	detection, so a device can hold more than one live credential. Matching on
-	fingerprint keeps revocation exact: scoping by (user, client) instead would
-	revoke every handset that user owns on that app, which is precisely the
-	per-device isolation AD-016-002 exists to provide.
+	Frappe's refresh rotation issues a new `OAuth Bearer Token` row and revokes
+	nothing, and the token endpoint carries no device identity — so the server
+	learns a device's current fingerprint only when the client calls
+	`rotate_session`. That call is deliberately best-effort (a bookkeeping failure
+	must not cost the attendant their request), which means the stored fingerprint
+	goes stale routinely.
+
+	Matching solely on the stored fingerprint was therefore a silent hole: an
+	admin revoking a lost handset revoked the *superseded* token, saw
+	`tokens_revoked: 1`, and left the phone's live credential working — with a
+	refresh token that never expires. AD-016-007 requires revoke to be an
+	authentication-layer control, so it cannot depend on the client having
+	cooperated.
+
+	The rule instead: revoke every Active token for this user (and client, when
+	known) **except** those claimed by the user's *other* still-active devices. A
+	token nobody claims is either this device's rotated credential or an orphan;
+	both must die. The cost is that a second handset whose fingerprint is also
+	stale gets logged out too — over-revoking is an inconvenience, under-revoking
+	is a lost phone with live access.
 	"""
+	claimed_by_others = {
+		row["oauth_token_fingerprint"]
+		for row in frappe.get_all(
+			"Mobile Device",
+			filters={"user": user, "is_active": 1},
+			fields=["name", "oauth_token_fingerprint"],
+		)
+		if row["oauth_token_fingerprint"] and row["name"] != exclude_device
+	}
+	# Never let another device's stale claim protect the token we are revoking.
+	claimed_by_others.discard(fingerprint)
+
 	rows = frappe.get_all(
 		"OAuth Bearer Token",
 		filters={"user": user, "status": "Active", **({"client": oauth_client} if oauth_client else {})},
@@ -69,7 +101,7 @@ def _revoke_token_chain(user: str, oauth_client: str | None, fingerprint: str | 
 	)
 	revoked = 0
 	for row in rows:
-		if fingerprint and token_fingerprint(row["name"]) != fingerprint:
+		if token_fingerprint(row["name"]) in claimed_by_others:
 			continue
 		frappe.db.set_value("OAuth Bearer Token", row["name"], "status", "Revoked")
 		revoked += 1
@@ -151,7 +183,10 @@ def register_session(device):
 	):
 		if prior["user"] == user:
 			continue
-		_revoke_token_chain(prior["user"], prior["oauth_client"], prior["oauth_token_fingerprint"])
+		_revoke_token_chain(
+			prior["user"], prior["oauth_client"], prior["oauth_token_fingerprint"],
+			exclude_device=prior["name"],
+		)
 		frappe.db.set_value(
 			"Mobile Device", prior["name"],
 			{"is_active": 0, "revoked_at": now_datetime(), "revoke_reason": "Admin Revoke",
@@ -171,6 +206,11 @@ def register_session(device):
 	doc.app_version = device.get("app_version")
 	doc.runtime_version = device.get("runtime_version")
 	doc.oauth_token_fingerprint = fingerprint
+	# Readable because Frappe names the bearer-token row after the token itself.
+	# Without it every revocation had to scan all clients.
+	doc.oauth_client = (
+		frappe.db.get_value("OAuth Bearer Token", token, "client") if token else None
+	)
 	doc.is_active = 1
 	doc.revoked_at = None
 	doc.revoke_reason = None
@@ -262,9 +302,11 @@ def rotate_session(device_id):
 	revoked = 0
 	if doc.oauth_token_fingerprint and doc.oauth_token_fingerprint != new_fingerprint:
 		revoked = _revoke_token_chain(
-			frappe.session.user, doc.oauth_client, doc.oauth_token_fingerprint
+			frappe.session.user, doc.oauth_client, doc.oauth_token_fingerprint,
+			exclude_device=doc.name,
 		)
 
+	doc.oauth_client = frappe.db.get_value("OAuth Bearer Token", token, "client")
 	doc.oauth_token_fingerprint = new_fingerprint
 	doc.last_seen_at = now_datetime()
 	doc.save(ignore_permissions=True)
@@ -282,7 +324,8 @@ def finish_drain(device_id):
 
 	doc = frappe.get_doc("Mobile Device", name)
 	revoked = _revoke_token_chain(
-		frappe.session.user, doc.oauth_client, doc.oauth_token_fingerprint
+		frappe.session.user, doc.oauth_client, doc.oauth_token_fingerprint,
+		exclude_device=doc.name,
 	)
 	doc.is_active = 0
 	doc.revoked_at = now_datetime()
@@ -306,7 +349,10 @@ def revoke_expired_version_blocks():
 		fields=["name", "user", "oauth_client", "oauth_token_fingerprint"],
 	)
 	for row in rows:
-		_revoke_token_chain(row["user"], row["oauth_client"], row["oauth_token_fingerprint"])
+		_revoke_token_chain(
+			row["user"], row["oauth_client"], row["oauth_token_fingerprint"],
+			exclude_device=row["name"],
+		)
 		frappe.db.set_value(
 			"Mobile Device", row["name"],
 			{"is_active": 0, "revoked_at": now_datetime(), "revoke_reason": "Version Blocked",
@@ -337,7 +383,9 @@ def mobile_logout(device_id):
 		frappe.throw(_("No registered device {0} for this user").format(device_id))
 
 	doc = frappe.get_doc("Mobile Device", name)
-	revoked = _revoke_token_chain(user, doc.oauth_client, doc.oauth_token_fingerprint)
+	revoked = _revoke_token_chain(
+		user, doc.oauth_client, doc.oauth_token_fingerprint, exclude_device=doc.name
+	)
 	doc.is_active = 0
 	doc.fcm_token = None
 	doc.revoked_at = now_datetime()

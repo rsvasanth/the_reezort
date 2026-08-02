@@ -35,6 +35,13 @@ def current_bearer_token() -> str | None:
 	request logs, and would invite trusting client input over the header that
 	actually authenticated the call.
 	"""
+	# There is no request in a scheduled job, a bench script, or a test. Frappe
+	# raises rather than returning None for a header read outside one, so guard
+	# before asking — otherwise every non-HTTP caller of anything downstream
+	# (sync_pull, the version-gate check) dies on an unrelated RuntimeError.
+	if not getattr(frappe.local, "request", None):
+		return None
+
 	header = frappe.get_request_header("Authorization") or ""
 	parts = header.split(" ", 1)
 	if len(parts) == 2 and parts[0].lower() == "bearer":

@@ -15,7 +15,7 @@ from frappe.utils import now_datetime
 
 from the_reezort.mobile.allowlist import get_action
 from the_reezort.mobile.services.auth import assert_not_version_blocked
-from the_reezort.utils import as_list, envelope
+from the_reezort.utils import as_dict, as_list, envelope
 
 # Collections sync_pull can serve, mapped to their loader. Anything else is an
 # error rather than an empty list — a typo must not look like "no work today".
@@ -222,12 +222,69 @@ def sync_push(operations):
 
 
 @frappe.whitelist()
-def sync_pull(collections=None, since=None):
+def _collection_query(name: str, user: str):
+	"""(doctype, filters, fields) for one pullable collection.
+
+	Field names come from the shipped doctypes, not the specs: Maintenance Ticket
+	ships `state`/`assigned_to`, not the `ticket_status`/`assigned_user` that 009's
+	data-model names.
+	"""
+	if name == "housekeeping_tasks":
+		return (
+			"Housekeeping Task",
+			{"assigned_user": user},
+			["name", "room", "task_type", "task_status", "priority", "dnd_status",
+			 "assigned_user", "due_at", "modified"],
+		)
+	if name == "maintenance_tickets":
+		return (
+			"Maintenance Ticket",
+			{"assigned_to": user},
+			["name", "room", "state", "priority", "assigned_to", "modified"],
+		)
+	return (None, None, None)
+
+
+def _tombstones(name: str, user: str, known_ids: list) -> list:
+	"""Of the ids this device still holds, which are no longer the caller's.
+
+	The client supplies what it has cached, because the server cannot answer
+	otherwise: a task reassigned away simply stops matching the `assigned_user`
+	filter, and nothing records that it once matched. Without this the row sits in
+	the device cache for good — and on BYOD that is somebody else's work sitting
+	on a phone the resort does not control.
+
+	Bounded by the cache, which by design holds only the user's own work.
+	"""
+	doctype, filters, _fields = _collection_query(name, user)
+	if not doctype or not known_ids:
+		return []
+
+	still_mine = {
+		row["name"]
+		for row in frappe.get_all(
+			doctype, filters={**filters, "name": ["in", known_ids]}, fields=["name"]
+		)
+	}
+	return [name_ for name_ in known_ids if name_ not in still_mine]
+
+
+@frappe.whitelist()
+def sync_pull(collections=None, since=None, known=None):
 	"""The caller's own assigned work only, scoped by role.
 
 	On BYOD that scoping is a security control rather than a bandwidth
 	optimisation (AD-016-007): whatever this returns may sit on a phone the
 	resort does not own and cannot wipe.
+
+	`since` and the returned `watermarks` are **per collection**. A single shared
+	watermark was wrong: `rooms_summary` timestamps move whenever the web SPA
+	touches a room, so a room newer than the newest task would advance the
+	watermark past task changes the client had never seen, and the next pull would
+	filter them out. Nothing would error; the attendant would simply not be told.
+
+	`known` maps a collection to the ids the device currently holds, and comes
+	back as `tombstones` for those that are no longer the caller's.
 	"""
 	# A fresh read is not draining. A stale build must not pull new work against
 	# a contract it no longer understands.
@@ -238,45 +295,39 @@ def sync_pull(collections=None, since=None):
 	if unknown:
 		frappe.throw(_("Unknown sync collection: {0}").format(", ".join(unknown)))
 
+	since = as_dict(since)
+	known = as_dict(known)
 	limit = _settings().sync_page_size or 200
 	user = frappe.session.user
+
 	data: dict = {}
+	watermarks: dict = {}
+	tombstones: dict = {}
 	has_more = False
 
-	def _since(filters):
-		if since:
-			filters["modified"] = [">", since]
-		return filters
-
-	if "housekeeping_tasks" in requested:
+	for name in ("housekeeping_tasks", "maintenance_tickets"):
+		if name not in requested:
+			continue
+		doctype, filters, fields = _collection_query(name, user)
+		mark = since.get(name)
 		rows = frappe.get_all(
-			"Housekeeping Task",
-			filters=_since({"assigned_user": user}),
-			fields=["name", "room", "task_type", "task_status", "priority", "dnd_status",
-			        "assigned_user", "due_at", "modified"],
+			doctype,
+			filters={**filters, **({"modified": [">", mark]} if mark else {})},
+			fields=fields,
 			order_by="modified asc",
 			limit=limit + 1,
 		)
 		has_more = has_more or len(rows) > limit
-		data["housekeeping_tasks"] = rows[:limit]
-
-	if "maintenance_tickets" in requested:
-		rows = frappe.get_all(
-			"Maintenance Ticket",
-			filters=_since({"assigned_to": user}),
-			fields=["name", "room", "state", "priority", "assigned_to", "modified"],
-			order_by="modified asc",
-			limit=limit + 1,
-		)
-		has_more = has_more or len(rows) > limit
-		data["maintenance_tickets"] = rows[:limit]
+		rows = rows[:limit]
+		data[name] = rows
+		# Per collection, and never rolled back below what the caller already had.
+		watermarks[name] = str(rows[-1]["modified"]) if rows else mark
+		tombstones[name] = _tombstones(name, user, as_list(known.get(name)))
 
 	if "rooms_summary" in requested:
-		room_names = {
-			r.get("room")
-			for r in data.get("housekeeping_tasks", [])
-			if r.get("room")
-		}
+		# Derived from the tasks just returned, so it carries no watermark of its
+		# own — its timestamps belong to Rooms, not to the caller's work.
+		room_names = {r.get("room") for r in data.get("housekeeping_tasks", []) if r.get("room")}
 		data["rooms_summary"] = (
 			frappe.get_all(
 				"Room",
@@ -287,11 +338,14 @@ def sync_pull(collections=None, since=None):
 			else []
 		)
 
-	watermark = max(
-		(str(row["modified"]) for rows in data.values() for row in rows if row.get("modified")),
-		default=since,
+	return envelope(
+		{
+			"collections": data,
+			"watermarks": watermarks,
+			"tombstones": tombstones,
+			"has_more": has_more,
+		}
 	)
-	return envelope({"collections": data, "watermark": watermark, "has_more": has_more})
 
 
 @frappe.whitelist()

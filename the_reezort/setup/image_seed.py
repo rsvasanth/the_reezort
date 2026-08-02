@@ -1,4 +1,4 @@
-"""Idempotent seeder for Signature Arch Villa renders.
+"""Idempotent seeder for villa room-type renders.
 
 Reads 4 image files from `the_reezort/setup/seed_assets/villa_renders/`:
 
@@ -10,9 +10,9 @@ Reads 4 image files from `the_reezort/setup/seed_assets/villa_renders/`:
 Uploads each to the File doctype (idempotent — file with the same content
 hash is reused). Wires them to:
 
-  · Room Type "Signature Arch Villa"  · image = exterior
-  · Every Room (V1–V7) sharing that   · image = exterior
-    room type
+  · The villa Room Type (resolved by   · image = exterior
+    _resolve_room_type, or passed in)
+  · Every Room sharing that room type  · image = exterior
   · One Room Condition Capture per    · capture_stage = "Marketing"
     Room, tagged Marketing, holding    · 4 photos in the child table
     all 4 images
@@ -35,10 +35,21 @@ import frappe
 from the_reezort.permissions import system_manager_only
 
 CAPTURE_STAGE = "Marketing"
+
+# Historical Room Type record names, kept so sites seeded before the demo
+# property seeder settled on RZ-DEMO-* keep resolving.
 ROOM_TYPE_NAME_CANDIDATES = [
 	"Signature Arch Villa",
 	"SAV",  # code
 ]
+
+# What property.api._seed_room_types actually creates for the villa:
+# name RZ-DEMO-VIL, room_type_code "VIL", room_type_name "Beachfront Villa".
+# Resolving on the code is stable across property-name changes.
+ROOM_TYPE_CODE = "VIL"
+
+# Last-resort name match, in order.
+ROOM_TYPE_NAME_PATTERNS = ["%Arch%", "%Villa%"]
 
 _HERE = Path(__file__).resolve().parent
 SEED_DIR = _HERE / "seed_assets" / "villa_renders"
@@ -81,16 +92,29 @@ def _extra_paths() -> list[Path]:
 	return extras
 
 
-def _resolve_room_type() -> str | None:
+def _resolve_room_type(room_type: str | None = None) -> str | None:
+	"""Resolve the villa Room Type to attach renders to.
+
+	An explicit name wins. Otherwise: historical record names, then the
+	room_type_code the demo property seeder creates, then a name match.
+	"""
+	if room_type:
+		return room_type if frappe.db.exists("Room Type", room_type) else None
+
 	for candidate in ROOM_TYPE_NAME_CANDIDATES:
 		if frappe.db.exists("Room Type", candidate):
 			return candidate
-	# Fallback: any room type named like "…arch…"
-	rows = frappe.db.sql(
-		"SELECT name FROM `tabRoom Type` WHERE room_type_name LIKE %s LIMIT 1",
-		("%Arch%",),
-	)
-	return rows[0][0] if rows else None
+
+	by_code = frappe.db.get_value("Room Type", {"room_type_code": ROOM_TYPE_CODE}, "name")
+	if by_code:
+		return by_code
+
+	for pattern in ROOM_TYPE_NAME_PATTERNS:
+		by_name = frappe.db.get_value("Room Type", {"room_type_name": ("like", pattern)}, "name")
+		if by_name:
+			return by_name
+
+	return None
 
 
 def _upload_file(path: Path, attached_to: dict | None = None) -> str:
@@ -192,7 +216,7 @@ def _attach_gallery_to_room(room: str, source_paths: list[tuple[Path, str]]) -> 
 
 @frappe.whitelist()
 @system_manager_only
-def seed_villa_renders() -> dict:
+def seed_villa_renders(room_type: str | None = None) -> dict:
 	if not SEED_DIR.exists() or not any(SEED_DIR.iterdir()):
 		return {
 			"ok": False,
@@ -200,9 +224,14 @@ def seed_villa_renders() -> dict:
 			"seed_dir": str(SEED_DIR),
 		}
 
-	room_type = _resolve_room_type()
-	if not room_type:
-		frappe.throw("Signature Arch Villa room type not found on this site.")
+	resolved = _resolve_room_type(room_type)
+	if not resolved:
+		frappe.throw(
+			f"No villa Room Type found on this site. Looked for {ROOM_TYPE_NAME_CANDIDATES}, "
+			f"room_type_code {ROOM_TYPE_CODE!r}, then names like {ROOM_TYPE_NAME_PATTERNS}. "
+			"Seed the demo property first, or pass room_type explicitly."
+		)
+	room_type = resolved
 
 	# Ordered source-file list: canonical shots (if present) first, extras next.
 	# Each item is (Path, caption) — the seeder uploads them as File

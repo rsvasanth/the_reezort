@@ -1,0 +1,171 @@
+{
+ "actions": [],
+ "allow_import": 0,
+ "creation": "2026-08-02 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "sec_versions",
+  "ops_min_supported_version",
+  "ops_recommended_version",
+  "col_versions",
+  "guest_min_supported_version",
+  "guest_recommended_version",
+  "sec_sync",
+  "max_outbox_age_hours",
+  "max_outbox_size",
+  "sync_page_size",
+  "sync_poll_seconds",
+  "col_sync",
+  "photo_max_dimension_px",
+  "photo_jpeg_quality",
+  "sync_log_retention_days",
+  "sec_push",
+  "push_quiet_hours_start",
+  "push_quiet_hours_end",
+  "feature_flags"
+ ],
+ "fields": [
+  {
+   "fieldname": "sec_versions",
+   "fieldtype": "Section Break",
+   "label": "Version Gates"
+  },
+  {
+   "default": "0.1.0",
+   "fieldname": "ops_min_supported_version",
+   "fieldtype": "Data",
+   "label": "Ops Min Supported Version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "ops_recommended_version",
+   "fieldtype": "Data",
+   "label": "Ops Recommended Version"
+  },
+  {
+   "fieldname": "col_versions",
+   "fieldtype": "Column Break",
+   "label": "Col Versions"
+  },
+  {
+   "default": "0.1.0",
+   "fieldname": "guest_min_supported_version",
+   "fieldtype": "Data",
+   "label": "Guest Min Supported Version",
+   "reqd": 1
+  },
+  {
+   "fieldname": "guest_recommended_version",
+   "fieldtype": "Data",
+   "label": "Guest Recommended Version"
+  },
+  {
+   "fieldname": "sec_sync",
+   "fieldtype": "Section Break",
+   "label": "Sync Limits"
+  },
+  {
+   "default": "72",
+   "fieldname": "max_outbox_age_hours",
+   "fieldtype": "Int",
+   "label": "Max Outbox Age Hours",
+   "reqd": 1
+  },
+  {
+   "default": "500",
+   "fieldname": "max_outbox_size",
+   "fieldtype": "Int",
+   "label": "Max Outbox Size",
+   "reqd": 1
+  },
+  {
+   "default": "200",
+   "fieldname": "sync_page_size",
+   "fieldtype": "Int",
+   "label": "Sync Page Size",
+   "reqd": 1
+  },
+  {
+   "default": "60",
+   "fieldname": "sync_poll_seconds",
+   "fieldtype": "Int",
+   "label": "Sync Poll Seconds",
+   "reqd": 1
+  },
+  {
+   "fieldname": "col_sync",
+   "fieldtype": "Column Break",
+   "label": "Col Sync"
+  },
+  {
+   "default": "1600",
+   "fieldname": "photo_max_dimension_px",
+   "fieldtype": "Int",
+   "label": "Photo Max Dimension Px",
+   "reqd": 1
+  },
+  {
+   "default": "75",
+   "fieldname": "photo_jpeg_quality",
+   "fieldtype": "Int",
+   "label": "Photo Jpeg Quality",
+   "reqd": 1
+  },
+  {
+   "default": "90",
+   "fieldname": "sync_log_retention_days",
+   "fieldtype": "Int",
+   "label": "Sync Log Retention Days",
+   "reqd": 1
+  },
+  {
+   "fieldname": "sec_push",
+   "fieldtype": "Section Break",
+   "label": "Push"
+  },
+  {
+   "fieldname": "push_quiet_hours_start",
+   "fieldtype": "Time",
+   "label": "Push Quiet Hours Start"
+  },
+  {
+   "fieldname": "push_quiet_hours_end",
+   "fieldtype": "Time",
+   "label": "Push Quiet Hours End"
+  },
+  {
+   "description": "JSON, per-app rollout switches",
+   "fieldname": "feature_flags",
+   "fieldtype": "Long Text",
+   "label": "Feature Flags"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-08-02 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Mobile Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

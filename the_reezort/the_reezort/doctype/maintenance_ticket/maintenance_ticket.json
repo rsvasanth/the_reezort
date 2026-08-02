@@ -57,59 +57,326 @@
   "guest_safe_note",
   "photos_section",
   "photos",
-  "idempotency_key"
+  "idempotency_key",
+  "last_mobile_sync_log"
  ],
  "fields": [
-  {"default": "RZ-MNT-.YYYY.-.#####", "fieldname": "naming_series", "fieldtype": "Select", "hidden": 1, "label": "Series", "options": "RZ-MNT-.YYYY.-.#####"},
-  {"fieldname": "resort_property", "fieldtype": "Link", "in_standard_filter": 1, "label": "Resort Property", "options": "Resort Property", "reqd": 1},
-  {"fieldname": "subject", "fieldtype": "Data", "in_list_view": 1, "label": "Subject", "reqd": 1},
-  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
-  {"default": "Reported", "fieldname": "state", "fieldtype": "Select", "in_list_view": 1, "in_standard_filter": 1, "label": "State", "options": "Reported\nAssigned\nIn Progress\nWaiting for Parts\nOn Hold\nResolved\nVerification Required\nReleased\nClosed\nDuplicate", "reqd": 1},
-  {"default": "HVAC", "fieldname": "category", "fieldtype": "Select", "in_list_view": 1, "in_standard_filter": 1, "label": "Category", "options": "HVAC\nPlumbing\nElectrical\nStructural\nIT\nHousekeeping Equipment\nLandscape\nOther", "reqd": 1},
-  {"default": "Normal", "fieldname": "priority", "fieldtype": "Select", "in_list_view": 1, "in_standard_filter": 1, "label": "Priority", "options": "Low\nNormal\nHigh\nUrgent\nGuest Impacting\nSafety Critical\nRevenue Blocking", "reqd": 1},
-  {"default": "Minor", "fieldname": "severity", "fieldtype": "Select", "in_standard_filter": 1, "label": "Severity", "options": "Minor\nModerate\nMajor\nCritical"},
-  {"fieldname": "context_section", "fieldtype": "Section Break", "label": "Context"},
-  {"default": "Room", "fieldname": "location_type", "fieldtype": "Select", "label": "Location Type", "options": "Room\nPublic Area\nOutlet\nEvent Space\nFacility\nAsset\nUtility\nOther"},
-  {"fieldname": "room", "fieldtype": "Link", "in_standard_filter": 1, "label": "Room", "options": "Room"},
-  {"fieldname": "building", "fieldtype": "Link", "label": "Building", "options": "Resort Building"},
-  {"fieldname": "floor", "fieldtype": "Link", "label": "Floor", "options": "Resort Floor"},
-  {"fieldname": "area", "fieldtype": "Data", "label": "Area / Public Location"},
-  {"fieldname": "stay", "fieldtype": "Link", "label": "Stay", "options": "Stay"},
-  {"fieldname": "guest", "fieldtype": "Link", "label": "Guest", "options": "Guest Profile"},
-  {"fieldname": "column_break_2", "fieldtype": "Column Break"},
-  {"fieldname": "raised_by", "fieldtype": "Link", "label": "Raised By", "options": "User"},
-  {"description": "Origin doctype (e.g. Front Desk report) for deep-linking back to the source of the report", "fieldname": "source_doctype", "fieldtype": "Data", "label": "Source Doctype"},
-  {"fieldname": "source_name", "fieldtype": "Data", "label": "Source Name"},
-  {"fieldname": "erpnext_asset", "fieldtype": "Link", "label": "ERPNext Asset", "options": "Asset"},
-  {"fieldname": "impact_section", "fieldtype": "Section Break", "label": "Impact"},
-  {"default": "0", "fieldname": "guest_impact", "fieldtype": "Check", "label": "Guest Impact"},
-  {"default": "0", "fieldname": "safety_impact", "fieldtype": "Check", "label": "Safety Impact"},
-  {"default": "0", "fieldname": "revenue_blocking", "fieldtype": "Check", "label": "Revenue Blocking"},
-  {"fieldname": "downtime", "fieldtype": "Link", "label": "Room Downtime", "options": "Room Downtime"},
-  {"fieldname": "timeline_section", "fieldtype": "Section Break", "label": "Timeline"},
-  {"fieldname": "reported_at", "fieldtype": "Datetime", "in_list_view": 1, "label": "Reported At"},
-  {"description": "Priority × Category × Property policy — set at create time, does not shift", "fieldname": "sla_due", "fieldtype": "Datetime", "label": "SLA Due"},
-  {"fieldname": "assigned_to", "fieldtype": "Link", "in_standard_filter": 1, "label": "Assigned To", "options": "User"},
-  {"fieldname": "assigned_employee", "fieldtype": "Link", "label": "Assigned Employee", "options": "Employee"},
-  {"fieldname": "assigned_at", "fieldtype": "Datetime", "label": "Assigned At", "read_only": 1},
-  {"fieldname": "started_at", "fieldtype": "Datetime", "label": "Actual Start At", "read_only": 1},
-  {"fieldname": "expected_completion_at", "fieldtype": "Datetime", "label": "Expected Completion At"},
-  {"fieldname": "completed_at", "fieldtype": "Datetime", "label": "Completed At", "read_only": 1},
-  {"fieldname": "column_break_3", "fieldtype": "Column Break"},
-  {"fieldname": "resolved_at", "fieldtype": "Datetime", "label": "Resolved At", "read_only": 1},
-  {"fieldname": "released_at", "fieldtype": "Datetime", "label": "Released At", "read_only": 1},
-  {"fieldname": "closed_at", "fieldtype": "Datetime", "label": "Closed At", "read_only": 1},
-  {"description": "Set when this ticket is marked as a duplicate of another open ticket for the same room+category", "fieldname": "duplicate_of", "fieldtype": "Link", "label": "Duplicate Of", "options": "Maintenance Ticket"},
-  {"default": "0", "fieldname": "escalated", "fieldtype": "Check", "label": "Escalated"},
-  {"fieldname": "escalated_at", "fieldtype": "Datetime", "label": "Escalated At", "read_only": 1},
-  {"fieldname": "content_section", "fieldtype": "Section Break", "label": "Content"},
-  {"fieldname": "description", "fieldtype": "Text", "label": "Description"},
-  {"fieldname": "resolution_notes", "fieldtype": "Text", "label": "Resolution Notes"},
-  {"fieldname": "technical_notes", "fieldtype": "Text", "label": "Technical Notes"},
-  {"fieldname": "guest_safe_note", "fieldtype": "Small Text", "label": "Guest-Safe Note"},
-  {"fieldname": "photos_section", "fieldtype": "Section Break", "label": "Photos"},
-  {"fieldname": "photos", "fieldtype": "Table", "label": "Photos", "options": "Maintenance Photo"},
-  {"description": "Dedupe key so a double-tap on Report Issue can't create two rows for the same event", "fieldname": "idempotency_key", "fieldtype": "Data", "hidden": 1, "label": "Idempotency Key", "unique": 1}
+  {
+   "default": "RZ-MNT-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "RZ-MNT-.YYYY.-.#####"
+  },
+  {
+   "fieldname": "resort_property",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Resort Property",
+   "options": "Resort Property",
+   "reqd": 1
+  },
+  {
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Subject",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Reported",
+   "fieldname": "state",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "State",
+   "options": "Reported\nAssigned\nIn Progress\nWaiting for Parts\nOn Hold\nResolved\nVerification Required\nReleased\nClosed\nDuplicate",
+   "reqd": 1
+  },
+  {
+   "default": "HVAC",
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Category",
+   "options": "HVAC\nPlumbing\nElectrical\nStructural\nIT\nHousekeeping Equipment\nLandscape\nOther",
+   "reqd": 1
+  },
+  {
+   "default": "Normal",
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Priority",
+   "options": "Low\nNormal\nHigh\nUrgent\nGuest Impacting\nSafety Critical\nRevenue Blocking",
+   "reqd": 1
+  },
+  {
+   "default": "Minor",
+   "fieldname": "severity",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Severity",
+   "options": "Minor\nModerate\nMajor\nCritical"
+  },
+  {
+   "fieldname": "context_section",
+   "fieldtype": "Section Break",
+   "label": "Context"
+  },
+  {
+   "default": "Room",
+   "fieldname": "location_type",
+   "fieldtype": "Select",
+   "label": "Location Type",
+   "options": "Room\nPublic Area\nOutlet\nEvent Space\nFacility\nAsset\nUtility\nOther"
+  },
+  {
+   "fieldname": "room",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Room",
+   "options": "Room"
+  },
+  {
+   "fieldname": "building",
+   "fieldtype": "Link",
+   "label": "Building",
+   "options": "Resort Building"
+  },
+  {
+   "fieldname": "floor",
+   "fieldtype": "Link",
+   "label": "Floor",
+   "options": "Resort Floor"
+  },
+  {
+   "fieldname": "area",
+   "fieldtype": "Data",
+   "label": "Area / Public Location"
+  },
+  {
+   "fieldname": "stay",
+   "fieldtype": "Link",
+   "label": "Stay",
+   "options": "Stay"
+  },
+  {
+   "fieldname": "guest",
+   "fieldtype": "Link",
+   "label": "Guest",
+   "options": "Guest Profile"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "raised_by",
+   "fieldtype": "Link",
+   "label": "Raised By",
+   "options": "User"
+  },
+  {
+   "description": "Origin doctype (e.g. Front Desk report) for deep-linking back to the source of the report",
+   "fieldname": "source_doctype",
+   "fieldtype": "Data",
+   "label": "Source Doctype"
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Data",
+   "label": "Source Name"
+  },
+  {
+   "fieldname": "erpnext_asset",
+   "fieldtype": "Link",
+   "label": "ERPNext Asset",
+   "options": "Asset"
+  },
+  {
+   "fieldname": "impact_section",
+   "fieldtype": "Section Break",
+   "label": "Impact"
+  },
+  {
+   "default": "0",
+   "fieldname": "guest_impact",
+   "fieldtype": "Check",
+   "label": "Guest Impact"
+  },
+  {
+   "default": "0",
+   "fieldname": "safety_impact",
+   "fieldtype": "Check",
+   "label": "Safety Impact"
+  },
+  {
+   "default": "0",
+   "fieldname": "revenue_blocking",
+   "fieldtype": "Check",
+   "label": "Revenue Blocking"
+  },
+  {
+   "fieldname": "downtime",
+   "fieldtype": "Link",
+   "label": "Room Downtime",
+   "options": "Room Downtime"
+  },
+  {
+   "fieldname": "timeline_section",
+   "fieldtype": "Section Break",
+   "label": "Timeline"
+  },
+  {
+   "fieldname": "reported_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Reported At"
+  },
+  {
+   "description": "Priority \u00d7 Category \u00d7 Property policy \u2014 set at create time, does not shift",
+   "fieldname": "sla_due",
+   "fieldtype": "Datetime",
+   "label": "SLA Due"
+  },
+  {
+   "fieldname": "assigned_to",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Assigned To",
+   "options": "User"
+  },
+  {
+   "fieldname": "assigned_employee",
+   "fieldtype": "Link",
+   "label": "Assigned Employee",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "assigned_at",
+   "fieldtype": "Datetime",
+   "label": "Assigned At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Actual Start At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expected_completion_at",
+   "fieldtype": "Datetime",
+   "label": "Expected Completion At"
+  },
+  {
+   "fieldname": "completed_at",
+   "fieldtype": "Datetime",
+   "label": "Completed At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "resolved_at",
+   "fieldtype": "Datetime",
+   "label": "Resolved At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "released_at",
+   "fieldtype": "Datetime",
+   "label": "Released At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "closed_at",
+   "fieldtype": "Datetime",
+   "label": "Closed At",
+   "read_only": 1
+  },
+  {
+   "description": "Set when this ticket is marked as a duplicate of another open ticket for the same room+category",
+   "fieldname": "duplicate_of",
+   "fieldtype": "Link",
+   "label": "Duplicate Of",
+   "options": "Maintenance Ticket"
+  },
+  {
+   "default": "0",
+   "fieldname": "escalated",
+   "fieldtype": "Check",
+   "label": "Escalated"
+  },
+  {
+   "fieldname": "escalated_at",
+   "fieldtype": "Datetime",
+   "label": "Escalated At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "content_section",
+   "fieldtype": "Section Break",
+   "label": "Content"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "resolution_notes",
+   "fieldtype": "Text",
+   "label": "Resolution Notes"
+  },
+  {
+   "fieldname": "technical_notes",
+   "fieldtype": "Text",
+   "label": "Technical Notes"
+  },
+  {
+   "fieldname": "guest_safe_note",
+   "fieldtype": "Small Text",
+   "label": "Guest-Safe Note"
+  },
+  {
+   "fieldname": "photos_section",
+   "fieldtype": "Section Break",
+   "label": "Photos"
+  },
+  {
+   "fieldname": "photos",
+   "fieldtype": "Table",
+   "label": "Photos",
+   "options": "Maintenance Photo"
+  },
+  {
+   "description": "Dedupe key so a double-tap on Report Issue can't create two rows for the same event",
+   "fieldname": "idempotency_key",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Idempotency Key",
+   "unique": 1
+  },
+  {
+   "description": "Last mobile-originated change, for support triage. No business meaning.",
+   "fieldname": "last_mobile_sync_log",
+   "fieldtype": "Link",
+   "label": "Last Mobile Sync Log",
+   "no_copy": 1,
+   "options": "Mobile Sync Log",
+   "read_only": 1
+  }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
@@ -119,11 +386,59 @@
  "name": "Maintenance Ticket",
  "owner": "Administrator",
  "permissions": [
-  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
-  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Resort Manager", "share": 1, "write": 1},
-  {"create": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Maintenance", "share": 1, "write": 1},
-  {"create": 1, "email": 1, "print": 1, "read": 1, "report": 1, "role": "Front Desk", "share": 1},
-  {"create": 1, "email": 1, "print": 1, "read": 1, "report": 1, "role": "Housekeeping", "share": 1}
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Resort Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Maintenance",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Front Desk",
+   "share": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Housekeeping",
+   "share": 1
+  }
  ],
  "sort_field": "reported_at",
  "sort_order": "DESC",

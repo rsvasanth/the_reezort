@@ -1,0 +1,142 @@
+{
+ "actions": [],
+ "allow_import": 0,
+ "autoname": "hash",
+ "creation": "2026-08-02 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "user",
+  "device",
+  "event_type",
+  "source_doctype",
+  "source_name",
+  "col_dispatch",
+  "title",
+  "body",
+  "deep_link",
+  "dispatch_status",
+  "fcm_message_id",
+  "error_message",
+  "sent_at",
+  "sec_payload",
+  "payload"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "User",
+   "options": "User",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "device",
+   "fieldtype": "Link",
+   "label": "Device",
+   "options": "Mobile Device"
+  },
+  {
+   "fieldname": "event_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Event Type",
+   "options": "Task Assigned\nSLA Escalation\nApproval Pending\nApproval Decided\nOrder Status\nArrival Readiness\nBroadcast",
+   "reqd": 1
+  },
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Data",
+   "label": "Source Doctype"
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Data",
+   "label": "Source Name"
+  },
+  {
+   "fieldname": "col_dispatch",
+   "fieldtype": "Column Break",
+   "label": "Col Dispatch"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "fieldname": "body",
+   "fieldtype": "Small Text",
+   "label": "Body",
+   "reqd": 1
+  },
+  {
+   "fieldname": "deep_link",
+   "fieldtype": "Data",
+   "label": "Deep Link"
+  },
+  {
+   "default": "Queued",
+   "fieldname": "dispatch_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Dispatch Status",
+   "options": "Queued\nSent\nFailed\nSuppressed",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fcm_message_id",
+   "fieldtype": "Data",
+   "label": "Fcm Message Id"
+  },
+  {
+   "fieldname": "error_message",
+   "fieldtype": "Small Text",
+   "label": "Error Message"
+  },
+  {
+   "fieldname": "sent_at",
+   "fieldtype": "Datetime",
+   "label": "Sent At"
+  },
+  {
+   "fieldname": "sec_payload",
+   "fieldtype": "Section Break",
+   "label": "Sec Payload"
+  },
+  {
+   "fieldname": "payload",
+   "fieldtype": "Long Text",
+   "label": "Payload"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-08-02 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Mobile Push Event",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -137,13 +137,20 @@ required_apps = ["erpnext", "hrms"]
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+# Mobile push triggers (016). Wired as observers rather than as calls planted
+# inside 005/009/015 service code: no existing service changes, and a push can
+# never fail the business transaction that triggered it.
+doc_events = {
+	"Housekeeping Task": {
+		"on_update": "the_reezort.mobile.notifications.on_housekeeping_task_update",
+	},
+	"Maintenance Ticket": {
+		"on_update": "the_reezort.mobile.notifications.on_maintenance_ticket_update",
+	},
+	"Approval Request": {
+		"on_update": "the_reezort.mobile.notifications.on_approval_request_update",
+	},
+}
 
 # Scheduled Tasks
 # ---------------
@@ -162,6 +169,12 @@ scheduler_events = {
 		"the_reezort.staff.notification_scheduler.send_leave_advance_followups",
 		"the_reezort.analytics.revenue.snapshot_yesterday",
 		"the_reezort.maintenance.preventive.run_daily_preventive_generation",
+		"the_reezort.mobile.services.sync.purge_sync_logs",
+		"the_reezort.mobile.services.push.purge_push_events",
+		# Frappe never cleans OAuth tokens up: one row per authorization AND per
+		# refresh, with rotation leaving the old ones Active. A full floor of
+		# handsets generates tens of thousands of rows a month.
+		"the_reezort.mobile.services.push.purge_oauth_tokens",
 	],
 }
 

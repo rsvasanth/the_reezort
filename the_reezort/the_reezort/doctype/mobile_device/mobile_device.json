@@ -1,0 +1,163 @@
+{
+ "actions": [],
+ "allow_import": 0,
+ "autoname": "hash",
+ "creation": "2026-08-02 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "user",
+  "app",
+  "device_id",
+  "platform",
+  "device_model",
+  "os_version",
+  "app_version",
+  "runtime_version",
+  "col_auth",
+  "oauth_client",
+  "oauth_token_fingerprint",
+  "fcm_token",
+  "is_active",
+  "registered_at",
+  "last_seen_at",
+  "revoked_at",
+  "revoke_reason"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "User",
+   "options": "User",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "app",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "App",
+   "options": "Ops\nGuest",
+   "reqd": 1
+  },
+  {
+   "description": "Client-generated stable UUID held in secure storage",
+   "fieldname": "device_id",
+   "fieldtype": "Data",
+   "label": "Device Id",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "default": "Android",
+   "fieldname": "platform",
+   "fieldtype": "Select",
+   "label": "Platform",
+   "options": "Android\niOS",
+   "reqd": 1
+  },
+  {
+   "fieldname": "device_model",
+   "fieldtype": "Data",
+   "label": "Device Model"
+  },
+  {
+   "fieldname": "os_version",
+   "fieldtype": "Data",
+   "label": "Os Version"
+  },
+  {
+   "fieldname": "app_version",
+   "fieldtype": "Data",
+   "label": "App Version",
+   "reqd": 1
+  },
+  {
+   "description": "Expo OTA runtime/update id",
+   "fieldname": "runtime_version",
+   "fieldtype": "Data",
+   "label": "Runtime Version"
+  },
+  {
+   "fieldname": "col_auth",
+   "fieldtype": "Column Break",
+   "label": "Col Auth"
+  },
+  {
+   "fieldname": "oauth_client",
+   "fieldtype": "Link",
+   "label": "Oauth Client",
+   "options": "OAuth Client"
+  },
+  {
+   "description": "SHA-256 of the current access token. NEVER the token itself",
+   "fieldname": "oauth_token_fingerprint",
+   "fieldtype": "Data",
+   "label": "Oauth Token Fingerprint",
+   "search_index": 1
+  },
+  {
+   "fieldname": "fcm_token",
+   "fieldtype": "Data",
+   "label": "Fcm Token",
+   "search_index": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Active"
+  },
+  {
+   "fieldname": "registered_at",
+   "fieldtype": "Datetime",
+   "label": "Registered At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "last_seen_at",
+   "fieldtype": "Datetime",
+   "label": "Last Seen At"
+  },
+  {
+   "fieldname": "revoked_at",
+   "fieldtype": "Datetime",
+   "label": "Revoked At"
+  },
+  {
+   "fieldname": "revoke_reason",
+   "fieldtype": "Select",
+   "label": "Revoke Reason",
+   "options": "\nUser Logout\nAdmin Revoke\nToken Invalid\nVersion Blocked\nInactivity\nDevice Lost"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-08-02 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Mobile Device",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "last_seen_at",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

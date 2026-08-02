@@ -1,0 +1,172 @@
+{
+ "actions": [],
+ "allow_import": 0,
+ "autoname": "hash",
+ "creation": "2026-08-02 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "client_request_id",
+  "user",
+  "device",
+  "action",
+  "target_doctype",
+  "target_name",
+  "base_modified",
+  "col_result",
+  "sync_status",
+  "conflict_reason",
+  "server_modified",
+  "changed_by",
+  "error_message",
+  "queued_at",
+  "received_at",
+  "applied_at",
+  "sec_payload",
+  "payload_snapshot",
+  "server_values"
+ ],
+ "fields": [
+  {
+   "description": "Client-generated UUID. The idempotency key",
+   "fieldname": "client_request_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Client Request Id",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "device",
+   "fieldtype": "Link",
+   "label": "Device",
+   "options": "Mobile Device"
+  },
+  {
+   "fieldname": "action",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Action",
+   "reqd": 1
+  },
+  {
+   "fieldname": "target_doctype",
+   "fieldtype": "Data",
+   "label": "Target Doctype",
+   "search_index": 1
+  },
+  {
+   "fieldname": "target_name",
+   "fieldtype": "Data",
+   "label": "Target Name",
+   "search_index": 1
+  },
+  {
+   "description": "modified of the document the client based its change on",
+   "fieldname": "base_modified",
+   "fieldtype": "Datetime",
+   "label": "Base Modified"
+  },
+  {
+   "fieldname": "col_result",
+   "fieldtype": "Column Break",
+   "label": "Col Result"
+  },
+  {
+   "default": "Received",
+   "fieldname": "sync_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Sync Status",
+   "options": "Received\nApplied\nDuplicate\nConflict\nRejected\nFailed",
+   "reqd": 1
+  },
+  {
+   "fieldname": "conflict_reason",
+   "fieldtype": "Small Text",
+   "label": "Conflict Reason"
+  },
+  {
+   "fieldname": "server_modified",
+   "fieldtype": "Datetime",
+   "label": "Server Modified"
+  },
+  {
+   "fieldname": "changed_by",
+   "fieldtype": "Link",
+   "label": "Changed By",
+   "options": "User"
+  },
+  {
+   "fieldname": "error_message",
+   "fieldtype": "Small Text",
+   "label": "Error Message"
+  },
+  {
+   "description": "Client clock. Operator context only; never business ordering",
+   "fieldname": "queued_at",
+   "fieldtype": "Datetime",
+   "label": "Queued At"
+  },
+  {
+   "fieldname": "received_at",
+   "fieldtype": "Datetime",
+   "label": "Received At",
+   "reqd": 1
+  },
+  {
+   "fieldname": "applied_at",
+   "fieldtype": "Datetime",
+   "label": "Applied At"
+  },
+  {
+   "fieldname": "sec_payload",
+   "fieldtype": "Section Break",
+   "label": "Sec Payload"
+  },
+  {
+   "fieldname": "payload_snapshot",
+   "fieldtype": "Long Text",
+   "label": "Payload Snapshot"
+  },
+  {
+   "fieldname": "server_values",
+   "fieldtype": "Long Text",
+   "label": "Server Values"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-08-02 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "THE REEZORT",
+ "name": "Mobile Sync Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "received_at",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

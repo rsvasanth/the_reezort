@@ -34,43 +34,214 @@
   "completion_notes",
   "photos",
   "dnd_status",
-  "exception_approval"
+  "exception_approval",
+  "last_mobile_sync_log"
  ],
  "fields": [
-  {"default": "RZ-HKT-.YYYY.-.#####", "fieldname": "naming_series", "fieldtype": "Select", "label": "Series", "options": "RZ-HKT-.YYYY.-.#####", "reqd": 1},
-  {"fieldname": "resort_property", "fieldtype": "Link", "in_list_view": 1, "label": "Resort Property", "options": "Resort Property", "reqd": 1},
-  {"fieldname": "room", "fieldtype": "Link", "in_list_view": 1, "label": "Room", "options": "Room"},
-  {"fieldname": "building", "fieldtype": "Link", "label": "Building", "options": "Resort Building"},
-  {"fieldname": "floor", "fieldtype": "Link", "label": "Floor", "options": "Resort Floor"},
-  {"fieldname": "task_section", "fieldtype": "Section Break", "label": "Task"},
-  {"fieldname": "task_type", "fieldtype": "Select", "in_list_view": 1, "label": "Task Type", "options": "Departure Cleaning\nStayover Cleaning\nArrival Touch-up\nTurndown\nDeep Cleaning\nAmenity Replenishment\nMinibar Check\nLinen Change\nLinen Restock\nRoom Inspection\nPublic Area Cleaning\nGuest Request Support\nMaintenance Follow-up", "reqd": 1},
-  {"default": "Queued", "fieldname": "task_status", "fieldtype": "Select", "in_list_view": 1, "label": "Task Status", "options": "Draft\nQueued\nAssigned\nIn Progress\nPaused\nCompleted\nInspection Required\nRework Required\nSkipped\nCancelled", "reqd": 1},
-  {"default": "Normal", "fieldname": "priority", "fieldtype": "Select", "in_list_view": 1, "label": "Priority", "options": "Low\nNormal\nHigh\nUrgent\nVIP", "reqd": 1},
-  {"fieldname": "due_at", "fieldtype": "Datetime", "in_list_view": 1, "label": "Due At"},
-  {"fieldname": "checklist_template", "fieldtype": "Link", "label": "Checklist Template", "options": "Housekeeping Checklist Template"},
-  {"default": "0", "fieldname": "requires_inspection", "fieldtype": "Check", "label": "Requires Inspection"},
-  {"fieldname": "assignment_section", "fieldtype": "Section Break", "label": "Assignment"},
-  {"fieldname": "assigned_user", "fieldtype": "Link", "in_list_view": 1, "label": "Assigned User", "options": "User"},
-  {"fieldname": "assigned_employee", "fieldtype": "Link", "label": "Assigned Employee", "options": "Employee"},
-  {"fieldname": "source_section", "fieldtype": "Section Break", "label": "Source"},
-  {"fieldname": "stay", "fieldtype": "Link", "label": "Stay", "options": "Stay"},
-  {"fieldname": "reservation", "fieldtype": "Link", "label": "Reservation", "options": "Reservation"},
-  {"fieldname": "source_doctype", "fieldtype": "Data", "label": "Source DocType"},
-  {"fieldname": "source_name", "fieldtype": "Data", "label": "Source Name"},
-  {"fieldname": "idempotency_key", "fieldtype": "Data", "in_list_view": 1, "label": "Idempotency Key", "reqd": 1, "unique": 1},
-  {"fieldname": "execution_section", "fieldtype": "Section Break", "label": "Execution"},
-  {"fieldname": "start_time", "fieldtype": "Datetime", "label": "Start Time"},
-  {"fieldname": "completed_at", "fieldtype": "Datetime", "label": "Completed At"},
-  {"fieldname": "completion_notes", "fieldtype": "Small Text", "label": "Completion Notes"},
-  {"fieldname": "photos", "fieldtype": "Table", "label": "Completion Photos", "options": "Room Condition Photo"},
-  {"default": "None", "fieldname": "dnd_status", "fieldtype": "Select", "label": "DND Status", "options": "None\nDND\nRefused\nAccess Issue"},
-  {"fieldname": "exception_approval", "fieldtype": "Link", "label": "Exception Approval", "options": "Housekeeping Exception Approval"}
+  {
+   "default": "RZ-HKT-.YYYY.-.#####",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "RZ-HKT-.YYYY.-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "resort_property",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Resort Property",
+   "options": "Resort Property",
+   "reqd": 1
+  },
+  {
+   "fieldname": "room",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Room",
+   "options": "Room"
+  },
+  {
+   "fieldname": "building",
+   "fieldtype": "Link",
+   "label": "Building",
+   "options": "Resort Building"
+  },
+  {
+   "fieldname": "floor",
+   "fieldtype": "Link",
+   "label": "Floor",
+   "options": "Resort Floor"
+  },
+  {
+   "fieldname": "task_section",
+   "fieldtype": "Section Break",
+   "label": "Task"
+  },
+  {
+   "fieldname": "task_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Task Type",
+   "options": "Departure Cleaning\nStayover Cleaning\nArrival Touch-up\nTurndown\nDeep Cleaning\nAmenity Replenishment\nMinibar Check\nLinen Change\nLinen Restock\nRoom Inspection\nPublic Area Cleaning\nGuest Request Support\nMaintenance Follow-up",
+   "reqd": 1
+  },
+  {
+   "default": "Queued",
+   "fieldname": "task_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Task Status",
+   "options": "Draft\nQueued\nAssigned\nIn Progress\nPaused\nCompleted\nInspection Required\nRework Required\nSkipped\nCancelled",
+   "reqd": 1
+  },
+  {
+   "default": "Normal",
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Priority",
+   "options": "Low\nNormal\nHigh\nUrgent\nVIP",
+   "reqd": 1
+  },
+  {
+   "fieldname": "due_at",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Due At"
+  },
+  {
+   "fieldname": "checklist_template",
+   "fieldtype": "Link",
+   "label": "Checklist Template",
+   "options": "Housekeeping Checklist Template"
+  },
+  {
+   "default": "0",
+   "fieldname": "requires_inspection",
+   "fieldtype": "Check",
+   "label": "Requires Inspection"
+  },
+  {
+   "fieldname": "assignment_section",
+   "fieldtype": "Section Break",
+   "label": "Assignment"
+  },
+  {
+   "fieldname": "assigned_user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Assigned User",
+   "options": "User"
+  },
+  {
+   "fieldname": "assigned_employee",
+   "fieldtype": "Link",
+   "label": "Assigned Employee",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "source_section",
+   "fieldtype": "Section Break",
+   "label": "Source"
+  },
+  {
+   "fieldname": "stay",
+   "fieldtype": "Link",
+   "label": "Stay",
+   "options": "Stay"
+  },
+  {
+   "fieldname": "reservation",
+   "fieldtype": "Link",
+   "label": "Reservation",
+   "options": "Reservation"
+  },
+  {
+   "fieldname": "source_doctype",
+   "fieldtype": "Data",
+   "label": "Source DocType"
+  },
+  {
+   "fieldname": "source_name",
+   "fieldtype": "Data",
+   "label": "Source Name"
+  },
+  {
+   "fieldname": "idempotency_key",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Idempotency Key",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "execution_section",
+   "fieldtype": "Section Break",
+   "label": "Execution"
+  },
+  {
+   "fieldname": "start_time",
+   "fieldtype": "Datetime",
+   "label": "Start Time"
+  },
+  {
+   "fieldname": "completed_at",
+   "fieldtype": "Datetime",
+   "label": "Completed At"
+  },
+  {
+   "fieldname": "completion_notes",
+   "fieldtype": "Small Text",
+   "label": "Completion Notes"
+  },
+  {
+   "fieldname": "photos",
+   "fieldtype": "Table",
+   "label": "Completion Photos",
+   "options": "Room Condition Photo"
+  },
+  {
+   "default": "None",
+   "fieldname": "dnd_status",
+   "fieldtype": "Select",
+   "label": "DND Status",
+   "options": "None\nDND\nRefused\nAccess Issue"
+  },
+  {
+   "fieldname": "exception_approval",
+   "fieldtype": "Link",
+   "label": "Exception Approval",
+   "options": "Housekeeping Exception Approval"
+  },
+  {
+   "description": "Last mobile-originated change, for support triage. No business meaning.",
+   "fieldname": "last_mobile_sync_log",
+   "fieldtype": "Link",
+   "label": "Last Mobile Sync Log",
+   "no_copy": 1,
+   "options": "Mobile Sync Log",
+   "read_only": 1
+  }
  ],
  "indexes": [
-  ["resort_property", "task_status", "due_at"],
-  ["room", "task_status"],
-  ["assigned_user", "task_status", "due_at"],
-  ["idempotency_key"]
+  [
+   "resort_property",
+   "task_status",
+   "due_at"
+  ],
+  [
+   "room",
+   "task_status"
+  ],
+  [
+   "assigned_user",
+   "task_status",
+   "due_at"
+  ],
+  [
+   "idempotency_key"
+  ]
  ],
  "links": [],
  "modified": "2026-07-06 00:00:00.000000",
@@ -79,11 +250,66 @@
  "name": "Housekeeping Task",
  "owner": "Administrator",
  "permissions": [
-  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
-  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Resort Manager", "share": 1, "write": 1},
-  {"create": 1, "delete": 0, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "Housekeeping", "share": 1, "write": 1},
-  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Maintenance", "share": 0, "write": 0},
-  {"create": 0, "delete": 0, "email": 0, "export": 0, "print": 0, "read": 1, "report": 1, "role": "Front Desk", "share": 0, "write": 0}
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Resort Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 0,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Housekeeping",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "Maintenance",
+   "share": 0,
+   "write": 0
+  },
+  {
+   "create": 0,
+   "delete": 0,
+   "email": 0,
+   "export": 0,
+   "print": 0,
+   "read": 1,
+   "report": 1,
+   "role": "Front Desk",
+   "share": 0,
+   "write": 0
+  }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",

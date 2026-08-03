@@ -1,19 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Alert, StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
 	ActivityIndicator,
-	Badge,
-	Button,
-	Card,
-	Chip,
-	Divider,
+	Appbar,
+	BottomNavigation,
 	MD3LightTheme,
 	PaperProvider,
+	Portal,
+	Snackbar,
 	Text,
 } from "react-native-paper";
 import { StatusBar } from "expo-status-bar";
-import { Alert } from "react-native";
 
 import { SessionExpiredError } from "@reezort/api-client";
 import type { OutboxSummary } from "@reezort/outbox";
@@ -24,81 +22,146 @@ import { oauthConfig } from "./src/config";
 import { deleteLocalDatabase } from "./src/outbox/expoSqlite";
 import { deleteAllPhotos } from "./src/photos";
 import { ConflictReview } from "./src/screens/ConflictReview";
+import { SignIn } from "./src/screens/SignIn";
+import { SyncScreen } from "./src/screens/SyncScreen";
+import { TaskDetail } from "./src/screens/TaskDetail";
+import { TaskList } from "./src/screens/TaskList";
+import { TicketDetail } from "./src/screens/TicketDetail";
+import { TicketList } from "./src/screens/TicketList";
+import { UpdateRequired } from "./src/screens/UpdateRequired";
+import { isUnreachable, statusLine, syncBadgeCount, syncErrorCopy } from "./src/screens/syncStatus";
 import {
+	cache,
+	cachedBoth,
 	client,
 	drainAll,
-	cache,
+	loadLastSyncedAt,
 	outbox,
-	cachedTasks,
-	refreshTasks,
-	queueCompletionWithPhoto,
-	queueTransition,
+	pullAll,
+	queuedTargetNames,
 	registerSession,
+	saveLastSyncedAt,
 	type HousekeepingTask,
+	type MaintenanceTicket,
 } from "./src/session";
 
 /**
- * Phase 1/3 skeleton: sign in, see your tasks, queue a transition offline, drain
- * it. Enough to exercise the whole path end to end on a handset.
+ * The ops app shell: auth gate, version gate, three destinations, one derived
+ * sync state.
  *
- * Material 3 components are consumed as shipped (AD-016-008) — no restyling.
- * The proper task list, camera capture and conflict review screens land next.
+ * What this replaced was a single scrolling page with the outbox counters at the
+ * top — machinery promoted above the work. `ui-ux-ops-app.md` inverts that: the
+ * round is the app, and the outbox appears on one screen, for when it is wrong.
  */
 const APP_VERSION = "0.1.0";
 
-export default function App() {
-	const [busy, setBusy] = useState(true);
-	const [user, setUser] = useState<string | null>(null);
-	const [tasks, setTasks] = useState<HousekeepingTask[]>([]);
-	const [summary, setSummary] = useState<OutboxSummary | null>(null);
-	const [note, setNote] = useState<string | null>(null);
-	const [error, setError] = useState<string | null>(null);
-	const [reviewing, setReviewing] = useState(false);
+type Tab = "tasks" | "work" | "sync";
 
-	const refreshSummary = useCallback(async () => {
+export default function App() {
+	const [booting, setBooting] = useState(true);
+	const [user, setUser] = useState<string | null>(null);
+	const [roles, setRoles] = useState<readonly string[]>([]);
+	const [versionBlocked, setVersionBlocked] = useState(false);
+	const [signingIn, setSigningIn] = useState(false);
+	const [signInError, setSignInError] = useState<string | null>(null);
+
+	const [tasks, setTasks] = useState<HousekeepingTask[]>([]);
+	const [tickets, setTickets] = useState<MaintenanceTicket[]>([]);
+	const [queued, setQueued] = useState<Set<string>>(new Set());
+	const [summary, setSummary] = useState<OutboxSummary | null>(null);
+
+	const [syncing, setSyncing] = useState(false);
+	const [unreachable, setUnreachable] = useState(false);
+	const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+
+	const [tab, setTab] = useState<Tab>("tasks");
+	const [openTask, setOpenTask] = useState<string | null>(null);
+	const [openTicket, setOpenTicket] = useState<string | null>(null);
+	const [reviewing, setReviewing] = useState(false);
+	const [toast, setToast] = useState<string | null>(null);
+
+	/** Everything the screens render comes from the device, never from a response. */
+	const readLocal = useCallback(async () => {
+		const { tasks: t, tickets: k } = await cachedBoth();
+		setTasks(t);
+		setTickets(k);
+		setQueued(await queuedTargetNames());
 		setSummary(await outbox.summary());
 	}, []);
 
-	const load = useCallback(async () => {
-		setError(null);
+	const sync = useCallback(async () => {
+		setSyncing(true);
+		try {
+			await pullAll();
+			await drainAll();
+			const at = Date.now();
+			setLastSyncedAt(at);
+			await saveLastSyncedAt(at);
+			setUnreachable(false);
+		} catch (cause) {
+			// A transport failure is the only offline signal that changes what the
+			// attendant should do. A refusal is the server talking, and says nothing
+			// about signal.
+			setUnreachable(isUnreachable(cause));
+			setToast(syncErrorCopy(cause));
+		} finally {
+			await readLocal();
+			setSyncing(false);
+		}
+	}, [readLocal]);
+
+	const boot = useCallback(async () => {
 		try {
 			await outbox.init();
 			await cache.init();
-			// Show whatever the device already holds before touching the network.
-			// An attendant opening the app in a corridor gets their round, not a
-			// spinner that resolves into an error.
-			setTasks(await cachedTasks());
+			// The cached round renders before anything touches the network: an
+			// attendant opening this in a corridor gets their work, not a spinner.
+			await readLocal();
+			setLastSyncedAt(await loadLastSyncedAt());
+
 			const who = await client.call<string>("frappe.auth.get_logged_user");
 			setUser(who);
-			await registerSession(APP_VERSION);
-			setTasks(await refreshTasks());
-			await refreshSummary();
+
+			const session = await registerSession(APP_VERSION);
+			setRoles(session.data?.roles ?? []);
+			if (session.ok === false) {
+				setVersionBlocked(true);
+				return;
+			}
+			await sync();
 		} catch (cause) {
-			// No session yet is the normal cold start, not something to shout about.
+			// No session yet is the ordinary cold start, not something to shout about.
 			if (!(cause instanceof SessionExpiredError)) {
-				setError(cause instanceof Error ? cause.message : String(cause));
+				setUnreachable(isUnreachable(cause));
 			}
 			setUser(null);
 		} finally {
-			setBusy(false);
+			setBooting(false);
 		}
-	}, [refreshSummary]);
+	}, [readLocal, sync]);
 
 	useEffect(() => {
-		void load();
-	}, [load]);
+		void boot();
+	}, [boot]);
 
 	const onSignIn = async () => {
-		setBusy(true);
-		setError(null);
+		setSigningIn(true);
+		setSignInError(null);
 		try {
 			await secureTokenStore.save(await login(oauthConfig));
-			await load();
+			setBooting(true);
+			await boot();
 		} catch (cause) {
+			// Cancelling is a choice, not an error, and must not raise a banner.
 			if (!(cause instanceof LoginCancelled)) {
-				setError(cause instanceof Error ? cause.message : String(cause));
+				setSignInError(
+					isUnreachable(cause)
+						? "Can't reach the server. Check your connection and try again."
+						: "That sign-in didn't work. Try again, or ask your supervisor.",
+				);
 			}
-			setBusy(false);
+		} finally {
+			setSigningIn(false);
 		}
 	};
 
@@ -111,9 +174,16 @@ export default function App() {
 		// Queued readiness photos are guest-room imagery. They go with everything else.
 		await deleteAllPhotos();
 		setUser(null);
+		setRoles([]);
 		setTasks([]);
+		setTickets([]);
 		setSummary(null);
+		setQueued(new Set());
 		setReviewing(false);
+		setOpenTask(null);
+		setOpenTicket(null);
+		setVersionBlocked(false);
+		setTab("tasks");
 	};
 
 	const onSignOut = async () => {
@@ -135,156 +205,163 @@ export default function App() {
 		);
 	};
 
-	const onQueue = async (task: HousekeepingTask) => {
-		const action = task.task_status === "In Progress" ? "pause_task" : "start_task";
-		await queueTransition(task, action);
-		await refreshSummary();
-		setNote(`Queued ${action.replace("_", " ")} for ${task.name}`);
+	const syncState = {
+		neverSynced: lastSyncedAt === null,
+		syncing,
+		unreachable,
+		lastSyncedAt,
+		summary,
 	};
 
-	const onDrain = async () => {
-		setBusy(true);
-		try {
-			const { writes, photos } = await drainAll();
-			const counts = writes.reduce<Record<string, number>>(
-				(acc, r) => ({ ...acc, [r.status]: (acc[r.status] ?? 0) + 1 }),
-				{},
-			);
-			const parts = Object.entries(counts).map(([status, n]) => `${n} ${status.toLowerCase()}`);
-			if (photos.length) parts.push(`${photos.length} photo${photos.length === 1 ? "" : "s"}`);
-			setNote(parts.length ? parts.join(" · ") : "Nothing to sync");
-			setTasks(await refreshTasks());
-			await refreshSummary();
-		} catch (cause) {
-			setError(cause instanceof Error ? cause.message : String(cause));
-		} finally {
-			setBusy(false);
-		}
+	// Roles gate the tabs; the server still enforces every permission. Both are
+	// shown when the user holds neither role, rather than an app with one empty
+	// tab and no account of why.
+	const hasHousekeeping = roles.includes("Housekeeping") || tasks.length > 0;
+	const hasMaintenance = roles.includes("Maintenance") || tickets.length > 0;
+	const showWork = hasMaintenance;
+	const showTasks = hasHousekeeping || !hasMaintenance;
+
+	const routes = useMemo(
+		() =>
+			[
+				showTasks ? { key: "tasks", title: "Tasks", focusedIcon: "clipboard-check" } : null,
+				showWork ? { key: "work", title: "Work", focusedIcon: "wrench" } : null,
+				{
+					key: "sync",
+					title: "Sync",
+					focusedIcon: "sync",
+					badge: syncBadgeCount(summary) ?? undefined,
+				},
+			].filter((r): r is NonNullable<typeof r> => r !== null),
+		[showTasks, showWork, summary],
+	);
+
+	// A tab can disappear underneath the selection — a housekeeping-only user
+	// whose last ticket was reassigned away, for instance.
+	useEffect(() => {
+		const fallback = routes[0];
+		if (fallback && !routes.some((r) => r.key === tab)) setTab(fallback.key as Tab);
+	}, [routes, tab]);
+
+	const task = tasks.find((t) => t.name === openTask) ?? null;
+	const ticket = tickets.find((t) => t.name === openTicket) ?? null;
+	const inDetail = task !== null || ticket !== null || reviewing;
+
+	const back = () => {
+		setOpenTask(null);
+		setOpenTicket(null);
+		setReviewing(false);
 	};
+
+	const afterQueue = async (message: string) => {
+		setToast(message);
+		await readLocal();
+	};
+
+	const title = task ? `Room ${task.room}` : ticket ? `Room ${ticket.room}` : "Reezort Ops";
 
 	return (
 		<SafeAreaProvider>
 			<PaperProvider theme={MD3LightTheme}>
-				<ScrollView contentContainerStyle={styles.page}>
-					<Text variant="headlineMedium">Reezort Ops</Text>
-					<Text variant="bodySmall" style={styles.muted}>
-						{user ?? "Not signed in"}
-					</Text>
-
-					{busy ? <ActivityIndicator style={styles.block} size="large" /> : null}
-
-					{!busy && !user ? (
-						<Card style={styles.block} mode="outlined">
-							<Card.Content>
-								<Text variant="bodyMedium">Sign in to load your tasks.</Text>
-							</Card.Content>
-							<Card.Actions>
-								<Button mode="contained" onPress={onSignIn}>
-									Sign in
-								</Button>
-							</Card.Actions>
-						</Card>
-					) : null}
-
-					{user ? (
-						<>
-							<Card style={styles.block} mode="outlined">
-								<Card.Title
-									title="Outbox"
-									subtitle={
-										summary
-											? `${summary.pending} queued · ${summary.needsReview} needs review · ${summary.failed} failed`
-											: "—"
-									}
-								/>
-								<Card.Actions>
-									<Button onPress={onDrain}>Sync now</Button>
-									{summary && summary.needsReview > 0 ? (
-										<Button mode="contained-tonal" onPress={() => setReviewing(true)}>
-											Review {summary.needsReview}
-										</Button>
-									) : null}
-									<Button onPress={onSignOut}>Sign out</Button>
-								</Card.Actions>
-							</Card>
-
-							{reviewing ? (
-								<ConflictReview
-									onResolved={async () => {
-										await refreshSummary();
-										setNote("Resolved. It will sync on the next drain.");
-									}}
-									onClose={() => setReviewing(false)}
-								/>
-							) : null}
-
-							<Text variant="titleMedium" style={styles.block}>
-								My tasks
+				<View style={styles.app}>
+					<Appbar.Header>
+						{inDetail ? <Appbar.BackAction onPress={back} /> : null}
+						<Appbar.Content title={title} />
+						{user && !versionBlocked ? (
+							<Text variant="labelMedium" style={styles.status}>
+								{statusLine(syncState)}
 							</Text>
-							{tasks.length === 0 ? (
-								<Text variant="bodySmall" style={styles.muted}>
-									Nothing assigned to you.
-								</Text>
-							) : null}
-							{tasks.map((task) => (
-								<Card key={task.name} style={styles.card} mode="outlined">
-									<Card.Title
-										title={task.task_type}
-										subtitle={`${task.room} · ${task.name}`}
+						) : null}
+					</Appbar.Header>
+
+					{booting ? (
+						<ActivityIndicator style={styles.centre} size="large" />
+					) : !user ? (
+						<SignIn busy={signingIn} error={signInError} onSignIn={() => void onSignIn()} />
+					) : versionBlocked ? (
+						<UpdateRequired queued={summary?.pending ?? 0} />
+					) : (
+						<>
+							<View style={styles.body}>
+								{task ? (
+									<TaskDetail
+										task={task}
+										queued={queued.has(task.name)}
+										onQueued={(m) => void afterQueue(m)}
+										onBack={back}
 									/>
-									<Card.Content>
-										<View style={styles.chips}>
-											<Chip compact>{task.task_status}</Chip>
-											<Chip compact>{task.priority}</Chip>
-										</View>
-									</Card.Content>
-									<Card.Actions>
-										<Button onPress={() => onQueue(task)}>
-											{task.task_status === "In Progress" ? "Pause" : "Start"}
-										</Button>
-									</Card.Actions>
-								</Card>
-							))}
+								) : ticket ? (
+									<TicketDetail
+										ticket={ticket}
+										queued={queued.has(ticket.name)}
+										onQueued={(m) => void afterQueue(m)}
+										onBack={back}
+									/>
+								) : reviewing ? (
+									<ConflictReview
+										onResolved={() => void afterQueue("Resolved. It'll sync on the next round.")}
+										onClose={back}
+									/>
+								) : tab === "tasks" ? (
+									<TaskList
+										tasks={tasks}
+										hasEverSynced={lastSyncedAt !== null}
+										refreshing={syncing}
+										onRefresh={() => void sync()}
+										onOpen={(t) => setOpenTask(t.name)}
+										queuedFor={(name) => queued.has(name)}
+									/>
+								) : tab === "work" ? (
+									<TicketList
+										tickets={tickets}
+										hasEverSynced={lastSyncedAt !== null}
+										refreshing={syncing}
+										onRefresh={() => void sync()}
+										onOpen={(t) => setOpenTicket(t.name)}
+										queuedFor={(name) => queued.has(name)}
+									/>
+								) : (
+									<SyncScreen
+										state={syncState}
+										now={Date.now()}
+										user={user}
+										onSyncNow={() => void sync()}
+										onReview={() => setReviewing(true)}
+										onSignOut={() => void onSignOut()}
+									/>
+								)}
+							</View>
+
+							{inDetail ? null : (
+								<BottomNavigation.Bar
+									navigationState={{
+										index: Math.max(
+											0,
+											routes.findIndex((r) => r.key === tab),
+										),
+										routes,
+									}}
+									onTabPress={({ route }) => setTab(route.key as Tab)}
+								/>
+							)}
 						</>
-					) : null}
+					)}
 
-					{note ? (
-						<>
-							<Divider style={styles.block} />
-							<Text variant="bodySmall" style={styles.muted}>
-								{note}
-							</Text>
-						</>
-					) : null}
-
-					{error ? (
-						<Card style={styles.block} mode="outlined">
-							<Card.Content>
-								<Text variant="labelLarge">Something went wrong</Text>
-								<Text variant="bodySmall" style={styles.muted}>
-									{error}
-								</Text>
-							</Card.Content>
-						</Card>
-					) : null}
-
-					<Text variant="bodySmall" style={styles.footer}>
-						{oauthConfig.baseUrl}
-						{"\n"}
-						{oauthConfig.redirectUri}
-					</Text>
+					<Portal>
+						<Snackbar visible={toast !== null} onDismiss={() => setToast(null)} duration={3000}>
+							{toast ?? ""}
+						</Snackbar>
+					</Portal>
 					<StatusBar style="auto" />
-				</ScrollView>
+				</View>
 			</PaperProvider>
 		</SafeAreaProvider>
 	);
 }
 
 const styles = StyleSheet.create({
-	page: { flexGrow: 1, justifyContent: "center", padding: 20 },
-	muted: { opacity: 0.7 },
-	block: { marginTop: 20 },
-	card: { marginTop: 10 },
-	chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-	footer: { marginTop: 24, opacity: 0.4, textAlign: "center" },
+	app: { flex: 1 },
+	body: { flex: 1 },
+	centre: { marginTop: 48 },
+	status: { marginRight: 16, opacity: 0.7 },
 });

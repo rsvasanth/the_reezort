@@ -18,6 +18,13 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const doctypeBase = resolve(here, "../../the_reezort/the_reezort/doctype");
 const libBase = resolve(here, "../src/lib");
+// The mobile apps mirror the same doctypes and drift the same way. A contract
+// entry may name a base; `lib` (the web SPA) is the default so existing entries
+// are untouched.
+const BASES = {
+	lib: libBase,
+	mobile: resolve(here, "../../mobile/packages/domain-types/src"),
+};
 
 // Each entry: a TS union that must equal a doctype Select field's options.
 const CONTRACTS = [
@@ -128,6 +135,15 @@ const CONTRACTS = [
 	{ file: "split-api.ts", type: "SplitType", doctype: "fnb_bill_split", field: "split_type" },
 	{ file: "split-api.ts", type: "SettlementMode", doctype: "fnb_bill_split", field: "settlement_mode" },
 	{ file: "split-api.ts", type: "SplitStatus", doctype: "fnb_bill_split", field: "split_status" },
+	// mobile/packages/domain-types ↔ Housekeeping Task / Maintenance Ticket.
+	// The ops app decides which buttons to offer from these values, so a drifted
+	// union does not mis-render — it offers an action the server will refuse,
+	// hours later, offline, to someone who cannot act on the refusal.
+	{ base: "mobile", file: "index.ts", type: "HousekeepingTaskStatus", doctype: "housekeeping_task", field: "task_status" },
+	{ base: "mobile", file: "index.ts", type: "HousekeepingDndStatus", doctype: "housekeeping_task", field: "dnd_status" },
+	{ base: "mobile", file: "index.ts", type: "HousekeepingPriority", doctype: "housekeeping_task", field: "priority" },
+	{ base: "mobile", file: "index.ts", type: "MaintenanceTicketState", doctype: "maintenance_ticket", field: "state" },
+	{ base: "mobile", file: "index.ts", type: "MaintenanceTicketPriority", doctype: "maintenance_ticket", field: "priority" },
 ];
 
 function doctypeOptions(doctype, field) {
@@ -137,8 +153,8 @@ function doctypeOptions(doctype, field) {
 	return (f.options || "").split("\n").map((s) => s.trim()).filter(Boolean);
 }
 
-function tsUnion(file, type) {
-	const src = readFileSync(resolve(libBase, file), "utf8");
+function tsUnion(file, type, base = "lib") {
+	const src = readFileSync(resolve(BASES[base], file), "utf8");
 	const m = src.match(new RegExp(`export type ${type}\\s*=([\\s\\S]*?);`));
 	if (!m) throw new Error(`TS type ${type} not found in ${file}`);
 	return [...m[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]);
@@ -147,7 +163,7 @@ function tsUnion(file, type) {
 let failures = 0;
 for (const c of CONTRACTS) {
 	const doc = new Set(doctypeOptions(c.doctype, c.field));
-	const ts = new Set(tsUnion(c.file, c.type));
+	const ts = new Set(tsUnion(c.file, c.type, c.base));
 	const fabricated = [...ts].filter((v) => !doc.has(v)); // in TS, not in doctype → will break
 	const missing = [...doc].filter((v) => !ts.has(v)); // in doctype, not in TS → incomplete
 	if (fabricated.length || missing.length) {

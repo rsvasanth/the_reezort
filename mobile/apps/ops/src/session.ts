@@ -9,11 +9,19 @@ import * as SecureStore from "expo-secure-store";
 import { randomUUID } from "expo-crypto";
 
 import { createClient, type FrappeClient } from "@reezort/api-client";
+import type {
+	HousekeepingDndStatus,
+	HousekeepingPriority,
+	HousekeepingTaskStatus,
+	MaintenanceTicketPriority,
+	MaintenanceTicketState,
+} from "@reezort/domain-types";
 import {
 	createCacheRepository,
 	createOutboxRepository,
 	drainOnce,
 	drainUploads,
+	isTerminal,
 	syncPullOnce,
 } from "@reezort/outbox";
 
@@ -37,7 +45,15 @@ export const cache = createCacheRepository(expoSqlExecutor);
  */
 const WORKING_WINDOW_MS = 36 * 60 * 60 * 1000;
 
-const PULL_COLLECTIONS = ["housekeeping_tasks", "rooms_summary"] as const;
+/**
+ * `maintenance_tickets` has been served by `sync_pull`'s PULLABLE tuple since the
+ * server module landed; the client simply never asked for it, so the Maintenance
+ * role had a working backend and no app.
+ *
+ * `room_inspections` is deliberately absent: the server does not serve it, and a
+ * device cannot display or conflict-check a document it was never sent.
+ */
+const PULL_COLLECTIONS = ["housekeeping_tasks", "maintenance_tickets", "rooms_summary"] as const;
 
 /**
  * A stable per-install id, in secure storage.
@@ -64,8 +80,18 @@ export const client: FrappeClient = createClient(oauthConfig, secureTokenStore, 
 	},
 });
 
-export async function registerSession(appVersion: string) {
-	return client.call<{ ok?: boolean }>("the_reezort.mobile.api.register_session", {
+/** `envelope()` in `the_reezort/utils.py`; `ok: false` means the version gate fired. */
+export interface SessionEnvelope {
+	readonly ok?: boolean;
+	readonly data?: {
+		readonly user?: { readonly name?: string; readonly full_name?: string };
+		readonly roles?: readonly string[];
+		readonly drain_only?: boolean;
+	};
+}
+
+export async function registerSession(appVersion: string): Promise<SessionEnvelope> {
+	return client.call<SessionEnvelope>("the_reezort.mobile.api.register_session", {
 		device: {
 			device_id: await deviceId(),
 			app: "Ops",
@@ -75,18 +101,67 @@ export async function registerSession(appVersion: string) {
 	});
 }
 
+const LAST_SYNCED_KEY = "reezort.ops.last_synced_at";
+
+/**
+ * Persisted, because "Never synced" after every cold start would be a lie told
+ * to someone holding a phone full of cached work.
+ */
+export async function loadLastSyncedAt(): Promise<number | null> {
+	const raw = await SecureStore.getItemAsync(LAST_SYNCED_KEY);
+	const parsed = raw ? Number(raw) : Number.NaN;
+	return Number.isFinite(parsed) ? parsed : null;
+}
+
+export async function saveLastSyncedAt(at: number): Promise<void> {
+	await SecureStore.setItemAsync(LAST_SYNCED_KEY, String(at));
+}
+
+/**
+ * Document names with a write still on the device.
+ *
+ * Drives the one-word "queued" marker on a row. The screens never see outbox
+ * rows themselves — the outbox is machinery, and only the Sync screen shows it.
+ */
+export async function queuedTargetNames(): Promise<Set<string>> {
+	const rows = await outbox.list();
+	return new Set(
+		rows.filter((r) => !isTerminal(r.state) && r.targetName).map((r) => r.targetName as string),
+	);
+}
+
+/**
+ * Fields as `_collection_query` in `the_reezort/mobile/services/sync.py` sends
+ * them — not as 005's data-model names them. `dnd_status` is carried because the
+ * client mirrors the server's completion guard with it.
+ */
 export interface HousekeepingTask {
 	readonly name: string;
 	readonly room: string;
 	readonly task_type: string;
-	readonly task_status: string;
-	readonly priority: string;
+	readonly task_status: HousekeepingTaskStatus;
+	readonly priority: HousekeepingPriority;
+	readonly dnd_status?: HousekeepingDndStatus;
+	readonly due_at?: string | null;
+	readonly modified: string;
+}
+
+/** Maintenance Ticket ships `state`/`assigned_to`, not 009's `ticket_status`. */
+export interface MaintenanceTicket {
+	readonly name: string;
+	readonly room: string;
+	readonly state: MaintenanceTicketState;
+	readonly priority: MaintenanceTicketPriority;
 	readonly modified: string;
 }
 
 /** The cached list. Works with no signal, which is the whole point. */
 export async function cachedTasks(): Promise<HousekeepingTask[]> {
 	return cache.list<HousekeepingTask>("housekeeping_tasks");
+}
+
+export async function cachedTickets(): Promise<MaintenanceTicket[]> {
+	return cache.list<MaintenanceTicket>("maintenance_tickets");
 }
 
 /**
@@ -97,10 +172,22 @@ export async function cachedTasks(): Promise<HousekeepingTask[]> {
  * would otherwise sit on the handset indefinitely.
  */
 export async function refreshTasks(): Promise<HousekeepingTask[]> {
+	await pullAll();
+	return cachedTasks();
+}
+
+/** One pull serves both lists; the collections travel in the same request. */
+export async function pullAll(): Promise<void> {
 	const now = Date.now();
 	await syncPullOnce(cache, client.call.bind(client), [...PULL_COLLECTIONS], now);
 	await cache.purgeOlderThan(now - WORKING_WINDOW_MS);
-	return cachedTasks();
+}
+
+export async function cachedBoth(): Promise<{
+	tasks: HousekeepingTask[];
+	tickets: MaintenanceTicket[];
+}> {
+	return { tasks: await cachedTasks(), tickets: await cachedTickets() };
 }
 
 /**
@@ -120,6 +207,52 @@ export async function queueTransition(
 		// The version the attendant was looking at. The server rejects rather than
 		// clobbers if it has moved since.
 		baseModified: task.modified,
+		createdAt: Date.now(),
+	});
+}
+
+/**
+ * Record why a room could not be serviced.
+ *
+ * `mark_dnd_or_refused` pauses the task and sets the guard that then blocks
+ * completion, so this is not a note — it changes what the attendant is offered
+ * next, which is why it is queued as a write rather than kept on the device.
+ */
+export async function queueDndOrRefused(
+	task: HousekeepingTask,
+	dndStatus: "DND" | "Refused" | "Access Issue",
+	notes?: string,
+): Promise<void> {
+	await outbox.enqueue({
+		clientRequestId: randomUUID(),
+		action: "housekeeping.mark_dnd_or_refused",
+		payload: notes ? { dnd_status: dndStatus, notes } : { dnd_status: dndStatus },
+		targetDoctype: "Housekeeping Task",
+		targetName: task.name,
+		baseModified: task.modified,
+		createdAt: Date.now(),
+	});
+}
+
+/**
+ * Step a maintenance ticket.
+ *
+ * The caller is responsible for offering only transitions the server allows —
+ * see `screens/ticketActions.ts`. The server re-checks regardless; this keeps the
+ * refusal from happening hours later, offline, where nobody can act on it.
+ */
+export async function queueTicketTransition(
+	ticket: MaintenanceTicket,
+	nextState: string,
+	notes?: string,
+): Promise<void> {
+	await outbox.enqueue({
+		clientRequestId: randomUUID(),
+		action: "maintenance.transition_ticket",
+		payload: notes ? { next_state: nextState, notes } : { next_state: nextState },
+		targetDoctype: "Maintenance Ticket",
+		targetName: ticket.name,
+		baseModified: ticket.modified,
 		createdAt: Date.now(),
 	});
 }

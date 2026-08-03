@@ -10,6 +10,58 @@
  * a wrong union is worse than a missing one.
  */
 
+/* ── Housekeeping Task ─────────────────────────────────────────────────── */
+
+/** `housekeeping_task.task_status`. */
+export type HousekeepingTaskStatus =
+	| "Draft"
+	| "Queued"
+	| "Assigned"
+	| "In Progress"
+	| "Paused"
+	| "Completed"
+	| "Inspection Required"
+	| "Rework Required"
+	| "Skipped"
+	| "Cancelled";
+
+/**
+ * `housekeeping_task.dnd_status`.
+ *
+ * "None" is a real option, not an empty field — the doctype spells the cleared
+ * state rather than leaving it null, and a client that tests for falsiness would
+ * read "None" as set.
+ */
+export type HousekeepingDndStatus = "None" | "DND" | "Refused" | "Access Issue";
+
+/** `housekeeping_task.priority`. Note "Normal", not "Medium". */
+export type HousekeepingPriority = "Low" | "Normal" | "High" | "Urgent" | "VIP";
+
+/* ── Maintenance Ticket ────────────────────────────────────────────────── */
+
+/** `maintenance_ticket.state`. */
+export type MaintenanceTicketState =
+	| "Reported"
+	| "Assigned"
+	| "In Progress"
+	| "Waiting for Parts"
+	| "On Hold"
+	| "Resolved"
+	| "Verification Required"
+	| "Released"
+	| "Closed"
+	| "Duplicate";
+
+/** `maintenance_ticket.priority`. Wider than housekeeping's, and different. */
+export type MaintenanceTicketPriority =
+	| "Low"
+	| "Normal"
+	| "High"
+	| "Urgent"
+	| "Guest Impacting"
+	| "Safety Critical"
+	| "Revenue Blocking";
+
 /**
  * The signed-in user, as returned by `register_session`.
  *

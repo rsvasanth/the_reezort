@@ -20,8 +20,8 @@
       "./plugins/withBenchCleartext"
     ],
     "extra": {
-      "apiBaseUrl": "http://100.106.191.3:8004",
-      "oauthClientId": "51hu0mjubv"
+      "apiBaseUrl": "https://app.thereezort.com",
+      "oauthClientId": "h1mb84t0d7"
     }
   }
 }

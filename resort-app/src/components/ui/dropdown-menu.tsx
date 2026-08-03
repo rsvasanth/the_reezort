@@ -5,16 +5,9 @@ import { Check, ChevronRight, Circle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 /**
- * Real Radix, replacing a Carbon Popover adapter. Three things that adapter had
- * to fake are now native: submenus (Sub/SubTrigger/SubContent were aliases onto
- * the flat menu), radio groups (RadioItem was an alias for CheckboxItem), and
- * portalling.
- *
- * `avoidClipping` is still accepted so call sites keep compiling, but it no
- * longer does anything. It existed because Carbon's Popover rendered inline and
- * got clipped by `overflow:hidden` ancestors; switching it to fixed positioning
- * then dragged in floating-ui's flip fallbacks, which picked placements that
- * overlapped the main pane. Radix portals to the body, so neither problem exists.
+ * `avoidClipping` is a legacy prop: accepted so older call sites keep compiling,
+ * but it does nothing. Radix portals to the body, so a menu cannot be clipped by
+ * an `overflow:hidden` ancestor. Safe to delete once no call site passes it.
  */
 const DropdownMenu = DropdownMenuPrimitive.Root
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
@@ -65,7 +58,7 @@ DropdownMenuSubContent.displayName = DropdownMenuPrimitive.SubContent.displayNam
 const DropdownMenuContent = React.forwardRef<
 	React.ElementRef<typeof DropdownMenuPrimitive.Content>,
 	React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> & {
-		/** Carbon-era no-op; see the note at the top of this file. */
+		/** No-op; see the note at the top of this file. */
 		avoidClipping?: boolean
 	}
 >(({ className, sideOffset = 4, avoidClipping: _avoidClipping, ...props }, ref) => (

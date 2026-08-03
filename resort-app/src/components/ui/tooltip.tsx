@@ -3,12 +3,6 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
 import { cn } from "@/lib/utils"
 
-/**
- * The Carbon adapter this replaces faked the compound API: TooltipTrigger and
- * TooltipContent rendered nothing and were only read as markers, so `side`,
- * `align`, `sideOffset` and `delayDuration` were silently ignored. On Radix they
- * are real again — call sites that already pass them now get what they asked for.
- */
 const TooltipProvider = TooltipPrimitive.Provider
 const Tooltip = TooltipPrimitive.Root
 const TooltipTrigger = TooltipPrimitive.Trigger

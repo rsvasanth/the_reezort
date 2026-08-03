@@ -15,12 +15,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 import { getOccupancyTimeline, type OccupancyTimeline } from "@/lib/reservation-api";
 
-// Reservation states on semantic tokens rather than literal hexes. The old map
-// hard-coded the Carbon v11 categorical palette, which broke rule 2 of the
-// design system (no hard-coded colour) and needed a `dark:` override on every
-// entry. The tokens already carry their own dark values, so the overrides go
-// away: `text-warning` is the readable dark amber in light mode and the lighter
-// one in dark mode, from the same class.
+// Reservation states on semantic tokens rather than literal hexes, per rule 2 of
+// the design system. The tokens carry their own dark values, so no `dark:`
+// override is needed: `text-warning` is the readable dark amber in light mode
+// and the lighter one in dark mode, from the same class.
 const RES_COLOR: Record<string, { bg: string; text: string; border: string; label: string }> = {
 	Hold: { bg: "bg-warning/15", text: "text-warning", border: "border-warning/40", label: "Hold" },
 	"Deposit Pending": { bg: "bg-warning/25", text: "text-warning", border: "border-warning/50", label: "Dep Pending" },
@@ -140,7 +138,7 @@ function TimelineGrid({ data }: { data: OccupancyTimeline }) {
 							const { dow, dm } = shortDayLabel(iso);
 							const isWeekend = ["Sat", "Sun"].includes(dow);
 							return (
-								<div key={iso} className={`bg-background p-2 text-center text-[10px] ${isWeekend ? "text-[#684e00] dark:text-[#fddc69]" : "text-muted-foreground"}`}>
+								<div key={iso} className={`bg-background p-2 text-center text-[10px] ${isWeekend ? "text-warning" : "text-muted-foreground"}`}>
 									<div className="font-semibold">{dow}</div>
 									<div>{dm}</div>
 								</div>

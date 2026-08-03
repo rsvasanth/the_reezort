@@ -55,7 +55,8 @@ export function SignaturePad({
 		if (!ctx) return;
 		const [x, y] = point(e);
 		ctx.lineTo(x, y);
-		ctx.strokeStyle = "#161616"; // Carbon Gray 100 — fixed ink color regardless of app theme
+		ctx.strokeStyle = "#1c1917"; // brand ink — deliberately fixed, not themed: a captured
+		// signature is stored and printed, so it must not change with the viewer's theme
 		ctx.lineWidth = 2;
 		ctx.lineCap = "round";
 		ctx.stroke();

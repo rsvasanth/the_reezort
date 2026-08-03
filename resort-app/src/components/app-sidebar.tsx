@@ -19,6 +19,7 @@ import {
 	PartyPopperIcon,
 	PlugIcon,
 	ReceiptTextIcon,
+	SettingsIcon,
 	ShieldCheckIcon,
 	SparklesIcon,
 	UsersIcon,
@@ -28,7 +29,7 @@ import {
 } from "lucide-react";
 import { useFrappeAuth } from "frappe-react-sdk";
 
-import { NavMain, type NavItem } from "@/components/nav-main";
+import { NavMain, type NavCategory, type NavItem } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
 import { allowedSidebarTitles, canAccessDesk, useUserProfile } from "@/hooks/use-user-profile";
 import {
@@ -39,29 +40,86 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
+	SidebarRail,
 } from "@/components/ui/sidebar";
 
-// Operational modules — Live = built and working, Soon = on the roadmap.
-const operations: NavItem[] = [
+// The cockpit is the landing screen, so it stays a flat row rather than being
+// buried one click into a category.
+const overview: NavItem[] = [
 	{ title: "Executive cockpit", url: "/resort-app#/cockpit", icon: LayoutDashboardIcon, status: "live" },
-	{ title: "Reservations", url: "/resort-app#/reservations", icon: CalendarDaysIcon, status: "live" },
-	{ title: "Front desk", url: "/resort-app#/frontdesk", icon: BedDoubleIcon, status: "live" },
-	{ title: "Housekeeping", url: "/resort-app#/housekeeping", icon: SparklesIcon, status: "live" },
-	{ title: "My tasks", url: "/resort-app#/my-tasks", icon: ListChecksIcon, status: "live" },
-	{ title: "All tasks", url: "/resort-app#/tasks", icon: ClipboardListIcon, status: "live" },
-	{ title: "Billing", url: "/resort-app#/billing", icon: ReceiptTextIcon, status: "live" },
-	{ title: "Direct billing", url: "/resort-app#/direct-bill", icon: ReceiptTextIcon, status: "live" },
-	{ title: "Charge to room", url: "/resort-app#/charge-room", icon: ReceiptTextIcon, status: "live" },
-	{ title: "Cashier close", url: "/resort-app#/cashier-close", icon: BanknoteIcon, status: "live" },
-	{ title: "Restaurant & bar", url: "/resort-app#/restaurant", icon: UtensilsIcon, status: "live" },
-	{ title: "Restaurant mgmt", url: "/resort-app#/restaurant/management", icon: UtensilsCrossedIcon, status: "live" },
-	{ title: "Maintenance", url: "/resort-app#/maintenance", icon: WrenchIcon, status: "live" },
-	{ title: "Engineering board", url: "/resort-app#/maintenance/engineering", icon: WrenchIcon, status: "live" },
-	{ title: "Concierge", url: "/resort-app#/guest-relations", icon: BellIcon, status: "live" },
-	{ title: "Service desk", url: "/resort-app#/servicedesk", icon: LifeBuoyIcon, status: "live" },
-	{ title: "Banquets & events", url: "#", icon: PartyPopperIcon, status: "soon" },
-	{ title: "CRM & loyalty", url: "/resort-app#/crm", icon: HeartHandshakeIcon, status: "live" },
-	{ title: "Analytics", url: "/resort-app#/analytics/revenue", icon: BarChartIcon, status: "live" },
+];
+
+/**
+ * Operational modules, grouped. These were previously nineteen flat rows, which
+ * with System and live folios put 26+ links in one scroll — the sidebar could
+ * not be read at a glance and did not fit shorter screens. Categories collapse,
+ * so the resting state is eight rows.
+ *
+ * Titles are unchanged: role gating filters by exact title
+ * (`allowedSidebarTitles`), so renaming an item silently removes it for every
+ * gated role.
+ */
+const categories: NavCategory[] = [
+	{
+		title: "Front office",
+		icon: BedDoubleIcon,
+		items: [
+			{ title: "Reservations", url: "/resort-app#/reservations", icon: CalendarDaysIcon, status: "live" },
+			{ title: "Front desk", url: "/resort-app#/frontdesk", icon: BedDoubleIcon, status: "live" },
+		],
+	},
+	{
+		title: "Housekeeping",
+		icon: SparklesIcon,
+		items: [
+			{ title: "Housekeeping", url: "/resort-app#/housekeeping", icon: SparklesIcon, status: "live" },
+			{ title: "My tasks", url: "/resort-app#/my-tasks", icon: ListChecksIcon, status: "live" },
+			{ title: "All tasks", url: "/resort-app#/tasks", icon: ClipboardListIcon, status: "live" },
+		],
+	},
+	{
+		title: "Billing",
+		icon: ReceiptTextIcon,
+		items: [
+			{ title: "Billing", url: "/resort-app#/billing", icon: ReceiptTextIcon, status: "live" },
+			{ title: "Direct billing", url: "/resort-app#/direct-bill", icon: ReceiptTextIcon, status: "live" },
+			{ title: "Charge to room", url: "/resort-app#/charge-room", icon: ReceiptTextIcon, status: "live" },
+			{ title: "Cashier close", url: "/resort-app#/cashier-close", icon: BanknoteIcon, status: "live" },
+		],
+	},
+	{
+		title: "Food & beverage",
+		icon: UtensilsIcon,
+		items: [
+			{ title: "Restaurant & bar", url: "/resort-app#/restaurant", icon: UtensilsIcon, status: "live" },
+			{ title: "Restaurant mgmt", url: "/resort-app#/restaurant/management", icon: UtensilsCrossedIcon, status: "live" },
+		],
+	},
+	{
+		title: "Engineering",
+		icon: WrenchIcon,
+		items: [
+			{ title: "Maintenance", url: "/resort-app#/maintenance", icon: WrenchIcon, status: "live" },
+			{ title: "Engineering board", url: "/resort-app#/maintenance/engineering", icon: WrenchIcon, status: "live" },
+		],
+	},
+	{
+		title: "Guest services",
+		icon: BellIcon,
+		items: [
+			{ title: "Concierge", url: "/resort-app#/guest-relations", icon: BellIcon, status: "live" },
+			{ title: "Service desk", url: "/resort-app#/servicedesk", icon: LifeBuoyIcon, status: "live" },
+			{ title: "Banquets & events", url: "#", icon: PartyPopperIcon, status: "soon" },
+		],
+	},
+	{
+		title: "Insight",
+		icon: BarChartIcon,
+		items: [
+			{ title: "CRM & loyalty", url: "/resort-app#/crm", icon: HeartHandshakeIcon, status: "live" },
+			{ title: "Analytics", url: "/resort-app#/analytics/revenue", icon: BarChartIcon, status: "live" },
+		],
+	},
 ];
 
 const system: NavItem[] = [
@@ -110,18 +168,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
 	// Desk is reserved for admin / accounts / management; operational roles are SPA-only.
 	const allowed = allowedSidebarTitles(profile);
-	const operationsItems = allowed ? operations.filter((i) => allowed.has(i.title)) : operations;
+	const keep = (items: NavItem[]) => (allowed ? items.filter((i) => allowed.has(i.title)) : items);
+
+	const overviewItems = keep(overview);
+	// Filter inside each category, then drop any category left empty — a gated
+	// role should not see an expandable section with nothing behind it.
+	const visibleCategories = categories
+		.map((category) => ({ ...category, items: keep(category.items) }))
+		.filter((category) => category.items.length > 0);
+
 	const systemBase = canAccessDesk(profile)
 		? system
 		: system.filter((item) => item.title !== "ERPNext desk");
-	const systemItems = allowed ? systemBase.filter((i) => allowed.has(i.title)) : systemBase;
+	const systemItems = keep(systemBase);
+	const systemCategory: NavCategory[] =
+		systemItems.length > 0
+			? [{ title: "System", icon: SettingsIcon, items: systemItems }]
+			: [];
 
 	return (
-		<Sidebar collapsible="offcanvas" {...props}>
+		<Sidebar collapsible="icon" {...props}>
 			<SidebarHeader>
 				<SidebarMenu>
 					<SidebarMenuItem>
-						<SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
+						<SidebarMenuButton asChild tooltip="THE REEZORT">
 							<a href="/resort-app">
 								<HotelIcon className="h-5 w-5" />
 								<span className="text-base font-medium">THE REEZORT</span>
@@ -131,13 +201,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 				</SidebarMenu>
 			</SidebarHeader>
 			<SidebarContent>
-				<NavMain label="Operations" items={operationsItems} />
-				{folioItems.length > 0 ? <NavMain label="Guest folios · live" items={folioItems} /> : null}
-				{systemItems.length > 0 ? <NavMain label="System" items={systemItems} className="mt-auto" /> : null}
+				<NavMain label="Operations" items={overviewItems} categories={visibleCategories} />
+				{folioItems.length > 0 ? (
+					<NavMain label="Guest folios · live" items={folioItems} />
+				) : null}
+				<NavMain categories={systemCategory} className="mt-auto" />
 			</SidebarContent>
 			<SidebarFooter>
 				<NavUser user={user} />
 			</SidebarFooter>
+			<SidebarRail />
 		</Sidebar>
 	);
 }

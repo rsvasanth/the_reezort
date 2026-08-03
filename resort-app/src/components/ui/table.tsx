@@ -2,15 +2,7 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-/**
- * Plain semantic table elements on brand tokens. The Carbon version needed
- * several workarounds that no longer apply: Carbon's naming is inverted from
- * ours (its `TableHead` is the <thead>, its `TableHeader` is the <th>), and its
- * <th> typed onClick against HTMLButtonElement because Carbon headers are
- * sortable buttons. Both required prop casts to satisfy consumers. Gone now.
- *
- * Export names are unchanged — 17+ screens import them.
- */
+/** Plain semantic table elements on brand tokens. 17+ screens import these names. */
 const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
 	({ className, ...props }, ref) => (
 		<div className="relative w-full overflow-auto">

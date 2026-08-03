@@ -17,6 +17,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 
 export function NavUser({
@@ -30,6 +31,7 @@ export function NavUser({
   }
 }) {
   const { logout } = useFrappeAuth()
+  const { isMobile } = useSidebar()
 
   async function handleLogout() {
     try {
@@ -71,23 +73,12 @@ export function NavUser({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-            // "top": this trigger sits at the very bottom of the sidebar, so
-            // any downward/side placement extends past the viewport bottom
-            // and the menu is invisible — it must open upward.
-            // "start" rather than "end": Carbon's Popover measures this
-            // trigger's box via an inline-block wrapper, which collapses to
-            // the button's own content width instead of the full-width
-            // SidebarMenuButton — "end" alignment then anchors off that
-            // wrong (narrower) right edge and renders off-screen. "start"
-            // only depends on the (correct) left edge, so it isn't affected.
-            side="top"
-            align="start"
+            // Opens to the side on desktop so it clears the sidebar whether it
+            // is expanded or collapsed to the icon rail; upward on mobile,
+            // where the trigger sits at the bottom of the sheet.
+            side={isMobile ? "top" : "right"}
+            align="end"
             sideOffset={4}
-            // Carbon's SideNav has overflow:hidden — without the fixed-position
-            // escape the menu is clipped at the sidebar's right edge. Safe to
-            // combine with side="top": there's always room above, so autoAlign
-            // keeps the requested placement instead of flipping.
-            avoidClipping
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">

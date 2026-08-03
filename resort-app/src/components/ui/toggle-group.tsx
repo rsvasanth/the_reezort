@@ -4,13 +4,6 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
-/**
- * The Carbon adapter this replaces was built on ContentSwitcher: it supported
- * single-select only, and ToggleGroupItem was an inert marker whose children
- * were stringified — so non-text item content silently rendered as
- * "[object Object]". On Radix both single and multiple work, and items render
- * their children as given.
- */
 const toggleVariants = cva(
 	cn(
 		"inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors",

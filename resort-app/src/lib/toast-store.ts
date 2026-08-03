@@ -1,4 +1,4 @@
-// Minimal imperative toast queue, shared between the Carbon-backed <Toaster/>
+// Minimal imperative toast queue, shared between the <Toaster/>
 // (src/components/ui/sonner.tsx) and the sonner-API shim
 // (src/lib/sonner-shim.tsx) that every call site's `toast.success(...)` etc.
 // gets aliased to (see vite.config.ts resolve.alias for "sonner").

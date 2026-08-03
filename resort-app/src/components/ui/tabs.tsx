@@ -3,15 +3,6 @@ import * as TabsPrimitive from "@radix-ui/react-tabs"
 
 import { cn } from "@/lib/utils"
 
-/**
- * Replaces a 175-line Carbon adapter that reconstructed this compound API by
- * walking the child tree — collecting TabsList/TabsTrigger/TabsContent markers,
- * mapping them onto Carbon's index-based selection, then rebuilding the tree in
- * place. All of that existed because Carbon's Tabs is index-driven and requires
- * TabList/TabPanels as direct children. Radix is value-driven and composes
- * freely, so the nesting cases the adapter had to special-case (a TabsList
- * nested inside a flex row in data-table.tsx) just work.
- */
 const Tabs = TabsPrimitive.Root
 
 const TabsList = React.forwardRef<

@@ -1,6 +1,6 @@
 // Aliased in vite.config.ts so every `import { toast } from "sonner"` across
 // the app (54 call sites) resolves here instead of the real sonner package —
-// keeps the exact same imperative call shape while rendering through Carbon's
+// keeps the exact same imperative call shape while rendering through our own
 // ToastNotification (see src/components/ui/sonner.tsx for the <Toaster/>).
 import { pushToast, dismissToast } from "@/lib/toast-store"
 

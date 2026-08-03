@@ -23,9 +23,6 @@
  * directly (card at 97% L), it extends the same ramp — same hue family, same
  * saturation curve — rather than introducing a new colour.
  *
- * Replaces the Carbon v11 set (Gray 10 / Gray 100, Blue 60 accent). Note the
- * previous `--brass` token held Carbon Blue 60: the brand's own token name was
- * carrying IBM's blue.
  */
 @layer base {
 	:root {
@@ -52,10 +49,9 @@
 		--brass-foreground: 39 40% 97%;
 
 		/*
-		 * Radius scale, restored. Carbon collapsed every step to 0rem because
-		 * Carbon is square; the brand uses rounded-2xl on large surfaces,
-		 * rounded-lg on controls and rounded-full on pills, so the steps have to
-		 * be distinct again.
+		 * The brand uses rounded-2xl on large surfaces, rounded-lg on controls and
+		 * rounded-full on pills, so these steps must stay distinct — collapsing
+		 * them onto one value flattens that rhythm.
 		 */
 		--radius-sm: 0.25rem;
 		--radius-md: 0.5rem;

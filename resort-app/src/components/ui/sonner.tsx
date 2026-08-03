@@ -25,10 +25,8 @@ const KIND: Record<ToastKind, { icon: typeof Info; accent: string }> = {
 }
 
 /**
- * Toasts continue to come from `@/lib/toast-store`, which every call site reaches
- * through the "sonner" alias in vite.config.ts. Only the rendering changed here —
- * Carbon's ToastNotification out, brand tokens in — so the 54 call sites and the
- * shim are untouched.
+ * Toasts come from `@/lib/toast-store`, which every call site reaches through the
+ * "sonner" alias in vite.config.ts.
  */
 function Toast({ item }: { item: ToastItem }) {
 	const { icon: Icon, accent } = KIND[item.kind]

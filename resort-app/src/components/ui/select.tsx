@@ -4,13 +4,6 @@ import { Check, ChevronDown, ChevronUp } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-/**
- * Replaces a Carbon adapter that flattened this compound API onto a native
- * <select>: SelectTrigger/SelectContent/SelectItem were inert markers, and item
- * children were pushed through String(), so anything richer than a text node
- * rendered as "[object Object]". `side` and `align` on SelectContent were also
- * accepted and ignored. All of it is real on Radix.
- */
 const Select = SelectPrimitive.Root
 const SelectGroup = SelectPrimitive.Group
 const SelectValue = SelectPrimitive.Value

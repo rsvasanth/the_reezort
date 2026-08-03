@@ -1,0 +1,10 @@
+/*
+ * Brand token variables come from `@reezort/tokens`, which is the single source
+ * for them on native. Imported before the Tailwind directives so the custom
+ * properties are defined by the time the base layer is emitted.
+ */
+@import "@reezort/tokens/global.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

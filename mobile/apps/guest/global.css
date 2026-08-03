@@ -1,0 +1,6 @@
+/* See the note in apps/ops/global.css — same source, same ordering rationale. */
+@import "@reezort/tokens/global.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

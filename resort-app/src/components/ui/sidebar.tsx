@@ -1,6 +1,5 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
-import { SideNav, SideNavItems, SideNavItem } from "@carbon/react"
 import { PanelLeft } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -99,14 +98,11 @@ const SidebarProvider = React.forwardRef<
 )
 SidebarProvider.displayName = "SidebarProvider"
 
-// Real Carbon SideNav. Carbon's SideNav is designed to stay always-visible
-// above the "lg" breakpoint unless `isFixedNav` is set — the `expanded` prop
-// alone only does anything below that breakpoint (found by testing: toggling
-// `expanded` with isFixedNav unset had zero visual effect on desktop). Since
-// this app's contract is "fully hide the sidebar on demand" on desktop too
-// (not Carbon's usual "always-present rail"), isFixedNav is set on desktop
-// so the collapsed state slides it off-screen via transform; on mobile it's
-// left unset so Carbon's built-in overlay+scrim drawer behavior applies.
+// A plain fixed <aside>, replacing Carbon's SideNav. Carbon's version needed
+// `isFixedNav` to hide at all on desktop — its `expanded` prop only did anything
+// below the "lg" breakpoint, which fought this app's contract of fully hiding
+// the sidebar on demand at any width. Here the collapsed state is just a
+// transform, and mobile gets an explicit scrim rather than Carbon's built-in one.
 const Sidebar = React.forwardRef<
   HTMLElement,
   React.ComponentProps<"div"> & {
@@ -120,17 +116,29 @@ const Sidebar = React.forwardRef<
   const close = () => (isMobile ? setOpenMobile(false) : setOpen(false))
 
   return (
-    <SideNav
-      ref={ref}
-      aria-label="Side navigation"
-      expanded={expanded}
-      isFixedNav={!isMobile}
-      onOverlayClick={close}
-      onSideNavBlur={close}
-      className={className}
-    >
-      <div className="flex h-full w-full flex-col">{children}</div>
-    </SideNav>
+    <>
+      {isMobile && expanded ? (
+        <div
+          role="presentation"
+          onClick={close}
+          className="fixed inset-0 z-40 bg-foreground/40"
+        />
+      ) : null}
+      <aside
+        ref={ref}
+        aria-label="Side navigation"
+        aria-hidden={!expanded}
+        style={{ width: SIDE_NAV_WIDTH }}
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-sidebar-border",
+          "bg-sidebar text-sidebar-foreground transition-transform duration-200 ease-out",
+          expanded ? "translate-x-0" : "-translate-x-full",
+          className
+        )}
+      >
+        <div className="flex h-full w-full flex-col">{children}</div>
+      </aside>
+    </>
   )
 })
 Sidebar.displayName = "Sidebar"
@@ -248,26 +256,19 @@ const SidebarGroupContent = React.forwardRef<HTMLDivElement, React.ComponentProp
 )
 SidebarGroupContent.displayName = "SidebarGroupContent"
 
-// SideNavItems/SideNavItem accept no ref, so these are plain functions
-// rather than forwardRef — nothing in the app passes a ref to either.
-function SidebarMenu({ children }: React.ComponentProps<"ul">) {
-  // Same overflow-clipping issue as SidebarMenuItem below, one level up.
-  return <SideNavItems className="!overflow-visible">{children}</SideNavItems>
+// Plain list elements. These were SideNavItems/SideNavItem, which set
+// overflow:hidden for label truncation and accepted no style prop — so the
+// override had to be an `!important` utility, without which any popover
+// anchored inside an item (the nav-user account menu) was clipped to invisible.
+// Truncation is handled by `truncate` on the label's own <span>, so nothing here
+// needs to clip and the override is gone. Kept as plain functions rather than
+// forwardRef, matching the previous signature; nothing passes a ref to either.
+function SidebarMenu({ children, className }: React.ComponentProps<"ul">) {
+  return <ul className={cn("flex w-full min-w-0 flex-col gap-1", className)}>{children}</ul>
 }
 
 function SidebarMenuItem({ children, className }: React.ComponentProps<"li">) {
-  // Carbon's SideNavItem sets overflow: hidden (for label text truncation,
-  // handled here instead via `truncate` on the label's own <span>) and
-  // accepts no style prop, only className — so the override has to be a
-  // `!important` utility class rather than an inline style. Without it any
-  // popover-based content anchored to a button inside the item — e.g. the
-  // nav-user account menu — gets silently clipped to invisible instead of
-  // floating above the sidebar.
-  return (
-    <SideNavItem className={cn("!overflow-visible", className)}>
-      {children}
-    </SideNavItem>
-  )
+  return <li className={cn("group/menu-item relative", className)}>{children}</li>
 }
 
 const sidebarMenuButtonBase =

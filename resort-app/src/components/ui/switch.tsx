@@ -1,37 +1,34 @@
 import * as React from "react"
-import { Toggle as CarbonToggle } from "@carbon/react"
+import * as SwitchPrimitive from "@radix-ui/react-switch"
+
+import { cn } from "@/lib/utils"
 
 export interface SwitchProps
-  extends Omit<
-    React.ButtonHTMLAttributes<HTMLButtonElement>,
-    "checked" | "onChange" | "id"
-  > {
-  id?: string
-  checked?: boolean
-  onCheckedChange?: (checked: boolean) => void
-  "aria-label"?: string
-}
+	extends React.ComponentPropsWithoutRef<typeof SwitchPrimitive.Root> {}
 
-const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
-  ({ id, checked, onCheckedChange, className, ...props }, ref) => {
-    const generatedId = React.useId()
-    const resolvedId = id ?? generatedId
-
-    return (
-      <CarbonToggle
-        ref={ref}
-        id={resolvedId}
-        className={className}
-        size="sm"
-        labelText={props["aria-label"] ?? ""}
-        hideLabel
-        toggled={Boolean(checked)}
-        onToggle={(next) => onCheckedChange?.(next)}
-        {...props}
-      />
-    )
-  }
-)
-Switch.displayName = "Switch"
+const Switch = React.forwardRef<
+	React.ElementRef<typeof SwitchPrimitive.Root>,
+	SwitchProps
+>(({ className, ...props }, ref) => (
+	<SwitchPrimitive.Root
+		ref={ref}
+		className={cn(
+			"peer inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors",
+			"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+			"disabled:cursor-not-allowed disabled:opacity-50",
+			"data-[state=checked]:bg-primary data-[state=unchecked]:bg-muted-foreground/30",
+			className,
+		)}
+		{...props}
+	>
+		<SwitchPrimitive.Thumb
+			className={cn(
+				"pointer-events-none block h-4 w-4 rounded-full bg-card shadow-sm ring-0 transition-transform",
+				"data-[state=checked]:translate-x-4 data-[state=unchecked]:translate-x-0",
+			)}
+		/>
+	</SwitchPrimitive.Root>
+))
+Switch.displayName = SwitchPrimitive.Root.displayName
 
 export { Switch }

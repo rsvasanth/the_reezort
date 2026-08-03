@@ -1,40 +1,49 @@
 import * as React from "react"
-import { Checkbox as CarbonCheckbox } from "@carbon/react"
+import * as CheckboxPrimitive from "@radix-ui/react-checkbox"
+import { Check, Minus } from "lucide-react"
+
+import { cn } from "@/lib/utils"
 
 type CheckedState = boolean | "indeterminate"
 
 export interface CheckboxProps
-  extends Omit<
-    React.InputHTMLAttributes<HTMLInputElement>,
-    "checked" | "onChange" | "id"
-  > {
-  id?: string
-  checked?: CheckedState
-  onCheckedChange?: (checked: CheckedState) => void
-  "aria-label"?: string
+	extends Omit<
+		React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>,
+		"checked" | "onCheckedChange"
+	> {
+	checked?: CheckedState
+	onCheckedChange?: (checked: CheckedState) => void
 }
 
-const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ id, checked, onCheckedChange, className, ...props }, ref) => {
-    const generatedId = React.useId()
-    const resolvedId = id ?? generatedId
-    const isIndeterminate = checked === "indeterminate"
-
-    return (
-      <CarbonCheckbox
-        ref={ref}
-        id={resolvedId}
-        className={className}
-        labelText={props["aria-label"] ?? ""}
-        hideLabel
-        checked={isIndeterminate ? false : Boolean(checked)}
-        indeterminate={isIndeterminate}
-        onChange={(_evt, data) => onCheckedChange?.(data.checked)}
-        {...props}
-      />
-    )
-  }
-)
-Checkbox.displayName = "Checkbox"
+/**
+ * Radix renders the checkbox as a <button>, not an <input>, so the forwarded
+ * ref is a button element. No call site currently forwards a ref here.
+ */
+const Checkbox = React.forwardRef<
+	React.ElementRef<typeof CheckboxPrimitive.Root>,
+	CheckboxProps
+>(({ className, ...props }, ref) => (
+	<CheckboxPrimitive.Root
+		ref={ref}
+		className={cn(
+			"peer h-4 w-4 shrink-0 rounded-sm border border-muted-foreground/50 transition-colors",
+			"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+			"disabled:cursor-not-allowed disabled:opacity-50",
+			"data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground",
+			"data-[state=indeterminate]:border-primary data-[state=indeterminate]:bg-primary data-[state=indeterminate]:text-primary-foreground",
+			className,
+		)}
+		{...props}
+	>
+		<CheckboxPrimitive.Indicator className="flex items-center justify-center text-current">
+			{props.checked === "indeterminate" ? (
+				<Minus className="h-3 w-3" strokeWidth={3} />
+			) : (
+				<Check className="h-3 w-3" strokeWidth={3} />
+			)}
+		</CheckboxPrimitive.Indicator>
+	</CheckboxPrimitive.Root>
+))
+Checkbox.displayName = CheckboxPrimitive.Root.displayName
 
 export { Checkbox }

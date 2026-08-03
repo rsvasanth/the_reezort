@@ -15,25 +15,32 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 import { getOccupancyTimeline, type OccupancyTimeline } from "@/lib/reservation-api";
 
-// Carbon v11 categorical palette (@carbon/colors) — same hue families as
-// before, swapped from Tailwind's default palette to Carbon's actual hex
-// values so the legend reads as Carbon rather than an off-brand palette.
+// Reservation states on semantic tokens rather than literal hexes. The old map
+// hard-coded the Carbon v11 categorical palette, which broke rule 2 of the
+// design system (no hard-coded colour) and needed a `dark:` override on every
+// entry. The tokens already carry their own dark values, so the overrides go
+// away: `text-warning` is the readable dark amber in light mode and the lighter
+// one in dark mode, from the same class.
 const RES_COLOR: Record<string, { bg: string; text: string; border: string; label: string }> = {
-	Hold: { bg: "bg-[#d2a106]/15", text: "text-[#684e00] dark:text-[#fddc69]", border: "border-[#b28600]/40", label: "Hold" },
-	"Deposit Pending": { bg: "bg-[#d2a106]/25", text: "text-[#684e00] dark:text-[#f1c21b]", border: "border-[#b28600]/50", label: "Dep Pending" },
-	Confirmed: { bg: "bg-[#4589ff]/20", text: "text-[#0043ce] dark:text-[#a6c8ff]", border: "border-[#4589ff]/40", label: "Confirmed" },
-	Modified: { bg: "bg-[#4589ff]/20", text: "text-[#0043ce] dark:text-[#a6c8ff]", border: "border-[#4589ff]/40", label: "Modified" },
-	"Checked In": { bg: "bg-[#42be65]/25", text: "text-[#0e6027] dark:text-[#6fdc8c]", border: "border-[#24a148]/40", label: "In-house" },
+	Hold: { bg: "bg-warning/15", text: "text-warning", border: "border-warning/40", label: "Hold" },
+	"Deposit Pending": { bg: "bg-warning/25", text: "text-warning", border: "border-warning/50", label: "Dep Pending" },
+	Confirmed: { bg: "bg-primary/15", text: "text-primary", border: "border-primary/40", label: "Confirmed" },
+	Modified: { bg: "bg-primary/15", text: "text-primary", border: "border-primary/40", label: "Modified" },
+	"Checked In": { bg: "bg-success/20", text: "text-success", border: "border-success/40", label: "In-house" },
 	Completed: { bg: "bg-muted", text: "text-muted-foreground", border: "border-border", label: "Completed" },
 };
 
+// Task types are categorical, not status — they carry no good/bad meaning — so
+// they take the chart series. Differentiation is by background only, with text
+// left on `foreground`, because several series are light enough that using them
+// as text colour would fail contrast on ivory.
 const TASK_COLOR: Record<string, string> = {
-	"Departure Cleaning": "bg-[#ff7eb6]/25 text-[#9f1853] dark:text-[#ffafd2]",
-	"Stayover Cleaning": "bg-[#08bdba]/25 text-[#005d5d] dark:text-[#3ddbd9]",
-	"Maintenance Follow-up": "bg-[#ff8389]/25 text-[#a2191f] dark:text-[#ffb3b8]",
-	"Arrival Touch-up": "bg-[#be95ff]/25 text-[#6929c4] dark:text-[#d4bbff]",
+	"Departure Cleaning": "bg-chart-4/25 text-foreground",
+	"Stayover Cleaning": "bg-chart-3/40 text-foreground",
+	"Maintenance Follow-up": "bg-chart-2/25 text-foreground",
+	"Arrival Touch-up": "bg-chart-1/25 text-foreground",
 };
-const DEFAULT_TASK_COLOR = "bg-[#a2a9b0]/25 text-[#4d5358] dark:text-[#c1c7cd]";
+const DEFAULT_TASK_COLOR = "bg-muted text-muted-foreground";
 
 function addDaysIso(iso: string, days: number): string {
 	const d = new Date(iso + "T00:00:00");

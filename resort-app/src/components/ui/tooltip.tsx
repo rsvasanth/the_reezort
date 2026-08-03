@@ -1,60 +1,38 @@
 import * as React from "react"
-import { Tooltip as CarbonTooltip } from "@carbon/react"
+import * as TooltipPrimitive from "@radix-ui/react-tooltip"
 
-interface TooltipProviderProps {
-  children?: React.ReactNode
-  delayDuration?: number
-  skipDelayDuration?: number
-}
-const TooltipProvider = ({ children }: TooltipProviderProps) => <>{children}</>
+import { cn } from "@/lib/utils"
 
-interface TooltipTriggerProps {
-  asChild?: boolean
-  children: React.ReactElement
-}
-const TooltipTrigger = ({ children }: TooltipTriggerProps) => children
+/**
+ * The Carbon adapter this replaces faked the compound API: TooltipTrigger and
+ * TooltipContent rendered nothing and were only read as markers, so `side`,
+ * `align`, `sideOffset` and `delayDuration` were silently ignored. On Radix they
+ * are real again — call sites that already pass them now get what they asked for.
+ */
+const TooltipProvider = TooltipPrimitive.Provider
+const Tooltip = TooltipPrimitive.Root
+const TooltipTrigger = TooltipPrimitive.Trigger
 
-interface TooltipContentProps {
-  className?: string
-  children?: React.ReactNode
-  side?: "top" | "right" | "bottom" | "left"
-  align?: string
-  sideOffset?: number
-  hidden?: boolean
-}
-const TooltipContent = ({ children }: TooltipContentProps) => <>{children}</>
-
-interface TooltipProps {
-  children?: React.ReactNode
-}
-
-const CARBON_ALIGN = new Set(["top", "right", "bottom", "left"])
-
-function Tooltip({ children }: TooltipProps) {
-  let trigger: React.ReactElement | null = null
-  let content: React.ReactNode = null
-  let align: TooltipContentProps["side"] | undefined
-
-  React.Children.forEach(children, (child) => {
-    if (!React.isValidElement(child)) return
-    if (child.type === TooltipTrigger) {
-      trigger = (child.props as TooltipTriggerProps).children
-    } else if (child.type === TooltipContent) {
-      const contentProps = child.props as TooltipContentProps
-      content = contentProps.children
-      if (contentProps.side && CARBON_ALIGN.has(contentProps.side)) {
-        align = contentProps.side
-      }
-    }
-  })
-
-  if (!trigger) return null
-
-  return (
-    <CarbonTooltip label={content} align={align}>
-      {trigger}
-    </CarbonTooltip>
-  )
-}
+const TooltipContent = React.forwardRef<
+	React.ElementRef<typeof TooltipPrimitive.Content>,
+	React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
+>(({ className, sideOffset = 4, ...props }, ref) => (
+	<TooltipPrimitive.Portal>
+		<TooltipPrimitive.Content
+			ref={ref}
+			sideOffset={sideOffset}
+			className={cn(
+				"z-50 overflow-hidden rounded-md border border-border bg-popover px-3 py-1.5 text-xs text-popover-foreground shadow-md",
+				"animate-in fade-in-0 zoom-in-95",
+				"data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+				"data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2",
+				"data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+				className,
+			)}
+			{...props}
+		/>
+	</TooltipPrimitive.Portal>
+))
+TooltipContent.displayName = TooltipPrimitive.Content.displayName
 
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }

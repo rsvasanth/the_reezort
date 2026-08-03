@@ -1,175 +1,67 @@
 import * as React from "react"
-import {
-  Tabs as CarbonTabs,
-  TabList,
-  Tab,
-  TabPanels,
-  TabPanel,
-} from "@carbon/react"
+import * as TabsPrimitive from "@radix-ui/react-tabs"
 
-interface TabsListProps {
-  className?: string
-  "data-testid"?: string
-  "aria-label"?: string
-  children?: React.ReactNode
-}
-const TabsList = (_props: TabsListProps) => null
+import { cn } from "@/lib/utils"
 
-interface TabsTriggerProps {
-  value: string
-  disabled?: boolean
-  className?: string
-  "data-testid"?: string
-  children?: React.ReactNode
-}
-const TabsTrigger = (_props: TabsTriggerProps) => null
+/**
+ * Replaces a 175-line Carbon adapter that reconstructed this compound API by
+ * walking the child tree — collecting TabsList/TabsTrigger/TabsContent markers,
+ * mapping them onto Carbon's index-based selection, then rebuilding the tree in
+ * place. All of that existed because Carbon's Tabs is index-driven and requires
+ * TabList/TabPanels as direct children. Radix is value-driven and composes
+ * freely, so the nesting cases the adapter had to special-case (a TabsList
+ * nested inside a flex row in data-table.tsx) just work.
+ */
+const Tabs = TabsPrimitive.Root
 
-interface TabsContentProps {
-  value: string
-  className?: string
-  children?: React.ReactNode
-}
-const TabsContent = (_props: TabsContentProps) => null
+const TabsList = React.forwardRef<
+	React.ElementRef<typeof TabsPrimitive.List>,
+	React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
+>(({ className, ...props }, ref) => (
+	<TabsPrimitive.List
+		ref={ref}
+		className={cn(
+			"inline-flex items-center justify-center gap-1 border-b border-border",
+			className,
+		)}
+		{...props}
+	/>
+))
+TabsList.displayName = TabsPrimitive.List.displayName
 
-interface TabsProps {
-  value?: string
-  defaultValue?: string
-  onValueChange?: (value: string) => void
-  className?: string
-  children?: React.ReactNode
-}
+const TabsTrigger = React.forwardRef<
+	React.ElementRef<typeof TabsPrimitive.Trigger>,
+	React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger>
+>(({ className, ...props }, ref) => (
+	<TabsPrimitive.Trigger
+		ref={ref}
+		className={cn(
+			"inline-flex items-center justify-center whitespace-nowrap border-b-2 border-transparent",
+			"px-4 py-2 text-sm font-medium text-muted-foreground transition-colors -mb-px",
+			"hover:text-foreground",
+			"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+			"disabled:pointer-events-none disabled:opacity-50",
+			"data-[state=active]:border-primary data-[state=active]:text-foreground",
+			className,
+		)}
+		{...props}
+	/>
+))
+TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
 
-// Bounded recursion helper: only walks through plain host elements (div,
-// span, ...), never into another component's internals. Radix's TabsList
-// doesn't have to be a direct child of Tabs — e.g. data-table.tsx nests it
-// inside a flex <div> alongside a Select and action buttons — so a shallow
-// direct-children scan silently drops the whole tab section whenever that
-// happens (found via browser verification: the cockpit's data table section
-// rendered as nothing at all).
-function isHostElement(child: React.ReactElement): boolean {
-  return typeof child.type === "string"
-}
-
-function collectTabsList(node: React.ReactNode): React.ReactElement<TabsListProps> | null {
-  let found: React.ReactElement<TabsListProps> | null = null
-  React.Children.forEach(node, (child) => {
-    if (found || !React.isValidElement(child)) return
-    if (child.type === TabsList) {
-      found = child as React.ReactElement<TabsListProps>
-    } else if (isHostElement(child) && (child.props as { children?: React.ReactNode }).children) {
-      found = collectTabsList((child.props as { children?: React.ReactNode }).children)
-    }
-  })
-  return found
-}
-
-function collectTabsContent(
-  node: React.ReactNode,
-  out: React.ReactElement<TabsContentProps>[]
-) {
-  React.Children.forEach(node, (child) => {
-    if (!React.isValidElement(child)) return
-    if (child.type === TabsContent) {
-      out.push(child as React.ReactElement<TabsContentProps>)
-    } else if (isHostElement(child) && (child.props as { children?: React.ReactNode }).children) {
-      collectTabsContent((child.props as { children?: React.ReactNode }).children, out)
-    }
-  })
-}
-
-function Tabs({
-  value: controlledValue,
-  defaultValue,
-  onValueChange,
-  className,
-  children,
-}: TabsProps) {
-  const listNode = collectTabsList(children)
-  const contentNodes: React.ReactElement<TabsContentProps>[] = []
-  collectTabsContent(children, contentNodes)
-
-  const triggers: React.ReactElement<TabsTriggerProps>[] = []
-  if (listNode) {
-    React.Children.forEach(listNode.props.children, (trigger) => {
-      if (React.isValidElement(trigger) && trigger.type === TabsTrigger) {
-        triggers.push(trigger as React.ReactElement<TabsTriggerProps>)
-      }
-    })
-  }
-
-  const order = triggers.map((t) => t.props.value)
-  const [uncontrolled, setUncontrolled] = React.useState(
-    defaultValue ?? order[0]
-  )
-  const value = controlledValue ?? uncontrolled
-  const selectedIndex = Math.max(0, order.indexOf(value ?? order[0]))
-
-  const handleChange = (state: { selectedIndex: number }) => {
-    const nextValue = order[state.selectedIndex]
-    if (nextValue === undefined) return
-    if (controlledValue === undefined) setUncontrolled(nextValue)
-    onValueChange?.(nextValue)
-  }
-
-  const renderedTabList = (
-    <TabList
-      aria-label={listNode?.props["aria-label"] ?? "Tabs"}
-      data-testid={listNode?.props["data-testid"]}
-    >
-      {triggers.map((t) => (
-        <Tab
-          key={t.props.value}
-          disabled={t.props.disabled}
-          data-testid={t.props["data-testid"]}
-        >
-          {t.props.children}
-        </Tab>
-      ))}
-    </TabList>
-  )
-
-  // Rebuild the original tree in place: swap TabsList for the real TabList
-  // wherever it was, drop TabsContent from wherever it was (it's rendered
-  // separately below via TabPanels), and leave every other host element —
-  // the Label/Select/action-buttons row in data-table.tsx, for instance —
-  // exactly where the consumer put it.
-  function transform(node: React.ReactNode): React.ReactNode {
-    return React.Children.map(node, (child) => {
-      if (!React.isValidElement(child)) return child
-      if (child.type === TabsList) return renderedTabList
-      if (child.type === TabsContent) return null
-      if (isHostElement(child) && (child.props as { children?: React.ReactNode }).children) {
-        return React.cloneElement(
-          child,
-          undefined,
-          transform((child.props as { children?: React.ReactNode }).children)
-        )
-      }
-      return child
-    })
-  }
-
-  const contentByValue = new Map(
-    contentNodes.map((c) => [c.props.value, c.props])
-  )
-
-  return (
-    <div className={className}>
-      <CarbonTabs selectedIndex={selectedIndex} onChange={handleChange}>
-        {transform(children)}
-        <TabPanels>
-          {order.map((v) => {
-            const content = contentByValue.get(v)
-            return (
-              <TabPanel key={v} className={content?.className}>
-                {v === value ? content?.children : null}
-              </TabPanel>
-            )
-          })}
-        </TabPanels>
-      </CarbonTabs>
-    </div>
-  )
-}
+const TabsContent = React.forwardRef<
+	React.ElementRef<typeof TabsPrimitive.Content>,
+	React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
+>(({ className, ...props }, ref) => (
+	<TabsPrimitive.Content
+		ref={ref}
+		className={cn(
+			"mt-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+			className,
+		)}
+		{...props}
+	/>
+))
+TabsContent.displayName = TabsPrimitive.Content.displayName
 
 export { Tabs, TabsList, TabsTrigger, TabsContent }

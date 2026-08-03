@@ -28,6 +28,29 @@ export default {
 					DEFAULT: "hsl(var(--brass))",
 					foreground: "hsl(var(--brass-foreground))",
 				},
+				chart: {
+					1: "hsl(var(--chart-1))",
+					2: "hsl(var(--chart-2))",
+					3: "hsl(var(--chart-3))",
+					4: "hsl(var(--chart-4))",
+					5: "hsl(var(--chart-5))",
+				},
+				success: {
+					DEFAULT: "hsl(var(--success))",
+					foreground: "hsl(var(--success-foreground))",
+				},
+				warning: {
+					DEFAULT: "hsl(var(--warning))",
+					foreground: "hsl(var(--warning-foreground))",
+				},
+				info: {
+					DEFAULT: "hsl(var(--info))",
+					foreground: "hsl(var(--info-foreground))",
+				},
+				danger: {
+					DEFAULT: "hsl(var(--danger))",
+					foreground: "hsl(var(--danger-foreground))",
+				},
 				muted: {
 					DEFAULT: "hsl(var(--muted))",
 					foreground: "hsl(var(--muted-foreground))",
@@ -56,16 +79,16 @@ export default {
 				},
 			},
 			borderRadius: {
-				"3xl": "var(--radius)",
-				"2xl": "var(--radius)",
-				xl: "var(--radius)",
-				lg: "var(--radius)",
-				md: "var(--radius)",
-				sm: "var(--radius)",
+				"3xl": "var(--radius-3xl)",
+				"2xl": "var(--radius-2xl)",
+				xl: "var(--radius-xl)",
+				lg: "var(--radius-lg)",
+				md: "var(--radius-md)",
+				sm: "var(--radius-sm)",
 			},
 			fontFamily: {
 				sans: [
-					'"IBM Plex Sans"',
+					'"Inter"',
 					"ui-sans-serif",
 					"system-ui",
 					"-apple-system",
@@ -73,7 +96,8 @@ export default {
 					'"Segoe UI"',
 					"sans-serif",
 				],
-				mono: ['"IBM Plex Mono"', "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+				serif: ['"Cormorant Garamond"', "ui-serif", "Georgia", "serif"],
+				mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
 			},
 		},
 	},

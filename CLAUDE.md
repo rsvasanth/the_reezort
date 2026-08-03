@@ -13,7 +13,8 @@ Locked stack:
 - Custom app: `the_reezort`
 - React SPA: `resort-app`
 - UI system: shadcn/ui, lucide-react, Frappe Doppio-style SPA integration
-- Production site: `https://app.thereezort.com`
+- Staging site (AWS, for cloud access and testing): `https://app.thereezort.com`
+  — this is NOT production; there is no live environment yet
 
 Project/spec repo:
 
@@ -269,11 +270,15 @@ Frontend build output is committed into:
 - `the_reezort/public/resort-app`
 - `the_reezort/www/resort-app.html`
 
-## Production Deploy Guardrail
+## Deploy Guardrail
 
-Do not deploy to production unless the user explicitly asks.
+`app.thereezort.com` is **staging** on AWS — a test environment, not a release
+target. Deploying there is routine, but still ask first: it is shared, and other
+people may be looking at it.
 
-Production deploy has been handled from Codex using the EC2 SSH key already present on the machine. Claude should not assume deploy authority.
+Deploys have been handled from Codex using the EC2 SSH key already present on the
+machine (`~/.ssh/Reezort.pem`). When a real production environment exists, it gets
+its own guardrail and explicit owner approval per deploy.
 
 If asked to prepare deployment, provide the exact commands and ask for confirmation unless the user explicitly says to deploy.
 

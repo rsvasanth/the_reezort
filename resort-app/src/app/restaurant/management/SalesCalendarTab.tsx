@@ -94,7 +94,7 @@ export default function SalesCalendarTab({ outlet }: { outlet: string }) {
 							Orders <span className="font-medium text-foreground tabular-nums">{cal.totals.orders}</span>
 						</span>
 						{cal.totals.waste_value > 0 ? (
-							<span className="inline-flex items-center gap-1 text-[#8e6a00] dark:text-[#d2a106]">
+							<span className="inline-flex items-center gap-1 text-warning">
 								<Trash2 className="size-3.5" /> <span className="tabular-nums">{formatINR(cal.totals.waste_value)}</span>
 							</span>
 						) : null}
@@ -166,7 +166,7 @@ function CalendarGrid({ cal }: { cal: SalesCalendar }) {
 								{d.waste_value > 0 ? (
 									<Tooltip>
 										<TooltipTrigger asChild>
-											<span className="inline-flex items-center text-[#8e6a00] dark:text-[#d2a106]">
+											<span className="inline-flex items-center text-warning">
 												<Trash2 className="size-3" />
 											</span>
 										</TooltipTrigger>

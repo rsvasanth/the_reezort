@@ -224,8 +224,8 @@ export function SettleFolioSheet({
 							<span
 								className={`font-semibold tabular-nums ${
 									Math.abs(variance) < 0.005
-										? "text-[#0e6027] dark:text-[#42be65]"
-										: "text-[#684e00] dark:text-[#fddc69]"
+										? "text-success"
+										: "text-warning"
 								}`}
 							>
 								{formatCurrency(variance, currency)}
@@ -369,7 +369,7 @@ function Issue({
 	const accent =
 		tone === "danger"
 			? "border-destructive/50 bg-destructive/10 text-destructive"
-			: "border-[#d2a106]/40 bg-[#fcf4d6] text-[#483700] dark:bg-[#302400]/30 dark:text-[#f1c21b]";
+			: "border-warning/40 bg-warning text-warning dark:bg-warning/30 dark:text-warning";
 	return (
 		<div className={`flex items-start gap-2 rounded-md border px-3 py-2 text-sm ${accent}`}>
 			<AlertTriangle className="mt-0.5 size-4 shrink-0" />

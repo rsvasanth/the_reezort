@@ -25,15 +25,15 @@ import { staggerContainer, staggerItem } from "@/lib/motion";
 import type { TimelineEvent, TimelineEventKind } from "@/lib/timeline-api";
 
 const KIND_META: Record<TimelineEventKind, { label: string; color: string; Icon: typeof BedDouble }> = {
-	reservation: { label: "Bookings", color: "bg-[#4589ff]", Icon: FileText },
-	stay: { label: "Stays", color: "bg-[#8a3ffc]", Icon: BedDouble },
-	folio: { label: "Folios", color: "bg-[#ee5396]", Icon: Receipt },
-	payment: { label: "Payments", color: "bg-[#24a148]", Icon: CreditCard },
-	housekeeping: { label: "Housekeeping", color: "bg-[#1192e8]", Icon: Brush },
-	condition: { label: "Condition", color: "bg-[#b28600]", Icon: ClipboardList },
-	move: { label: "Room moves", color: "bg-[#fa4d56]", Icon: Move },
-	ticket: { label: "Service", color: "bg-[#eb6200]", Icon: Wrench },
-	status: { label: "Status changes", color: "bg-[#525252]", Icon: History },
+	reservation: { label: "Bookings", color: "bg-primary", Icon: FileText },
+	stay: { label: "Stays", color: "bg-chart-2", Icon: BedDouble },
+	folio: { label: "Folios", color: "bg-chart-4", Icon: Receipt },
+	payment: { label: "Payments", color: "bg-success", Icon: CreditCard },
+	housekeeping: { label: "Housekeeping", color: "bg-primary", Icon: Brush },
+	condition: { label: "Condition", color: "bg-warning", Icon: ClipboardList },
+	move: { label: "Room moves", color: "bg-danger", Icon: Move },
+	ticket: { label: "Service", color: "bg-chart-1", Icon: Wrench },
+	status: { label: "Status changes", color: "bg-muted-foreground", Icon: History },
 };
 
 function formatWhen(iso: string | null): string {

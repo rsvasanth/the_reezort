@@ -203,7 +203,7 @@ function ManagerPane({ onRunSubmitted }: { onRunSubmitted: () => Promise<void> }
 	const skippedBanner = useMemo(() => {
 		if (!preview || preview.skipped_count <= 0) return null;
 		return (
-			<div className="rounded-md border border-[#f1c21b] bg-[#fcf4d6] px-3 py-2 text-xs text-[#483700]">
+			<div className="rounded-md border border-warning bg-warning px-3 py-2 text-xs text-warning">
 				{preview.skipped_count} employee{preview.skipped_count === 1 ? "" : "s"} skipped — assign structures first.
 			</div>
 		);

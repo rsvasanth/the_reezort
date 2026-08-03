@@ -204,14 +204,14 @@ function KotTicket({
 						<span className="mt-1 font-mono tabular-nums text-muted-foreground">{it.quantity}×</span>
 						<div className="min-w-0 flex-1">
 							<div className={`mt-0.5 ${lineStatusTone(it.line_status)}`}>{it.item_name}</div>
-							{it.chef_note ? <div className="text-[11px] text-[#8e6a00] dark:text-[#d2a106]">· {it.chef_note}</div> : null}
+							{it.chef_note ? <div className="text-[11px] text-warning">· {it.chef_note}</div> : null}
 						</div>
 					</div>
 				))}
 			</div>
 
 			{order.chef_notes ? (
-				<div className="mx-4 mb-2 rounded-md bg-[#b28600]/10 px-2.5 py-1.5 text-[11px] text-[#8e6a00] dark:text-[#f1c21b]">
+				<div className="mx-4 mb-2 rounded-md bg-warning/10 px-2.5 py-1.5 text-[11px] text-warning">
 					{order.chef_notes}
 				</div>
 			) : null}

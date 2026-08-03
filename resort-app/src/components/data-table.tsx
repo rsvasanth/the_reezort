@@ -200,7 +200,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
         className="flex gap-1 px-1.5 text-muted-foreground [&_svg]:size-3"
       >
         {row.original.status === "Done" ? (
-          <CheckCircle2Icon className="text-[#24a148] dark:text-[#42be65]" />
+          <CheckCircle2Icon className="text-success" />
         ) : (
           <LoaderIcon />
         )}

@@ -344,7 +344,7 @@ function BlockerRow({
 	const accent =
 		tone === "danger"
 			? "border-destructive/50 bg-destructive/10 text-destructive"
-			: "border-[#b28600]/40 bg-[#fcf4d6] text-[#302400] dark:bg-[#1c1500]/30 dark:text-[#fddc69]";
+			: "border-warning/40 bg-warning text-warning dark:bg-warning/30 dark:text-warning";
 	return (
 		<div className={`flex items-start gap-2 rounded-md border px-3 py-2 text-sm ${accent}`}>
 			<AlertTriangle className="mt-0.5 size-4 shrink-0" />
@@ -367,7 +367,7 @@ function SuccessBody({
 }) {
 	return (
 		<div className="mt-6 flex flex-col gap-4">
-			<div className="flex items-start gap-3 rounded-md border border-[#24a148]/40 bg-[#defbe6] px-3 py-2 text-sm text-[#022d0d] dark:bg-[#071908]/30 dark:text-[#a7f0ba]">
+			<div className="flex items-start gap-3 rounded-md border border-success/40 bg-success px-3 py-2 text-sm text-success dark:bg-success/30 dark:text-success">
 				<CheckCircle2 className="mt-0.5 size-4" />
 				<span>Line added — folio refreshed.</span>
 			</div>

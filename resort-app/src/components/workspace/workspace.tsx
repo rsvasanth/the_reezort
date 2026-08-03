@@ -94,8 +94,8 @@ export function KpiStrip({ items }: { items: Kpi[] }) {
 								className={cn(
 									"mt-1 text-xl font-semibold tabular-nums",
 									k.accent === "danger" && "text-destructive",
-									k.accent === "warn" && "text-[#8e6a00] dark:text-[#f1c21b]",
-									k.accent === "good" && "text-[#198038] dark:text-[#42be65]"
+									k.accent === "warn" && "text-warning",
+									k.accent === "good" && "text-success"
 								)}
 							>
 								{k.value}

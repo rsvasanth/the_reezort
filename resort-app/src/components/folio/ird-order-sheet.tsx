@@ -277,7 +277,7 @@ export function IrdOrderSheet({
 								data-testid="fnb-ordered-at"
 							/>
 							{hoursBack > 24 ? (
-								<div className="mt-1 flex items-center gap-1 text-[11px] text-[#684e00]">
+								<div className="mt-1 flex items-center gap-1 text-[11px] text-warning">
 									<AlertTriangle className="size-3" />
 									Back-dating &gt; 24h will require manager approval.
 								</div>
@@ -339,7 +339,7 @@ export function IrdOrderSheet({
 								<button
 									type="button"
 									onClick={() => setVegOnly((v) => !v)}
-									className={`ml-auto inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${vegOnly ? "border-[#24a148] bg-[#24a148]/10 text-[#0e6027]" : "hover:bg-accent"}`}
+									className={`ml-auto inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] ${vegOnly ? "border-success bg-success/10 text-success" : "hover:bg-accent"}`}
 									data-testid="veg-only"
 								>
 									<Leaf className="size-3" /> Veg only

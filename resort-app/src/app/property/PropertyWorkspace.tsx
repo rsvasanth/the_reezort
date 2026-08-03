@@ -220,7 +220,7 @@ export function ScopeWorkspace({ kind, code }: { kind: Scope; code: string | nul
 										{r.image ? (
 											<img src={r.image} alt={r.room_number} className="aspect-[16/10] w-full object-cover" />
 										) : (
-											<div className="flex aspect-[16/10] w-full items-center justify-center bg-gradient-to-br from-stone-200 to-stone-100 text-sm font-medium text-[#697077] dark:from-stone-800 dark:to-stone-900 dark:text-[#c1c7cd]">
+											<div className="flex aspect-[16/10] w-full items-center justify-center bg-gradient-to-br from-stone-200 to-stone-100 text-sm font-medium text-muted-foreground dark:from-stone-800 dark:to-stone-900 dark:text-muted-foreground">
 												{r.room_number}
 											</div>
 										)}

@@ -150,7 +150,7 @@ function ContextRow({ line, currency }: { line: FolioLine; currency: string }) {
 
 function WarningStrip({ text }: { text: string }) {
 	return (
-		<div className="rounded-md border border-[#b28600]/40 bg-[#b28600]/10 p-2 text-xs text-[#483700] dark:text-[#fddc69]">
+		<div className="rounded-md border border-warning/40 bg-warning/10 p-2 text-xs text-warning">
 			⚠ {text}
 			<div className="mt-0.5 text-[10px] opacity-80">An Audit Event will be recorded.</div>
 		</div>

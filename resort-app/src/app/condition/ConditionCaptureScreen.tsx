@@ -65,8 +65,8 @@ const STAGES: CaptureStage[] = ["Check-In", "Check-Out"];
 const CONDITIONS: OverallCondition[] = ["Good", "Minor Issues", "Damage Noted"];
 
 const CONDITION_BADGE: Record<OverallCondition, { label: string; className: string }> = {
-	Good: { label: "Good", className: "border-[#24a148]/40 bg-[#defbe6] text-[#044317] dark:bg-[#071908]/30 dark:text-[#6fdc8c]" },
-	"Minor Issues": { label: "Minor Issues", className: "border-[#b28600]/40 bg-[#fcf4d6] text-[#302400] dark:bg-[#1c1500]/30 dark:text-[#fddc69]" },
+	Good: { label: "Good", className: "border-success/40 bg-success text-success dark:bg-success/30 dark:text-success" },
+	"Minor Issues": { label: "Minor Issues", className: "border-warning/40 bg-warning text-warning dark:bg-warning/30 dark:text-warning" },
 	"Damage Noted": { label: "Damage Noted", className: "border-destructive/40 bg-destructive/10 text-destructive" },
 };
 
@@ -436,7 +436,7 @@ export default function ConditionCaptureScreen({ stay }: Props) {
 
 											{/* Success banner after submit */}
 											{submitState === "done" && (
-												<div className="flex items-start gap-2 rounded-md border border-[#24a148]/40 bg-[#defbe6] px-3 py-2 text-sm text-[#022d0d] dark:bg-[#071908]/30 dark:text-[#a7f0ba]">
+												<div className="flex items-start gap-2 rounded-md border border-success/40 bg-success px-3 py-2 text-sm text-success dark:bg-success/30 dark:text-success">
 													<CheckCircle2 className="mt-0.5 size-4 shrink-0" />
 													<span>Capture recorded — stage is now read-only.</span>
 												</div>

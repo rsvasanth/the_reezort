@@ -127,7 +127,7 @@ export function FolioLinesTable({
 
 				<div className="flex items-center gap-4 border-t px-5 py-3 text-[11px] text-muted-foreground">
 					<span className="inline-flex items-center gap-1.5">
-						<span className="size-1.5 rounded-full bg-[#24a148]" />
+						<span className="size-1.5 rounded-full bg-success" />
 						{postedCount} posted to ERPNext
 					</span>
 					<span className="inline-flex items-center gap-1.5">
@@ -228,15 +228,15 @@ function LedgerRow({
 function statusDotClass(status: LineStatus): string {
 	switch (status) {
 		case "Posted":
-			return "bg-[#24a148]";
+			return "bg-success";
 		case "Open":
 		case "Routed":
 			return "bg-brass ring-2 ring-brass/25";
 		case "Credited":
 		case "Refunded":
-			return "bg-[#4589ff]";
+			return "bg-primary";
 		case "Written Off":
-			return "bg-[#b28600]";
+			return "bg-warning";
 		case "Draft":
 		case "Voided":
 		case "Transferred":

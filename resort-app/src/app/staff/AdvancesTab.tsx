@@ -51,9 +51,9 @@ function formatINR(n: number): string {
 
 function statusBadge(status: AdvanceRow["status"], docstatus: number) {
 	if (status === "Paid") return <Badge variant="secondary">Paid</Badge>;
-	if (status === "Unpaid") return <Badge variant="outline" className="border-[#4589ff] text-[#0043ce]">Approved · Unpaid</Badge>;
+	if (status === "Unpaid") return <Badge variant="outline" className="border-primary text-primary">Approved · Unpaid</Badge>;
 	if (status === "Cancelled") return <Badge variant="outline">Cancelled</Badge>;
-	if (docstatus === 0) return <Badge variant="outline" className="border-[#b28600] text-[#684e00]">Pending</Badge>;
+	if (docstatus === 0) return <Badge variant="outline" className="border-warning text-warning">Pending</Badge>;
 	return <Badge variant="outline">{status}</Badge>;
 }
 
@@ -212,7 +212,7 @@ export default function AdvancesTab() {
 														onClick={() => onDecide(r.name, "Approve")}
 														data-testid={`approve-advance-${r.name}`}
 													>
-														<Check className="size-4 text-[#198038]" />
+														<Check className="size-4 text-success" />
 													</Button>
 													<Button
 														variant="ghost"
@@ -221,7 +221,7 @@ export default function AdvancesTab() {
 														onClick={() => onDecide(r.name, "Reject")}
 														data-testid={`reject-advance-${r.name}`}
 													>
-														<X className="size-4 text-[#da1e28]" />
+														<X className="size-4 text-danger" />
 													</Button>
 												</div>
 											</TableCell>

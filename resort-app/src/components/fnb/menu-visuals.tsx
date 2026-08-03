@@ -29,14 +29,14 @@ export function parseTags(s: string | null | undefined): string[] {
 }
 
 const VEG_FLAG_COLOR: Record<string, string> = {
-	"Non-veg": "bg-[#fa4d56]",
-	Egg: "bg-[#b28600]",
-	Vegan: "bg-[#198038]",
-	Veg: "bg-[#24a148]",
+	"Non-veg": "bg-danger",
+	Egg: "bg-warning",
+	Vegan: "bg-success",
+	Veg: "bg-success",
 };
 
 export function VegDot({ flag, className }: { flag: string; className?: string }) {
-	const color = VEG_FLAG_COLOR[flag] ?? "bg-[#24a148]";
+	const color = VEG_FLAG_COLOR[flag] ?? "bg-success";
 	return (
 		<span
 			className={cn("inline-block size-2.5 rounded-full ring-1 ring-black/20", color, className)}
@@ -51,7 +51,7 @@ export function SpiceIcons({ level, className }: { level: number | null; classNa
 	return (
 		<span className={cn("inline-flex", className)} aria-label={`Spice ${level}/3`}>
 			{Array.from({ length: Math.min(level, 3) }).map((_, i) => (
-				<Flame key={i} className="size-3 text-[#fa4d56]" />
+				<Flame key={i} className="size-3 text-danger" />
 			))}
 		</span>
 	);

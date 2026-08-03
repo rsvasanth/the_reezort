@@ -64,8 +64,8 @@ const RANGES = [
 
 const CHANNEL_COLOR: Record<string, string> = {
 	Direct: "bg-brass",
-	Corporate: "bg-[#4589ff]",
-	OTA: "bg-[#24a148]",
+	Corporate: "bg-primary",
+	OTA: "bg-success",
 	"Walk-in": "bg-muted-foreground",
 };
 
@@ -181,7 +181,7 @@ export default function RevenueDashboard() {
 			</div>
 
 			{partial ? (
-				<div className="flex items-center gap-2 rounded-lg border border-[#b28600]/40 bg-[#b28600]/10 px-3 py-2 text-sm text-[#684e00] dark:text-[#f1c21b]">
+				<div className="flex items-center gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning">
 					<AlertTriangle className="size-4 shrink-0" />
 					{summary.days_missing} day{summary.days_missing === 1 ? "" : "s"} missing snapshots.
 					{canRebuild ? " Rebuild to heal the series." : ""}
@@ -277,7 +277,7 @@ function KpiCard({
 			<span className="font-display text-2xl font-light tabular-nums">{value}</span>
 			<span
 				className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-					flat ? "bg-muted text-muted-foreground" : up ? "bg-[#24a148]/15 text-[#198038] dark:text-[#6fdc8c]" : "bg-destructive/15 text-destructive"
+					flat ? "bg-muted text-muted-foreground" : up ? "bg-success/15 text-success" : "bg-destructive/15 text-destructive"
 				}`}
 			>
 				{!flat ? (up ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />) : null}

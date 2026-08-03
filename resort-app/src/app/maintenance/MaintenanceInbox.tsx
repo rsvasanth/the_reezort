@@ -321,7 +321,7 @@ function TicketRow({
 
 	return (
 		<div
-			className={`rounded-xl border bg-card p-4 transition-colors ${overdue ? "border-[#b28600]/50 bg-[#b28600]/5" : ""}`}
+			className={`rounded-xl border bg-card p-4 transition-colors ${overdue ? "border-warning/50 bg-warning/5" : ""}`}
 			data-testid={`ticket-${ticket.name}`}
 		>
 			<div className="flex flex-wrap items-start justify-between gap-3">
@@ -350,7 +350,7 @@ function TicketRow({
 							<Badge variant="outline" className="text-[10px] border-orange-500 text-orange-700 dark:text-orange-300">Revenue</Badge>
 						) : null}
 						{overdue ? (
-							<Badge variant="outline" className="gap-1 border-transparent bg-[#b28600] text-[10px] text-black">
+							<Badge variant="outline" className="gap-1 border-transparent bg-warning text-[10px] text-black">
 								<AlertTriangle className="size-3" /> Overdue
 							</Badge>
 						) : null}
@@ -360,7 +360,7 @@ function TicketRow({
 						<span>· Reported {relativeTime(ticket.reported_at)}</span>
 						<span>· by {ticket.raised_by}</span>
 						<span>· {ticket.assigned_to ? `Assigned to ${ticket.assigned_to}` : "Unassigned"}</span>
-						<span className={overdue ? "text-[#8e6a00] dark:text-[#d2a106]" : ""}>· SLA {slaLabel(ticket.minutes_remaining)}</span>
+						<span className={overdue ? "text-warning" : ""}>· SLA {slaLabel(ticket.minutes_remaining)}</span>
 						{ticket.downtime ? (
 							<span>· Downtime: <a href="#/maintenance/engineering" className="hover:underline">{ticket.downtime}</a></span>
 						) : null}

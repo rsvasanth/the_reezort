@@ -370,8 +370,8 @@ export default function CashierCloseScreen() {
 						) : null}
 
 						{active.close_status === "Submitted" ? (
-							<div className="flex flex-col gap-2 rounded-md border border-[#f1c21b] bg-[#fcf4d6] p-3">
-								<p className="text-sm font-medium text-[#302400]">
+							<div className="flex flex-col gap-2 rounded-md border border-warning bg-warning p-3">
+								<p className="text-sm font-medium text-warning">
 									Variance {fmt(active.variance_amount)} is awaiting manager approval.
 								</p>
 								<Textarea

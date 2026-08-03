@@ -38,7 +38,7 @@ export function RoomThumb({
 		<div
 			style={style}
 			className={cn(
-				"flex shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-stone-200 to-stone-100 text-xs font-medium text-[#697077] ring-1 ring-border dark:from-stone-800 dark:to-stone-900 dark:text-[#c1c7cd]",
+				"flex shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-stone-200 to-stone-100 text-xs font-medium text-muted-foreground ring-1 ring-border dark:from-stone-800 dark:to-stone-900 dark:text-muted-foreground",
 				className,
 			)}
 			aria-label={label}

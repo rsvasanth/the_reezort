@@ -30,7 +30,7 @@ export function DeltaBadge({ value, label }: { value: number | null; label?: str
 				flat
 					? "bg-muted text-muted-foreground"
 					: up
-						? "bg-[#24a148]/15 text-[#198038] dark:text-[#6fdc8c]"
+						? "bg-success/15 text-success"
 						: "bg-destructive/15 text-destructive",
 			)}
 		>
@@ -41,7 +41,7 @@ export function DeltaBadge({ value, label }: { value: number | null; label?: str
 }
 
 const TREND_META: Record<DishTrend, { icon: typeof ArrowUpRight; tint: string; label: string }> = {
-	up: { icon: ArrowUpRight, tint: "text-[#198038] dark:text-[#6fdc8c]", label: "Up" },
+	up: { icon: ArrowUpRight, tint: "text-success", label: "Up" },
 	down: { icon: ArrowDownRight, tint: "text-destructive", label: "Down" },
 	flat: { icon: Minus, tint: "text-muted-foreground", label: "Flat" },
 	new: { icon: Sparkles, tint: "text-brass", label: "New" },

@@ -306,7 +306,7 @@ export function SplitBillSheet({
 								<div className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
 									<span className="text-muted-foreground">
 										Remaining to allocate
-										<span className={Math.abs(valueRemainder) > 0.01 ? "ml-2 text-destructive" : "ml-2 text-[#198038] dark:text-[#42be65]"}>
+										<span className={Math.abs(valueRemainder) > 0.01 ? "ml-2 text-destructive" : "ml-2 text-success"}>
 											{splitType === "Percentage" ? `${valueRemainder}%` : formatINR(valueRemainder)}
 										</span>
 									</span>

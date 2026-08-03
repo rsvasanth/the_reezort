@@ -296,7 +296,7 @@ export default function PropertySetupScreen() {
 									active
 										? "border-foreground bg-foreground text-background"
 										: done
-											? "border-[#198038]/40 bg-[#defbe6] text-[#0e6027]"
+											? "border-success/40 bg-success text-success"
 											: "border-border text-muted-foreground",
 								].join(" ")}
 							>
@@ -538,7 +538,7 @@ export default function PropertySetupScreen() {
 
 							{step === 5 && (
 								<div className="flex flex-col gap-4" data-testid="setup-summary">
-									<div className="flex items-center gap-2 text-[#0e6027]">
+									<div className="flex items-center gap-2 text-success">
 										<Check className="size-5" />
 										<span className="font-medium">Property is ready.</span>
 									</div>

@@ -1,0 +1,108 @@
+/*
+ * THE REEZORT brand tokens for NativeWind.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * TEMPORARY LOCATION. Rule 4 of `shared-web-mobile-architecture.md` puts these
+ * in a root `packages/tokens` consumed by web and native alike. That package
+ * cannot exist until the AD-016-001 workspace-root merge lands, and the merge is
+ * gated on the web workstream (see `workstream-split.md`: sequence is root merge
+ * → tokens → types). Until then these values exist in two places — here and in
+ * `resort-app/src/index.css` — which is a knowingly time-boxed duplication, not
+ * an accepted state. Collapse this file into root `packages/tokens` at merge
+ * time and delete it.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Values are copied verbatim from `ui-foundation-design-system.md`, which traces
+ * every one of them to the `#/book` marketing site. They are NOT re-derived
+ * here: brass #b08d57, ink #1c1917, the ivory/sand ramp #efeae1 → #c2b8a5, brick
+ * #c0392b. The two documented exceptions carry over unchanged — semantic status
+ * beyond `danger`, and the chart series.
+ *
+ * The variable NAMES are the contract. They match the web's shadcn variable set
+ * exactly, so `bg-primary` means the same colour in a React Native screen as in
+ * a DOM one. Do not rename one side without the other.
+ *
+ * `--sidebar-*` is deliberately absent: it is a web-shell concept with no native
+ * counterpart.
+ */
+
+@layer base {
+	:root {
+		--background: 39 30% 91%; /* #efeae1 ivory */
+		--foreground: 24 10% 10%; /* #1c1917 ink */
+		--card: 39 40% 97%;
+		--card-foreground: 24 10% 10%;
+		--popover: 39 40% 97%;
+		--popover-foreground: 24 10% 10%;
+		--primary: 36 36% 52%; /* #b08d57 brass */
+		--primary-foreground: 39 40% 97%;
+		--secondary: 38 23% 88%; /* #e7e2d9 */
+		--secondary-foreground: 24 10% 10%;
+		--muted: 38 23% 88%;
+		--muted-foreground: 24 5% 45%; /* #78716c */
+		--accent: 40 19% 81%; /* #d8d2c6 */
+		--accent-foreground: 24 10% 10%;
+		--destructive: 6 63% 46%; /* #c0392b brick */
+		--destructive-foreground: 39 40% 97%;
+		--border: 40 19% 81%;
+		--input: 40 19% 81%;
+		--ring: 36 36% 52%;
+		--brass: 36 36% 52%;
+		--brass-foreground: 39 40% 97%;
+
+		--success: 95 25% 34%;
+		--success-foreground: 39 40% 97%;
+		--warning: 32 55% 45%;
+		--warning-foreground: 39 40% 97%;
+		--info: 24 5% 45%;
+		--info-foreground: 39 40% 97%;
+		--danger: 6 63% 46%;
+		--danger-foreground: 39 40% 97%;
+
+		--chart-1: 36 36% 52%;
+		--chart-2: 28 15% 28%;
+		--chart-3: 39 19% 70%;
+		--chart-4: 6 63% 46%;
+		--chart-5: 37 7% 51%;
+	}
+
+	/* Dark theme from the site's deep inks: #0e0d0b, #141210, #2b2822. */
+	.dark:root {
+		--background: 40 12% 5%; /* #0e0d0b */
+		--foreground: 39 30% 91%;
+		--card: 36 11% 8%; /* #141210 */
+		--card-foreground: 39 30% 91%;
+		--popover: 36 11% 8%;
+		--popover-foreground: 39 30% 91%;
+		--primary: 36 36% 52%; /* brass holds across themes */
+		--primary-foreground: 40 12% 5%;
+		--secondary: 40 12% 15%; /* #2b2822 */
+		--secondary-foreground: 39 30% 91%;
+		--muted: 40 12% 15%;
+		--muted-foreground: 37 7% 51%; /* #8a8378 */
+		--accent: 40 12% 20%;
+		--accent-foreground: 39 30% 91%;
+		--destructive: 6 63% 46%;
+		--destructive-foreground: 39 30% 91%;
+		--border: 40 12% 15%;
+		--input: 40 12% 15%;
+		--ring: 36 36% 52%;
+		--brass: 36 36% 52%;
+		--brass-foreground: 40 12% 5%;
+
+		--success: 95 22% 48%;
+		--success-foreground: 40 12% 5%;
+		--warning: 32 55% 58%;
+		--warning-foreground: 40 12% 5%;
+		--info: 37 7% 62%;
+		--info-foreground: 40 12% 5%;
+		--danger: 6 63% 52%;
+		--danger-foreground: 39 30% 91%;
+
+		--chart-1: 36 36% 52%;
+		--chart-2: 39 19% 70%;
+		--chart-3: 37 7% 51%;
+		--chart-4: 6 63% 52%;
+		--chart-5: 38 23% 88%;
+	}
+}

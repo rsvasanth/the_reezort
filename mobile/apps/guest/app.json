@@ -10,6 +10,10 @@
       "package": "com.thereezort.guest",
       "minSdkVersion": 29,
       "edgeToEdgeEnabled": true
-    }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar"
+    ]
   }
 }

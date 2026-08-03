@@ -15,6 +15,7 @@
       "@reezort/api-client": ["./packages/api-client/src"],
       "@reezort/domain-types": ["./packages/domain-types/src"],
       "@reezort/outbox": ["./packages/outbox/src"],
+      "@reezort/tokens": ["./packages/tokens/src"],
       "@reezort/ui": ["./packages/ui/src"]
     }
   }

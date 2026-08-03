@@ -15,8 +15,8 @@
     "guest": "yarn workspace @reezort/guest start"
   },
   "devDependencies": {
-    "@types/react": "~19.1.0",
-    "typescript": "~5.9.2",
+    "@types/react": "~19.2.14",
+    "typescript": "~6.0.3",
     "vitest": "^3"
   }
 }

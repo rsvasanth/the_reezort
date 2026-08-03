@@ -17,7 +17,9 @@
       "expo-web-browser",
       "expo-sqlite",
       "expo-build-properties",
-      "./plugins/withBenchCleartext"
+      "./plugins/withBenchCleartext",
+      "expo-router",
+      "expo-status-bar"
     ],
     "extra": {
       "apiBaseUrl": "https://app.thereezort.com",

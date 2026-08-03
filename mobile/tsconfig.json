@@ -5,6 +5,7 @@
 		{ "path": "./packages/domain-types" },
 		{ "path": "./packages/api-client" },
 		{ "path": "./packages/outbox" },
+		{ "path": "./packages/tokens" },
 		{ "path": "./packages/ui" }
 	]
 }

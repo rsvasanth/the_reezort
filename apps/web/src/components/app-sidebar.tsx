@@ -62,6 +62,7 @@ const overview: NavItem[] = [
 const categories: NavCategory[] = [
 	{
 		title: "Front office",
+		tone: 1,
 		icon: BedDoubleIcon,
 		items: [
 			{ title: "Reservations", url: "/resort-app#/reservations", icon: CalendarDaysIcon, status: "live" },
@@ -70,6 +71,7 @@ const categories: NavCategory[] = [
 	},
 	{
 		title: "Housekeeping",
+		tone: 2,
 		icon: SparklesIcon,
 		items: [
 			{ title: "Housekeeping", url: "/resort-app#/housekeeping", icon: SparklesIcon, status: "live" },
@@ -79,6 +81,7 @@ const categories: NavCategory[] = [
 	},
 	{
 		title: "Billing",
+		tone: 3,
 		icon: ReceiptTextIcon,
 		items: [
 			{ title: "Billing", url: "/resort-app#/billing", icon: ReceiptTextIcon, status: "live" },
@@ -89,6 +92,7 @@ const categories: NavCategory[] = [
 	},
 	{
 		title: "Food & beverage",
+		tone: 4,
 		icon: UtensilsIcon,
 		items: [
 			{ title: "Restaurant & bar", url: "/resort-app#/restaurant", icon: UtensilsIcon, status: "live" },
@@ -97,6 +101,7 @@ const categories: NavCategory[] = [
 	},
 	{
 		title: "Engineering",
+		tone: 5,
 		icon: WrenchIcon,
 		items: [
 			{ title: "Maintenance", url: "/resort-app#/maintenance", icon: WrenchIcon, status: "live" },
@@ -105,6 +110,7 @@ const categories: NavCategory[] = [
 	},
 	{
 		title: "Guest services",
+		tone: 6,
 		icon: BellIcon,
 		items: [
 			{ title: "Concierge", url: "/resort-app#/guest-relations", icon: BellIcon, status: "live" },
@@ -114,6 +120,7 @@ const categories: NavCategory[] = [
 	},
 	{
 		title: "Insight",
+		tone: 7,
 		icon: BarChartIcon,
 		items: [
 			{ title: "CRM & loyalty", url: "/resort-app#/crm", icon: HeartHandshakeIcon, status: "live" },
@@ -183,7 +190,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 	const systemItems = keep(systemBase);
 	const systemCategory: NavCategory[] =
 		systemItems.length > 0
-			? [{ title: "System", icon: SettingsIcon, items: systemItems }]
+			? [{ title: "System", tone: 8, icon: SettingsIcon, items: systemItems }]
 			: [];
 
 	return (

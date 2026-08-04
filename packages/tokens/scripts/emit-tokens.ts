@@ -240,6 +240,33 @@ function elevation(mode: Mode, scales: Record<string, string[]>) {
  * Light mode deliberately takes much lower steps. The same hues at dark-mode
  * strength over a near-white page would fight every surface on top of them.
  */
+/**
+ * A categorical ramp for wayfinding — one hue per functional area of the app.
+ *
+ * Distinct from the semantic colours, which carry meaning: `danger` is red
+ * because something is wrong, so it cannot also mean "Billing". These are
+ * identity only, spread around the wheel so adjacent nav sections never read as
+ * the same colour. Step 11 is the accessible-text step, so each is legible as an
+ * icon or label and usable as a low-alpha tint behind one.
+ */
+function categories(mode: Mode) {
+	const C = RadixColors as Record<string, Record<string, string>>;
+	const pick = (name: string) => {
+		const scale = Object.values(mode === "light" ? C[name] : C[`${name}Dark`]) as string[];
+		return hexToHsl(scale[10]); // step 11
+	};
+	return {
+		"cat-1": pick("indigo"),
+		"cat-2": pick("jade"),
+		"cat-3": pick("amber"),
+		"cat-4": pick("tomato"),
+		"cat-5": pick("cyan"),
+		"cat-6": pick("violet"),
+		"cat-7": pick("plum"),
+		"cat-8": pick("bronze"),
+	};
+}
+
 function artwork(mode: Mode) {
 	const d = mode === "dark";
 	const C = RadixColors as Record<string, Record<string, string>>;
@@ -269,8 +296,8 @@ function artwork(mode: Mode) {
 
 const light = build("light");
 const dark = build("dark");
-const lightElev = { ...elevation("light", light.scales), ...artwork("light") };
-const darkElev = { ...elevation("dark", dark.scales), ...artwork("dark") };
+const lightElev = { ...elevation("light", light.scales), ...artwork("light"), ...categories("light") };
+const darkElev = { ...elevation("dark", dark.scales), ...artwork("dark"), ...categories("dark") };
 
 /**
  * Motion. Durations are short and consistent; the reduced-motion fallback swaps

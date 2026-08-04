@@ -33,6 +33,26 @@ export type NavCategory = {
 	title: string
 	icon: LucideIcon
 	items: NavItem[]
+	/** Index into the categorical ramp — identity, not meaning. See TONE below. */
+	tone?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
+}
+
+/**
+ * Class names must be static for Tailwind to emit them, so the ramp is a lookup
+ * rather than an interpolated `text-cat-${n}`.
+ *
+ * The hue identifies the section; it never signals state. Active and hover still
+ * use the brand, so "where I am" and "what this is" stay separable.
+ */
+const TONE: Record<number, { icon: string; rest: string; open: string }> = {
+	1: { icon: "text-cat-1", rest: "bg-cat-1/[0.07]", open: "data-[state=open]:bg-cat-1/[0.14]" },
+	2: { icon: "text-cat-2", rest: "bg-cat-2/[0.07]", open: "data-[state=open]:bg-cat-2/[0.14]" },
+	3: { icon: "text-cat-3", rest: "bg-cat-3/[0.07]", open: "data-[state=open]:bg-cat-3/[0.14]" },
+	4: { icon: "text-cat-4", rest: "bg-cat-4/[0.07]", open: "data-[state=open]:bg-cat-4/[0.14]" },
+	5: { icon: "text-cat-5", rest: "bg-cat-5/[0.07]", open: "data-[state=open]:bg-cat-5/[0.14]" },
+	6: { icon: "text-cat-6", rest: "bg-cat-6/[0.07]", open: "data-[state=open]:bg-cat-6/[0.14]" },
+	7: { icon: "text-cat-7", rest: "bg-cat-7/[0.07]", open: "data-[state=open]:bg-cat-7/[0.14]" },
+	8: { icon: "text-cat-8", rest: "bg-cat-8/[0.07]", open: "data-[state=open]:bg-cat-8/[0.14]" },
 }
 
 // Whether a nav item's URL matches the current hash route. Matches the exact
@@ -97,6 +117,7 @@ function CategoryItem({
 	category: NavCategory
 	currentHash: string
 }) {
+	const tone = category.tone ? TONE[category.tone] : undefined
 	const containsActive = category.items.some((item) => isItemActive(item.url, currentHash))
 	const [open, setOpen] = React.useState(containsActive)
 	const touched = React.useRef(false)
@@ -120,14 +141,14 @@ function CategoryItem({
 					<SidebarMenuButton
 						tooltip={category.title}
 						className={cn(
-							"bg-sidebar-accent/40 hover:bg-sidebar-primary/10",
-							"data-[state=open]:bg-sidebar-accent/70",
+							tone ? [tone.rest, tone.open] : ["bg-sidebar-accent/40", "data-[state=open]:bg-sidebar-accent/70"],
+							"hover:bg-sidebar-primary/10",
 						)}
 						// Collapsed-with-active-child needs to read as active, since the
 						// child rows it would normally show are hidden.
 						isActive={!open && containsActive}
 					>
-						<category.icon />
+						<category.icon className={tone?.icon} />
 						<span>{category.title}</span>
 						<ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
 					</SidebarMenuButton>

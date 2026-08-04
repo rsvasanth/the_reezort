@@ -98,6 +98,14 @@
 		--art-indigo: #c1d0ff;
 		--art-pink: #efbfdd;
 		--art-opacity: 0.38;
+		--cat-1: 226 56% 50%;
+		--cat-2: 164 61% 32%;
+		--cat-3: 35 100% 34%;
+		--cat-4: 10 82% 45%;
+		--cat-5: 192 81% 33%;
+		--cat-6: 252 43% 52%;
+		--cat-7: 292 45% 44%;
+		--cat-8: 15 20% 41%;
 
 		/*
 		 * Radix's `medium` radius setting. Steps must stay distinct — collapsing
@@ -193,6 +201,14 @@
 		--art-indigo: #c1d0ff;
 		--art-pink: #efbfdd;
 		--art-opacity: 0.38;
+		--cat-1: 226 56% 50%;
+		--cat-2: 164 61% 32%;
+		--cat-3: 35 100% 34%;
+		--cat-4: 10 82% 45%;
+		--cat-5: 192 81% 33%;
+		--cat-6: 252 43% 52%;
+		--cat-7: 292 45% 44%;
+		--cat-8: 15 20% 41%;
 	}
 
 	.dark {
@@ -258,5 +274,13 @@
 		--art-indigo: #253974;
 		--art-pink: #d6409f;
 		--art-opacity: 0.3;
+		--cat-1: 228 100% 81%;
+		--cat-2: 163 75% 48%;
+		--cat-3: 46 100% 54%;
+		--cat-4: 12 100% 75%;
+		--cat-5: 190 75% 60%;
+		--cat-6: 253 100% 83%;
+		--cat-7: 292 79% 77%;
+		--cat-8: 18 35% 74%;
 	}
 }

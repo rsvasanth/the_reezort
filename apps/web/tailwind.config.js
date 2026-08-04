@@ -102,6 +102,7 @@ export default {
 			 * double-outlined.
 			 */
 			boxShadow: {
+				panel: "var(--shadow-card)",
 				1: "var(--shadow-1)",
 				2: "var(--shadow-2)",
 				3: "var(--shadow-3)",

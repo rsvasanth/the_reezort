@@ -1,8 +1,16 @@
 import { useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
-import { Button, Dialog, Portal, Text, TextInput } from "react-native-paper";
+import { ScrollView, View } from "react-native";
 
-import { spacing } from "@reezort/ui";
+import {
+	Button,
+	Dialog,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	Input,
+	Text,
+} from "@reezort/ui";
 
 import { queueTicketTransition, type MaintenanceTicket } from "../session";
 import { availableTransitions, type TicketTransition } from "./ticketActions";
@@ -51,75 +59,62 @@ export function TicketDetail({ ticket, queued, onQueued, onBack }: Props) {
 	};
 
 	return (
-		<ScrollView contentContainerStyle={styles.page}>
-			<Text variant="headlineSmall">Room {ticket.room}</Text>
-			<Text variant="bodyMedium" style={styles.muted}>
+		<ScrollView className="flex-1 bg-background" contentContainerClassName="p-4">
+			<Text className="text-xl font-semibold">Room {ticket.room}</Text>
+			<Text className="mt-1 text-muted-foreground">
 				{ticket.state} · {ticket.priority}
 			</Text>
-			<Text variant="bodySmall" style={styles.faint}>
-				{ticket.name}
-			</Text>
+			<Text className="mt-1 text-sm text-muted-foreground/60">{ticket.name}</Text>
 
-			<View style={styles.actions}>
+			<View className="mt-6 gap-2">
 				{transitions.map((transition) => (
 					<Button
 						key={transition.next}
-						mode={transition.primary ? "contained" : "outlined"}
+						variant={transition.primary ? "default" : "outline"}
 						disabled={busy}
-						style={styles.action}
 						onPress={() => start(transition)}
 					>
-						{transition.label}
+						<Text>{transition.label}</Text>
 					</Button>
 				))}
 				{transitions.length === 0 ? (
-					<Text variant="bodySmall" style={styles.muted}>
-						This ticket is closed.
-					</Text>
+					<Text className="text-sm text-muted-foreground">This ticket is closed.</Text>
 				) : null}
 			</View>
 
 			{queued ? (
-				<Text variant="bodySmall" style={styles.muted}>
+				<Text className="mt-4 text-sm text-muted-foreground">
 					Queued · will sync when you're back online
 				</Text>
 			) : null}
 
-			<Portal>
-				<Dialog visible={asking !== null} onDismiss={() => setAsking(null)}>
-					<Dialog.Title>{asking?.label}</Dialog.Title>
-					<Dialog.Content>
-						<Text variant="bodyMedium">What was done?</Text>
-						<TextInput
-							mode="outlined"
-							label="Notes"
-							value={note}
-							onChangeText={setNote}
-							multiline
-							style={styles.note}
-						/>
-					</Dialog.Content>
-					<Dialog.Actions>
-						<Button onPress={() => setAsking(null)}>Cancel</Button>
+			<Dialog open={asking !== null} onOpenChange={(open) => !open && setAsking(null)}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>{asking?.label}</DialogTitle>
+					</DialogHeader>
+					<Text>What was done?</Text>
+					<Input
+						value={note}
+						onChangeText={setNote}
+						multiline
+						placeholder="Notes"
+						className="h-24 py-2"
+						textAlignVertical="top"
+					/>
+					<DialogFooter>
+						<Button variant="ghost" onPress={() => setAsking(null)}>
+							<Text>Cancel</Text>
+						</Button>
 						<Button
-							mode="contained"
 							disabled={busy || note.trim().length === 0}
 							onPress={() => asking && void apply(asking, note.trim())}
 						>
-							Save
+							<Text>Save</Text>
 						</Button>
-					</Dialog.Actions>
-				</Dialog>
-			</Portal>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</ScrollView>
 	);
 }
-
-const styles = StyleSheet.create({
-	page: { padding: spacing.md },
-	muted: { opacity: 0.7, marginTop: spacing.xs },
-	faint: { opacity: 0.4, marginTop: spacing.xs },
-	actions: { marginTop: spacing.lg },
-	action: { marginTop: spacing.sm },
-	note: { marginTop: spacing.sm },
-});

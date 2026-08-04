@@ -9,7 +9,10 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-xl border border-border/60 text-card-foreground",
+      // Radius 12px (radius-5) per the Radix card spec; the ::before is 11px so it
+      // sits inside the 1px stroke rather than poking through its corners.
+      "relative isolate rounded-2xl text-card-foreground shadow-panel",
+      "before:absolute before:inset-px before:-z-10 before:rounded-[11px] before:bg-[var(--card-surface)]",
       className
     )}
     {...props}

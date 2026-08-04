@@ -86,6 +86,8 @@
 		--shadow-4: 0 0 0 1px color-mix(in oklab, rgb(0 0 0 / 0.086), #d3d9f1 25%), 0 8px 40px rgb(0 0 0 / 0.083), 0 12px 32px -16px rgb(0 0 0 / 0.165);
 		--shadow-5: 0 0 0 1px color-mix(in oklab, rgb(0 0 0 / 0.086), #d3d9f1 25%), 0 12px 60px rgb(0 0 0 / 0.165), 0 12px 32px -16px rgb(0 0 0 / 0.275);
 		--shadow-6: 0 0 0 1px color-mix(in oklab, rgb(0 0 0 / 0.086), #d3d9f1 25%), 0 12px 60px rgb(0 0 0 / 0.11), 0 16px 64px rgb(0 0 0 / 0.22), 0 16px 36px -20px rgb(0 0 0 / 0.495);
+		--card-surface: #fbfcffd9;
+		--shadow-card: inset 0 0 0 1px color-mix(in oklab, rgb(0 0 0 / 0.08), #d3d9f1 25%), 0 8px 40px rgb(0 0 0 / 0.083), 0 12px 32px -16px rgb(0 0 0 / 0.165);
 		--surface: rgb(255 255 255 / 0.8);
 		--panel-translucent: rgb(255 255 255 / 0.7);
 		--overlay: rgb(0 0 0 / 0.4);
@@ -179,6 +181,8 @@
 		--shadow-4: 0 0 0 1px color-mix(in oklab, rgb(0 0 0 / 0.086), #d3d9f1 25%), 0 8px 40px rgb(0 0 0 / 0.083), 0 12px 32px -16px rgb(0 0 0 / 0.165);
 		--shadow-5: 0 0 0 1px color-mix(in oklab, rgb(0 0 0 / 0.086), #d3d9f1 25%), 0 12px 60px rgb(0 0 0 / 0.165), 0 12px 32px -16px rgb(0 0 0 / 0.275);
 		--shadow-6: 0 0 0 1px color-mix(in oklab, rgb(0 0 0 / 0.086), #d3d9f1 25%), 0 12px 60px rgb(0 0 0 / 0.11), 0 16px 64px rgb(0 0 0 / 0.22), 0 16px 36px -20px rgb(0 0 0 / 0.495);
+		--card-surface: #fbfcffd9;
+		--shadow-card: inset 0 0 0 1px color-mix(in oklab, rgb(0 0 0 / 0.08), #d3d9f1 25%), 0 8px 40px rgb(0 0 0 / 0.083), 0 12px 32px -16px rgb(0 0 0 / 0.165);
 		--surface: rgb(255 255 255 / 0.8);
 		--panel-translucent: rgb(255 255 255 / 0.7);
 		--overlay: rgb(0 0 0 / 0.4);
@@ -242,6 +246,8 @@
 		--shadow-4: 0 0 0 1px color-mix(in oklab, rgb(255 255 255 / 0.172), #39393b 25%), 0 8px 40px rgb(0 0 0 / 0.15), 0 12px 32px -16px rgb(0 0 0 / 0.3);
 		--shadow-5: 0 0 0 1px color-mix(in oklab, rgb(255 255 255 / 0.172), #39393b 25%), 0 12px 60px rgb(0 0 0 / 0.3), 0 12px 32px -16px rgb(0 0 0 / 0.5);
 		--shadow-6: 0 0 0 1px color-mix(in oklab, rgb(255 255 255 / 0.172), #39393b 25%), 0 12px 60px rgb(0 0 0 / 0.2), 0 16px 64px rgb(0 0 0 / 0.4), 0 16px 36px -20px rgb(0 0 0 / 0.9);
+		--card-surface: #181819b3;
+		--shadow-card: inset 0 0 0 1px color-mix(in oklab, rgb(255 255 255 / 0.14), #39393b 25%), 0 8px 40px rgb(0 0 0 / 0.15), 0 12px 32px -16px rgb(0 0 0 / 0.3);
 		--surface: rgb(0 0 0 / 0.25);
 		--panel-translucent: rgb(255 255 255 / 0.034);
 		--overlay: rgb(0 0 0 / 0.6);

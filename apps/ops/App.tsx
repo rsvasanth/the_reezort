@@ -1,17 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, StyleSheet, View } from "react-native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
-import {
-	ActivityIndicator,
-	Appbar,
-	BottomNavigation,
-	MD3LightTheme,
-	PaperProvider,
-	Portal,
-	Snackbar,
-	Text,
-} from "react-native-paper";
+import { ActivityIndicator, Alert, Pressable, View } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { ChevronLeft, ClipboardCheck, RefreshCw, Wrench, type LucideIcon } from "lucide-react-native";
 import { StatusBar } from "expo-status-bar";
+
+import { Text } from "@reezort/ui";
+
+import "./global.css";
 
 import { SessionExpiredError } from "@reezort/api-client";
 import type { OutboxSummary } from "@reezort/outbox";
@@ -79,6 +74,15 @@ export default function App() {
 	const [openTicket, setOpenTicket] = useState<string | null>(null);
 	const [reviewing, setReviewing] = useState(false);
 	const [toast, setToast] = useState<string | null>(null);
+
+	// Paper's Snackbar auto-dismissed via `duration`; ours is a plain view, so the
+	// timer is explicit. Keyed on the message so a second toast restarts the clock
+	// rather than inheriting the remainder of the first one's.
+	useEffect(() => {
+		if (toast === null) return undefined;
+		const timer = setTimeout(() => setToast(null), 3000);
+		return () => clearTimeout(timer);
+	}, [toast]);
 
 	/** Everything the screens render comes from the device, never from a response. */
 	const readLocal = useCallback(async () => {
@@ -222,14 +226,14 @@ export default function App() {
 	const showTasks = hasHousekeeping || !hasMaintenance;
 
 	const routes = useMemo(
-		() =>
+		(): readonly { key: Tab; title: string; icon: LucideIcon; badge?: number }[] =>
 			[
-				showTasks ? { key: "tasks", title: "Tasks", focusedIcon: "clipboard-check" } : null,
-				showWork ? { key: "work", title: "Work", focusedIcon: "wrench" } : null,
+				showTasks ? { key: "tasks" as const, title: "Tasks", icon: ClipboardCheck } : null,
+				showWork ? { key: "work" as const, title: "Work", icon: Wrench } : null,
 				{
-					key: "sync",
+					key: "sync" as const,
 					title: "Sync",
-					focusedIcon: "sync",
+					icon: RefreshCw,
 					badge: syncBadgeCount(summary) ?? undefined,
 				},
 			].filter((r): r is NonNullable<typeof r> => r !== null),
@@ -262,27 +266,38 @@ export default function App() {
 
 	return (
 		<SafeAreaProvider>
-			<PaperProvider theme={MD3LightTheme}>
-				<View style={styles.app}>
-					<Appbar.Header>
-						{inDetail ? <Appbar.BackAction onPress={back} /> : null}
-						<Appbar.Content title={title} />
-						{user && !versionBlocked ? (
-							<Text variant="labelMedium" style={styles.status}>
-								{statusLine(syncState)}
-							</Text>
+			<SafeAreaView className="flex-1 bg-background" edges={["top", "bottom"]}>
+				<View className="flex-1">
+					{/* Was Paper's Appbar. A plain row: back affordance only where there
+					    is somewhere to go back to, title, and the sync status line. */}
+					<View className="h-14 flex-row items-center gap-2 border-b border-border px-2">
+						{inDetail ? (
+							<Pressable
+								accessibilityRole="button"
+								accessibilityLabel="Back"
+								onPress={back}
+								className="h-12 w-12 items-center justify-center rounded-full active:opacity-70"
+							>
+								<ChevronLeft size={24} className="text-foreground" />
+							</Pressable>
 						) : null}
-					</Appbar.Header>
+						<Text className="flex-1 px-2 text-lg font-medium" numberOfLines={1}>
+							{title}
+						</Text>
+						{user && !versionBlocked ? (
+							<Text className="mr-2 text-sm text-muted-foreground">{statusLine(syncState)}</Text>
+						) : null}
+					</View>
 
 					{booting ? (
-						<ActivityIndicator style={styles.centre} size="large" />
+						<ActivityIndicator className="mt-12" size="large" />
 					) : !user ? (
 						<SignIn busy={signingIn} error={signInError} onSignIn={() => void onSignIn()} />
 					) : versionBlocked ? (
 						<UpdateRequired queued={summary?.pending ?? 0} />
 					) : (
 						<>
-							<View style={styles.body}>
+							<View className="flex-1">
 								{task ? (
 									<TaskDetail
 										task={task}
@@ -333,35 +348,64 @@ export default function App() {
 							</View>
 
 							{inDetail ? null : (
-								<BottomNavigation.Bar
-									navigationState={{
-										index: Math.max(
-											0,
-											routes.findIndex((r) => r.key === tab),
-										),
-										routes,
-									}}
-									onTabPress={({ route }) => setTab(route.key as Tab)}
-								/>
+								// Was BottomNavigation.Bar. Each destination is a 48px-tall
+								// target with its badge drawn inline, so the queue depth is
+								// visible from the round rather than only on the sync screen.
+								<View className="flex-row border-t border-border">
+									{routes.map((route) => {
+										const active = route.key === tab;
+										const Icon = route.icon;
+										return (
+											<Pressable
+												key={route.key}
+												accessibilityRole="tab"
+												accessibilityState={{ selected: active }}
+												onPress={() => setTab(route.key)}
+												className="min-h-[56px] flex-1 items-center justify-center gap-0.5 py-2 active:opacity-70"
+											>
+												<View>
+													<Icon
+														size={22}
+														className={active ? "text-primary" : "text-muted-foreground"}
+													/>
+													{route.badge ? (
+														<View className="absolute -right-2.5 -top-1 min-w-[16px] items-center rounded-full bg-primary px-1">
+															<Text className="text-[10px] text-primary-foreground">
+																{route.badge}
+															</Text>
+														</View>
+													) : null}
+												</View>
+												<Text
+													className={
+														active
+															? "text-xs font-medium text-primary"
+															: "text-xs text-muted-foreground"
+													}
+												>
+													{route.title}
+												</Text>
+											</Pressable>
+										);
+									})}
+								</View>
 							)}
 						</>
 					)}
 
-					<Portal>
-						<Snackbar visible={toast !== null} onDismiss={() => setToast(null)} duration={3000}>
-							{toast ?? ""}
-						</Snackbar>
-					</Portal>
+					{/* Was Paper's Snackbar in a Portal. Absolutely positioned above the
+					    tab bar; dismissal is the timer effect above, or a tap. */}
+					{toast !== null ? (
+						<Pressable
+							onPress={() => setToast(null)}
+							className="absolute bottom-20 left-4 right-4 rounded-md bg-foreground px-4 py-3"
+						>
+							<Text className="text-background">{toast}</Text>
+						</Pressable>
+					) : null}
 					<StatusBar style="auto" />
 				</View>
-			</PaperProvider>
+			</SafeAreaView>
 		</SafeAreaProvider>
 	);
 }
-
-const styles = StyleSheet.create({
-	app: { flex: 1 },
-	body: { flex: 1 },
-	centre: { marginTop: 48 },
-	status: { marginRight: 16, opacity: 0.7 },
-});

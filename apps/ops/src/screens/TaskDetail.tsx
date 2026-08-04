@@ -1,16 +1,16 @@
 import { useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
+
 import {
 	Button,
 	Dialog,
-	Portal,
-	RadioButton,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	Input,
 	Text,
-	TextInput,
-	TouchableRipple,
-} from "react-native-paper";
-
-import { spacing } from "@reezort/ui";
+} from "@reezort/ui";
 
 import {
 	queueCompletionWithPhoto,
@@ -31,6 +31,11 @@ import {
  *
  * The screen where a round is actually finished. Its predecessor offered Start
  * and Pause and nothing else, so an attendant could open work and never close it.
+ *
+ * The reason picker is composed here rather than promoted to `@reezort/ui`: the
+ * web design system has no RadioGroup, and adding one on native only would break
+ * the mirroring that Rule 5 exists to protect. It is a single-select list, which
+ * is a screen concern.
  */
 interface Props {
 	readonly task: HousekeepingTask;
@@ -91,85 +96,89 @@ export function TaskDetail({ task, queued, onQueued, onBack }: Props) {
 	};
 
 	return (
-		<ScrollView contentContainerStyle={styles.page}>
-			<Text variant="headlineSmall">{task.task_type}</Text>
-			<Text variant="bodyMedium" style={styles.muted}>
+		<ScrollView className="flex-1 bg-background" contentContainerClassName="p-4">
+			<Text className="text-xl font-semibold">{task.task_type}</Text>
+			<Text className="mt-1 text-muted-foreground">
 				{[task.task_status, task.priority, task.due_at ? `due ${timeOf(task.due_at)}` : null]
 					.filter(Boolean)
 					.join(" · ")}
 			</Text>
 			{/* Present because supervisors ask for it on the phone; muted because it
 			    means nothing to the person doing the work. */}
-			<Text variant="bodySmall" style={styles.faint}>
-				{task.name}
-			</Text>
+			<Text className="mt-1 text-sm text-muted-foreground/60">{task.name}</Text>
 
-			{blockedReason ? (
-				<Text variant="bodyMedium" style={styles.blocked}>
-					{blockedReason}
-				</Text>
-			) : null}
+			{blockedReason ? <Text className="mt-4 text-warning">{blockedReason}</Text> : null}
 
-			<View style={styles.actions}>
+			<View className="mt-6 gap-2">
 				{actions.map((option) => (
 					<Button
 						key={option.action}
-						mode={option.primary ? "contained" : "outlined"}
+						variant={option.primary ? "default" : "outline"}
 						disabled={busy}
-						style={styles.action}
 						onPress={() => void run(option.action)}
 					>
-						{option.label}
+						<Text>{option.label}</Text>
 					</Button>
 				))}
 				{actions.length === 0 ? (
-					<Text variant="bodySmall" style={styles.muted}>
-						Nothing left to do on this one.
-					</Text>
+					<Text className="text-sm text-muted-foreground">Nothing left to do on this one.</Text>
 				) : null}
 			</View>
 
 			{queued ? (
-				<Text variant="bodySmall" style={styles.muted}>
+				<Text className="mt-4 text-sm text-muted-foreground">
 					Queued · will sync when you're back online
 				</Text>
 			) : null}
 
-			<Portal>
-				<Dialog visible={askingReason} onDismiss={() => setAskingReason(false)}>
-					<Dialog.Title>Why can't the room be serviced?</Dialog.Title>
-					<Dialog.Content>
-						<RadioButton.Group
-							onValueChange={(v) => setReason(v as typeof reason)}
-							value={reason ?? ""}
-						>
-							{DND_CHOICES.map((choice) => (
-								<TouchableRipple key={choice.value} onPress={() => setReason(choice.value)}>
-									<View style={styles.choice}>
-										<RadioButton value={choice.value} />
-										<Text variant="bodyMedium" style={styles.choiceLabel}>
-											{choice.label}
-										</Text>
+			<Dialog open={askingReason} onOpenChange={setAskingReason}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Why can't the room be serviced?</DialogTitle>
+					</DialogHeader>
+
+					<View className="gap-1">
+						{DND_CHOICES.map((choice) => {
+							const selected = reason === choice.value;
+							return (
+								<Pressable
+									key={choice.value}
+									accessibilityRole="radio"
+									accessibilityState={{ selected }}
+									onPress={() => setReason(choice.value)}
+									className="flex-row items-center gap-3 py-2 active:opacity-70"
+								>
+									<View
+										className={
+											selected
+												? "h-5 w-5 items-center justify-center rounded-full border-2 border-primary"
+												: "h-5 w-5 rounded-full border-2 border-muted-foreground/50"
+										}
+									>
+										{selected ? <View className="h-2.5 w-2.5 rounded-full bg-primary" /> : null}
 									</View>
-								</TouchableRipple>
-							))}
-						</RadioButton.Group>
-						<TextInput
-							mode="outlined"
-							label="Anything to add? (optional)"
-							value={note}
-							onChangeText={setNote}
-							style={styles.note}
-						/>
-					</Dialog.Content>
-					<Dialog.Actions>
-						<Button onPress={() => setAskingReason(false)}>Cancel</Button>
-						<Button mode="contained" disabled={!reason || busy} onPress={() => void confirmReason()}>
-							Save
+									<Text className="shrink">{choice.label}</Text>
+								</Pressable>
+							);
+						})}
+					</View>
+
+					<Input
+						value={note}
+						onChangeText={setNote}
+						placeholder="Anything to add? (optional)"
+					/>
+
+					<DialogFooter>
+						<Button variant="ghost" onPress={() => setAskingReason(false)}>
+							<Text>Cancel</Text>
 						</Button>
-					</Dialog.Actions>
-				</Dialog>
-			</Portal>
+						<Button disabled={!reason || busy} onPress={() => void confirmReason()}>
+							<Text>Save</Text>
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</ScrollView>
 	);
 }
@@ -180,15 +189,3 @@ function timeOf(value: string): string {
 	if (Number.isNaN(parsed.getTime())) return value;
 	return parsed.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
-
-const styles = StyleSheet.create({
-	page: { padding: spacing.md },
-	muted: { opacity: 0.7, marginTop: spacing.xs },
-	faint: { opacity: 0.4, marginTop: spacing.xs },
-	blocked: { marginTop: spacing.md },
-	actions: { marginTop: spacing.lg },
-	action: { marginTop: spacing.sm },
-	choice: { flexDirection: "row", alignItems: "center" },
-	choiceLabel: { flexShrink: 1 },
-	note: { marginTop: spacing.md },
-});

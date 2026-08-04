@@ -205,6 +205,22 @@ function elevation(mode: Mode, scales: Record<string, string[]>) {
 		/* Modals over artwork. */
 		"shadow-6": [hairline, `0 12px 60px ${k(0.2)}`, `0 16px 64px ${k(0.4)}`, `0 16px 36px -20px ${k(0.9)}`].join(", "),
 
+		/*
+		 * Card surface and its elevation, as a pair.
+		 *
+		 * The hairline is INSET, not outset. That is the whole difference between
+		 * a card that floats above the artwork and one that reads as a window cut
+		 * into it — over a gradient canvas the second is what you want. The fill
+		 * is translucent and goes on a ::before inset by 1px so it lands inside
+		 * the stroke rather than under it, which keeps the edge crisp.
+		 */
+		"card-surface": dark ? `${scales.gray[1]}b3` : `${scales.gray[0]}d9`,
+		"shadow-card": [
+			`inset 0 0 0 1px color-mix(in oklab, ${dark ? "rgb(255 255 255 / 0.14)" : "rgb(0 0 0 / 0.08)"}, ${line} 25%)`,
+			`0 8px 40px ${k(0.15)}`,
+			`0 12px 32px -16px ${k(0.3)}`,
+		].join(", "),
+
 		/* Translucent panel fill — composites over the canvas rather than hiding it. */
 		"surface": dark ? "rgb(0 0 0 / 0.25)" : "rgb(255 255 255 / 0.8)",
 		"panel-translucent": dark ? "rgb(255 255 255 / 0.034)" : "rgb(255 255 255 / 0.7)",

@@ -8,5 +8,14 @@
 		".": "./src/index.ts",
 		"./global.css": "./global.css",
 		"./preset": "./tailwind-preset.js"
+	},
+	"scripts": {
+		"generate": "tsx scripts/emit-tokens.ts"
+	},
+	"devDependencies": {
+		"@radix-ui/colors": "^3.0.0",
+		"bezier-easing": "^2.1.0",
+		"colorjs.io": "^0.5.2",
+		"tsx": "^4.19.2"
 	}
 }

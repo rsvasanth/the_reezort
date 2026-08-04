@@ -1,108 +1,90 @@
 /*
- * THE REEZORT brand tokens for NativeWind.
+ * GENERATED — do not hand-edit. Run `yarn workspace @reezort/tokens generate`.
+ * Source of truth: packages/tokens/scripts/emit-tokens.ts
  *
- * ─────────────────────────────────────────────────────────────────────────────
- * TEMPORARY LOCATION. Rule 4 of `shared-web-mobile-architecture.md` puts these
- * in a root `packages/tokens` consumed by web and native alike. That package
- * cannot exist until the AD-016-001 workspace-root merge lands, and the merge is
- * gated on the web workstream (see `workstream-split.md`: sequence is root merge
- * → tokens → types). Until then these values exist in two places — here and in
- * `resort-app/src/index.css` — which is a knowingly time-boxed duplication, not
- * an accepted state. Collapse this file into root `packages/tokens` at merge
- * time and delete it.
- * ─────────────────────────────────────────────────────────────────────────────
+ * Accent is Radix's stock `amber`; grays and semantics are derived from the
+ * owner's seeds through Radix's own generateRadixColors, so every step carries
+ * Radix's contrast guarantees. Foregrounds are computed from WCAG luminance,
+ * never assumed white — amber-9 takes dark text.
  *
- * Values are copied verbatim from `ui-foundation-design-system.md`, which traces
- * every one of them to the `#/book` marketing site. They are NOT re-derived
- * here: brass #b08d57, ink #1c1917, the ivory/sand ramp #efeae1 → #c2b8a5, brick
- * #c0392b. The two documented exceptions carry over unchanged — semantic status
- * beyond `danger`, and the chart series.
- *
- * The variable NAMES are the contract. They match the web's shadcn variable set
- * exactly, so `bg-primary` means the same colour in a React Native screen as in
- * a DOM one. Do not rename one side without the other.
- *
- * `--sidebar-*` is deliberately absent: it is a web-shell concept with no native
- * counterpart.
+ * The variable NAMES are the cross-platform contract: `bg-primary` must mean the
+ * same colour in a React Native screen as in a DOM one. Do not rename one side
+ * without the other.
  */
+/* `--sidebar-*` is deliberately absent: a web-shell concept with no native counterpart. */
 
 @layer base {
 	:root {
-		--background: 39 30% 91%; /* #efeae1 ivory */
-		--foreground: 24 10% 10%; /* #1c1917 ink */
-		--card: 39 40% 97%;
-		--card-foreground: 24 10% 10%;
-		--popover: 39 40% 97%;
-		--popover-foreground: 24 10% 10%;
-		--primary: 36 36% 52%; /* #b08d57 brass */
-		--primary-foreground: 39 40% 97%;
-		--secondary: 38 23% 88%; /* #e7e2d9 */
-		--secondary-foreground: 24 10% 10%;
-		--muted: 38 23% 88%;
-		--muted-foreground: 24 5% 45%; /* #78716c */
-		--accent: 40 19% 81%; /* #d8d2c6 */
-		--accent-foreground: 24 10% 10%;
-		--destructive: 6 63% 46%; /* #c0392b brick */
-		--destructive-foreground: 39 40% 97%;
-		--border: 40 19% 81%;
-		--input: 40 19% 81%;
-		--ring: 36 36% 52%;
-		--brass: 36 36% 52%;
-		--brass-foreground: 39 40% 97%;
-
-		--success: 95 25% 34%;
-		--success-foreground: 39 40% 97%;
-		--warning: 32 55% 45%;
-		--warning-foreground: 39 40% 97%;
-		--info: 24 5% 45%;
-		--info-foreground: 39 40% 97%;
+		--background: 225 100% 98%;
+		--foreground: 230 31% 15%;
+		--card: 225 100% 99%;
+		--card-foreground: 230 31% 15%;
+		--popover: 225 100% 99%;
+		--popover-foreground: 230 31% 15%;
+		--primary: 42 100% 62%;
+		--primary-foreground: 24 40% 22%;
+		--secondary: 228 71% 96%;
+		--secondary-foreground: 230 31% 15%;
+		--muted: 228 71% 96%;
+		--muted-foreground: 229 17% 43%;
+		--accent: 226 60% 93%;
+		--accent-foreground: 230 31% 15%;
+		--destructive: 6 63% 46%;
+		--destructive-foreground: 0 0% 100%;
+		--border: 228 52% 89%;
+		--input: 229 48% 85%;
+		--ring: 38 75% 55%;
+		--brass: 42 100% 62%;
+		--brass-foreground: 24 40% 22%;
+		--success: 145 45% 34%;
+		--success-foreground: 0 0% 100%;
+		--warning: 26 85% 41%;
+		--warning-foreground: 20 60% 99%;
+		--info: 214 48% 47%;
+		--info-foreground: 0 0% 100%;
 		--danger: 6 63% 46%;
-		--danger-foreground: 39 40% 97%;
-
-		--chart-1: 36 36% 52%;
-		--chart-2: 28 15% 28%;
-		--chart-3: 39 19% 70%;
+		--danger-foreground: 0 0% 100%;
+		--chart-1: 42 100% 62%;
+		--chart-2: 214 48% 47%;
+		--chart-3: 145 45% 34%;
 		--chart-4: 6 63% 46%;
-		--chart-5: 37 7% 51%;
+		--chart-5: 228 22% 60%;
 	}
 
-	/* Dark theme from the site's deep inks: #0e0d0b, #141210, #2b2822. */
 	.dark:root {
-		--background: 40 12% 5%; /* #0e0d0b */
-		--foreground: 39 30% 91%;
-		--card: 36 11% 8%; /* #141210 */
-		--card-foreground: 39 30% 91%;
-		--popover: 36 11% 8%;
-		--popover-foreground: 39 30% 91%;
-		--primary: 36 36% 52%; /* brass holds across themes */
-		--primary-foreground: 40 12% 5%;
-		--secondary: 40 12% 15%; /* #2b2822 */
-		--secondary-foreground: 39 30% 91%;
-		--muted: 40 12% 15%;
-		--muted-foreground: 37 7% 51%; /* #8a8378 */
-		--accent: 40 12% 20%;
-		--accent-foreground: 39 30% 91%;
+		--background: 240 3% 7%;
+		--foreground: 240 3% 93%;
+		--card: 240 2% 10%;
+		--card-foreground: 240 3% 93%;
+		--popover: 240 2% 10%;
+		--popover-foreground: 240 3% 93%;
+		--primary: 42 100% 62%;
+		--primary-foreground: 36 29% 7%;
+		--secondary: 240 1% 14%;
+		--secondary-foreground: 240 3% 93%;
+		--muted: 240 1% 14%;
+		--muted-foreground: 240 1% 70%;
+		--accent: 240 1% 16%;
+		--accent-foreground: 240 3% 93%;
 		--destructive: 6 63% 46%;
-		--destructive-foreground: 39 30% 91%;
-		--border: 40 12% 15%;
-		--input: 40 12% 15%;
-		--ring: 36 36% 52%;
-		--brass: 36 36% 52%;
-		--brass-foreground: 40 12% 5%;
-
-		--success: 95 22% 48%;
-		--success-foreground: 40 12% 5%;
-		--warning: 32 55% 58%;
-		--warning-foreground: 40 12% 5%;
-		--info: 37 7% 62%;
-		--info-foreground: 40 12% 5%;
-		--danger: 6 63% 52%;
-		--danger-foreground: 39 30% 91%;
-
-		--chart-1: 36 36% 52%;
-		--chart-2: 39 19% 70%;
-		--chart-3: 37 7% 51%;
-		--chart-4: 6 63% 52%;
-		--chart-5: 38 23% 88%;
+		--destructive-foreground: 0 0% 100%;
+		--border: 240 2% 23%;
+		--input: 240 1% 28%;
+		--ring: 36 60% 35%;
+		--brass: 42 100% 62%;
+		--brass-foreground: 36 29% 7%;
+		--success: 141 42% 65%;
+		--success-foreground: 137 23% 6%;
+		--warning: 22 96% 70%;
+		--warning-foreground: 23 24% 7%;
+		--info: 215 92% 75%;
+		--info-foreground: 218 42% 7%;
+		--danger: 8 100% 75%;
+		--danger-foreground: 5 30% 7%;
+		--chart-1: 42 100% 62%;
+		--chart-2: 214 48% 47%;
+		--chart-3: 145 45% 34%;
+		--chart-4: 6 63% 46%;
+		--chart-5: 240 0% 43%;
 	}
 }

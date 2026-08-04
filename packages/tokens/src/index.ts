@@ -1,13 +1,22 @@
+/*
+ * GENERATED — do not hand-edit. Run `yarn workspace @reezort/tokens generate`.
+ * Source of truth: packages/tokens/scripts/emit-tokens.ts
+ *
+ * Accent is Radix's stock `amber`; grays and semantics are derived from the
+ * owner's seeds through Radix's own generateRadixColors, so every step carries
+ * Radix's contrast guarantees. Foregrounds are computed from WCAG luminance,
+ * never assumed white — amber-9 takes dark text.
+ *
+ * The variable NAMES are the cross-platform contract: `bg-primary` must mean the
+ * same colour in a React Native screen as in a DOM one. Do not rename one side
+ * without the other.
+ */
+
 /**
- * Token values as JavaScript, for the places NativeWind classes cannot reach.
- *
- * Navigation chrome (React Navigation's theme), the status bar, and the Android
- * system UI background are configured with plain colour strings, not className —
- * so they need the palette in TS. Raven hit the same wall and solved it the same
- * way. Everything a component renders should use classes instead; reach for this
+ * Token values as JavaScript, for the places NativeWind classes cannot reach:
+ * React Navigation's theme, the status bar, the Android system UI background.
+ * Everything a component renders should use classes instead — reach for this
  * only at the platform boundary.
- *
- * Same source and same temporary-location caveat as `global.css` — see its header.
  */
 
 /** 8pt rhythm, shared by both apps — spacing is not brand expression. */
@@ -47,37 +56,37 @@ interface Palette {
 
 export const COLORS: { readonly light: Palette; readonly dark: Palette } = {
 	light: {
-		background: "hsl(39 30% 91%)",
-		foreground: "hsl(24 10% 10%)",
-		card: "hsl(39 40% 97%)",
-		cardForeground: "hsl(24 10% 10%)",
-		primary: "hsl(36 36% 52%)",
-		primaryForeground: "hsl(39 40% 97%)",
-		muted: "hsl(38 23% 88%)",
-		mutedForeground: "hsl(24 5% 45%)",
-		accent: "hsl(40 19% 81%)",
-		border: "hsl(40 19% 81%)",
+		background: "hsl(225 100% 98%)",
+		foreground: "hsl(230 31% 15%)",
+		card: "hsl(225 100% 99%)",
+		cardForeground: "hsl(230 31% 15%)",
+		primary: "hsl(42 100% 62%)",
+		primaryForeground: "hsl(24 40% 22%)",
+		muted: "hsl(228 71% 96%)",
+		mutedForeground: "hsl(229 17% 43%)",
+		accent: "hsl(226 60% 93%)",
+		border: "hsl(228 52% 89%)",
 		destructive: "hsl(6 63% 46%)",
-		success: "hsl(95 25% 34%)",
-		warning: "hsl(32 55% 45%)",
-		info: "hsl(24 5% 45%)",
+		success: "hsl(145 45% 34%)",
+		warning: "hsl(26 85% 41%)",
+		info: "hsl(214 48% 47%)",
 		danger: "hsl(6 63% 46%)",
 	},
 	dark: {
-		background: "hsl(40 12% 5%)",
-		foreground: "hsl(39 30% 91%)",
-		card: "hsl(36 11% 8%)",
-		cardForeground: "hsl(39 30% 91%)",
-		primary: "hsl(36 36% 52%)",
-		primaryForeground: "hsl(40 12% 5%)",
-		muted: "hsl(40 12% 15%)",
-		mutedForeground: "hsl(37 7% 51%)",
-		accent: "hsl(40 12% 20%)",
-		border: "hsl(40 12% 15%)",
+		background: "hsl(240 3% 7%)",
+		foreground: "hsl(240 3% 93%)",
+		card: "hsl(240 2% 10%)",
+		cardForeground: "hsl(240 3% 93%)",
+		primary: "hsl(42 100% 62%)",
+		primaryForeground: "hsl(36 29% 7%)",
+		muted: "hsl(240 1% 14%)",
+		mutedForeground: "hsl(240 1% 70%)",
+		accent: "hsl(240 1% 16%)",
+		border: "hsl(240 2% 23%)",
 		destructive: "hsl(6 63% 46%)",
-		success: "hsl(95 22% 48%)",
-		warning: "hsl(32 55% 58%)",
-		info: "hsl(37 7% 62%)",
-		danger: "hsl(6 63% 52%)",
+		success: "hsl(141 42% 65%)",
+		warning: "hsl(22 96% 70%)",
+		info: "hsl(215 92% 75%)",
+		danger: "hsl(8 100% 75%)",
 	},
 };

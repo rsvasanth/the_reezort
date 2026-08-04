@@ -1,13 +1,8 @@
 /**
- * Token values as JavaScript, for the places NativeWind classes cannot reach.
- *
- * Navigation chrome (React Navigation's theme), the status bar, and the Android
- * system UI background are configured with plain colour strings, not className —
- * so they need the palette in TS. Raven hit the same wall and solved it the same
- * way. Everything a component renders should use classes instead; reach for this
+ * Token values as JavaScript, for the places NativeWind classes cannot reach:
+ * React Navigation's theme, the status bar, the Android system UI background.
+ * Everything a component renders should use classes instead — reach for this
  * only at the platform boundary.
- *
- * Same source and same temporary-location caveat as `global.css` — see its header.
  */
 /** 8pt rhythm, shared by both apps — spacing is not brand expression. */
 export interface Spacing {

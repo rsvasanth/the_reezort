@@ -11,28 +11,17 @@
 }
 
 /*
- * THE REEZORT tokens. Generated — do not hand-edit. See scripts/palette/.
+ * GENERATED — do not hand-edit. Run `yarn workspace @reezort/tokens generate`.
+ * Source of truth: packages/tokens/scripts/emit-tokens.ts
  *
- * Accent is Radix's stock `amber` (owner decision, 2026-08-03), replacing the
- * custom #A66407 bronze that briefly preceded it and, before that, the #b08d57
- * brass extracted from `#/book`. The `#/book` marketing site still renders its
- * own palette explicitly and is deliberately untouched.
+ * Accent is Radix's stock `amber`; grays and semantics are derived from the
+ * owner's seeds through Radix's own generateRadixColors, so every step carries
+ * Radix's contrast guarantees. Foregrounds are computed from WCAG luminance,
+ * never assumed white — amber-9 takes dark text.
  *
- * Grays are generated from the owner's seeds (#0A0D1E light / #E5E5E6 dark) via
- * Radix's own `generateRadixColors`, vendored in scripts/palette/, so the twelve
- * steps carry Radix's contrast guarantees.
- *
- * `--primary-foreground` is COMPUTED, not assumed. Stock amber-9 (#ffc53d) is a
- * light colour: white text on it is 1.58:1, far below AA. The generator picks
- * the readable end of the scale per step, so an accent change can never
- * silently make every primary button unreadable.
- *
- * `warning` sits at hue 26 (orange) rather than its natural amber, because
- * amber is now the accent — roughly 87 utilities resolve to warning, and at the
- * accent's hue those screens would flatten into one colour.
- *
- * Values are HSL triples, not hex, because Tailwind needs `hsl(var(--x))` to
- * inject alpha for the `/25`-style opacity modifiers used across the app.
+ * The variable NAMES are the cross-platform contract: `bg-primary` must mean the
+ * same colour in a React Native screen as in a DOM one. Do not rename one side
+ * without the other.
  */
 @layer base {
 	:root {
@@ -78,7 +67,6 @@
 		--sidebar-accent-foreground: 230 31% 15%;
 		--sidebar-border: 228 52% 89%;
 		--sidebar-ring: 38 75% 55%;
-
 
 		/* Distinct steps: large surfaces, controls and pills must not collapse to one value. */
 		--radius-sm: 0.25rem;

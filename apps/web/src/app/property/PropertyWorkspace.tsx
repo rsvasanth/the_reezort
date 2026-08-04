@@ -178,7 +178,7 @@ export function ScopeWorkspace({ kind, code }: { kind: Scope; code: string | nul
 
 	return (
 		<AppShell>
-			<main className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 lg:px-6" data-testid={`${kind}-workspace`}>
+			<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6" data-testid={`${kind}-workspace`}>
 				<header className="flex flex-wrap items-start justify-between gap-4">
 					<div>
 						<div className="mb-2 flex items-center gap-2">

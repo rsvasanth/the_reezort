@@ -44,7 +44,7 @@ export default function BillingOverviewScreen() {
 	const cur = data?.currency ?? "INR";
 
 	return (
-		<main className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 lg:px-6" data-testid="billing-screen">
+		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6" data-testid="billing-screen">
 			<header>
 				<Badge variant="outline" className="mb-2">Billing</Badge>
 				<h1 className="text-3xl font-light text-foreground md:text-4xl">Billing</h1>

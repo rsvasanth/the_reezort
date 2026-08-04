@@ -75,7 +75,7 @@ export default function AuditTrailScreen() {
 	}, [events]);
 
 	return (
-		<main className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 lg:px-6" data-testid="audit-trail">
+		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6" data-testid="audit-trail">
 			<header>
 				<Badge variant="outline" className="mb-2 gap-1">
 					<FileSearch className="size-3" /> Compliance

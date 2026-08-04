@@ -108,7 +108,7 @@ export default function MyDayScreen() {
 	const firstName = (day?.employee_name?.split(" ")[0] ?? day?.user ?? "").trim();
 
 	return (
-		<main className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 lg:px-6" data-testid="my-day-screen">
+		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6" data-testid="my-day-screen">
 			<header>
 				<Badge variant="outline" className="mb-2">My day</Badge>
 				<h1 className="text-3xl font-light text-foreground md:text-4xl">

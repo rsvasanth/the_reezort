@@ -187,7 +187,7 @@ export default function MaintenanceInbox() {
 		(counts["Verification Required"] ?? 0);
 
 	return (
-		<main className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 lg:px-6">
+		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6">
 			<div className="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<div className="mb-2 flex items-center gap-2">

@@ -269,7 +269,7 @@ export default function PropertySetupScreen() {
 	const current = STEPS[step];
 
 	return (
-		<main className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 lg:px-6" data-testid="setup-screen">
+		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6" data-testid="setup-screen">
 			<header className="max-w-3xl">
 				<div className="mb-3 flex flex-wrap gap-2">
 					<Badge variant="outline">Property setup</Badge>

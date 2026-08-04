@@ -89,13 +89,13 @@
 		--surface: rgb(255 255 255 / 0.8);
 		--panel-translucent: rgb(255 255 255 / 0.7);
 		--overlay: rgb(0 0 0 / 0.4);
-		--art-glow: #8da2fb;
-		--art-violet: #ebe4ff;
-		--art-purple: #f2e2fc;
-		--art-deep: #e6f4fe;
-		--art-indigo: #edf2fe;
-		--art-pink: #fbdcef;
-		--art-opacity: 0.42;
+		--art-glow: #7f9cf5;
+		--art-violet: #c2b5f5;
+		--art-purple: #d1afec;
+		--art-deep: #acd8fc;
+		--art-indigo: #c1d0ff;
+		--art-pink: #efbfdd;
+		--art-opacity: 0.55;
 
 		/*
 		 * Radix's `medium` radius setting. Steps must stay distinct — collapsing
@@ -182,13 +182,13 @@
 		--surface: rgb(255 255 255 / 0.8);
 		--panel-translucent: rgb(255 255 255 / 0.7);
 		--overlay: rgb(0 0 0 / 0.4);
-		--art-glow: #8da2fb;
-		--art-violet: #ebe4ff;
-		--art-purple: #f2e2fc;
-		--art-deep: #e6f4fe;
-		--art-indigo: #edf2fe;
-		--art-pink: #fbdcef;
-		--art-opacity: 0.42;
+		--art-glow: #7f9cf5;
+		--art-violet: #c2b5f5;
+		--art-purple: #d1afec;
+		--art-deep: #acd8fc;
+		--art-indigo: #c1d0ff;
+		--art-pink: #efbfdd;
+		--art-opacity: 0.55;
 	}
 
 	.dark {

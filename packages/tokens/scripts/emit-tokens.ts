@@ -234,14 +234,20 @@ function artwork(mode: Mode) {
 	 * else — so the roles matter more than the individual colours.
 	 */
 	return {
-		"art-glow": d ? "#5b81fe" : "#8da2fb", // the light source
-		"art-violet": d ? C.violetDark.violet6 : C.violet.violet4,
-		"art-purple": d ? C.purpleDark.purple9 : C.purple.purple4,
-		"art-deep": d ? C.blueDark.blue5 : C.blue.blue3,
-		"art-indigo": d ? C.indigoDark.indigo5 : C.indigo.indigo3,
-		"art-pink": d ? C.pinkDark.pink9 : C.pink.pink4,
-		/* How hard the whole composition is knocked back behind content. */
-		"art-opacity": d ? "0.5" : "0.42",
+		"art-glow": d ? "#5b81fe" : "#7f9cf5", // the light source
+		"art-violet": d ? C.violetDark.violet6 : C.violet.violet7,
+		"art-purple": d ? C.purpleDark.purple9 : C.purple.purple7,
+		"art-deep": d ? C.blueDark.blue5 : C.blue.blue6,
+		"art-indigo": d ? C.indigoDark.indigo5 : C.indigo.indigo6,
+		"art-pink": d ? C.pinkDark.pink9 : C.pink.pink6,
+		/*
+		 * How hard the whole composition is knocked back behind content. Light
+		 * mode takes steps 6-7 rather than 3-4: the pale steps were invisible
+		 * against a near-white page, so the artwork was costing a render for
+		 * nothing. Higher steps plus a slightly stronger knockback keeps it
+		 * present without competing with text.
+		 */
+		"art-opacity": d ? "0.5" : "0.55",
 	};
 }
 

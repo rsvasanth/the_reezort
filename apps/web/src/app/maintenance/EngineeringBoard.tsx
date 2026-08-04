@@ -206,7 +206,7 @@ export default function EngineeringBoard() {
 	const pendingCount = downtimes.filter((d) => d.downtime_status === "Pending Release").length;
 
 	return (
-		<main className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 lg:px-6">
+		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6">
 			{/* Header */}
 			<div className="flex flex-wrap items-end justify-between gap-4">
 				<div>

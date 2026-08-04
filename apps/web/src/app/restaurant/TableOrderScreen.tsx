@@ -133,7 +133,7 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 
 	if (state === "loading") {
 		return (
-			<main className="flex flex-1 items-center justify-center bg-background">
+			<main className="flex flex-1 items-center justify-center ">
 				<Loader2 className="size-6 animate-spin text-muted-foreground" />
 			</main>
 		);
@@ -141,7 +141,7 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 
 	if (state === "error" || !order) {
 		return (
-			<main className="flex flex-1 flex-col items-center justify-center gap-3 bg-background">
+			<main className="flex flex-1 flex-col items-center justify-center gap-3 ">
 				<p className="text-sm text-muted-foreground">Order not found.</p>
 				<Button variant="outline" asChild><a href="#/restaurant"><ArrowLeft className="mr-1.5 size-4" /> Back to floor</a></Button>
 			</main>
@@ -153,7 +153,7 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 	const canSettle = order.state === "Served" || order.state === "Bill Pending";
 
 	return (
-		<main className="flex flex-1 flex-col gap-4 bg-background px-4 py-6 lg:px-6">
+		<main className="flex flex-1 flex-col gap-4  px-4 py-6 lg:px-6">
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div className="flex items-center gap-3">
 					<Button variant="ghost" size="icon" aria-label="Back to floor" asChild>

@@ -51,6 +51,8 @@
 		--chart-5: 228 22% 60%;
 		--brand-wash: 36 100% 87%;
 		--brand-wash-soft: 39 100% 91%;
+		--surface: rgb(255 255 255 / 0.8);
+		--overlay: rgb(0 0 0 / 0.4);
 	}
 
 	.dark:root {
@@ -90,5 +92,7 @@
 		--chart-5: 240 0% 43%;
 		--brand-wash: 27 100% 14%;
 		--brand-wash-soft: 31 86% 11%;
+		--surface: rgb(0 0 0 / 0.25);
+		--overlay: rgb(0 0 0 / 0.6);
 	}
 }

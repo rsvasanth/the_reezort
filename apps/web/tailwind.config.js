@@ -80,6 +80,41 @@ export default {
 					ring: "hsl(var(--sidebar-ring))",
 				},
 			},
+			/*
+			 * Type scale: each size ships with its line-height and a progressively
+			 * tighter tracking. Larger type gets more negative letter-spacing, which
+			 * is what makes a headline read as set rather than defaulted.
+			 */
+			fontSize: {
+				xs: ["0.75rem", { lineHeight: "1rem", letterSpacing: "0.005em" }],
+				sm: ["0.875rem", { lineHeight: "1.25rem", letterSpacing: "0em" }],
+				base: ["1rem", { lineHeight: "1.5rem", letterSpacing: "0em" }],
+				lg: ["1.125rem", { lineHeight: "1.625rem", letterSpacing: "-0.005em" }],
+				xl: ["1.25rem", { lineHeight: "1.75rem", letterSpacing: "-0.01em" }],
+				"2xl": ["1.5rem", { lineHeight: "1.875rem", letterSpacing: "-0.0125em" }],
+				"3xl": ["1.75rem", { lineHeight: "2.25rem", letterSpacing: "-0.015em" }],
+				"4xl": ["2.1875rem", { lineHeight: "2.5rem", letterSpacing: "-0.02em" }],
+				"5xl": ["3.75rem", { lineHeight: "3.75rem", letterSpacing: "-0.05em" }],
+			},
+			/*
+			 * Elevation. Each token already contains its own hairline border, so
+			 * never pair a shadow with a separate border — surfaces end up
+			 * double-outlined.
+			 */
+			boxShadow: {
+				1: "var(--shadow-1)",
+				2: "var(--shadow-2)",
+				3: "var(--shadow-3)",
+				4: "var(--shadow-4)",
+				5: "var(--shadow-5)",
+				6: "var(--shadow-6)",
+			},
+			transitionDuration: {
+				fast: "var(--duration-fast)",
+				slide: "var(--duration-slide)",
+				curtain: "var(--duration-curtain)",
+			},
+			transitionTimingFunction: { out: "var(--ease-out)" },
 			borderRadius: {
 				"3xl": "var(--radius-3xl)",
 				"2xl": "var(--radius-2xl)",
@@ -87,6 +122,7 @@ export default {
 				lg: "var(--radius-lg)",
 				md: "var(--radius-md)",
 				sm: "var(--radius-sm)",
+				full: "var(--radius-thumb)",
 			},
 			fontFamily: {
 				sans: [

@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
-import { Divider, Text, TouchableRipple } from "react-native-paper";
+import { Pressable, RefreshControl, ScrollView, View } from "react-native";
 
-import { spacing } from "@reezort/ui";
+import { Separator, Text } from "@reezort/ui";
 
 import type { Section } from "./listSections";
 
@@ -10,8 +9,8 @@ import type { Section } from "./listSections";
  * The list scaffolding both tabs share: grouped rows, pull-to-refresh, and one
  * sentence when there is nothing to show.
  *
- * Composition of Material 3 primitives, not a new component in the design-system
- * sense — AD-016-008 forbids authoring visual components, not arranging them.
+ * An arrangement of shared primitives, not a new design-system component — it
+ * composes `@reezort/ui` rather than authoring anything visual of its own.
  */
 interface Props<T> {
 	readonly sections: readonly Section<T>[];
@@ -41,32 +40,32 @@ export function Sections<T>({
 
 	return (
 		<ScrollView
-			contentContainerStyle={styles.page}
+			className="flex-1 bg-background"
+			contentContainerClassName="p-4 pb-8"
 			refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
 		>
 			{sections.length === 0 ? (
-				<View style={styles.empty}>
-					<Text variant="bodyMedium" style={styles.muted}>
-						{emptyCopy}
-					</Text>
+				<View className="items-center pt-16">
+					<Text className="text-center text-muted-foreground">{emptyCopy}</Text>
 				</View>
 			) : null}
 
 			{sections.map((section) => (
-				<View key={section.title} style={styles.section}>
-					<TouchableRipple
+				<View key={section.title} className="mb-6">
+					<Pressable
+						className="active:opacity-70"
 						onPress={() =>
 							setCollapsed((prev) => ({ ...prev, [section.title]: !isCollapsed(section) }))
 						}
 					>
-						<View style={styles.heading}>
-							<Text variant="titleSmall">{section.title}</Text>
-							<Text variant="bodySmall" style={styles.muted}>
+						<View className="flex-row items-center justify-between py-2">
+							<Text className="text-sm font-medium">{section.title}</Text>
+							<Text className="text-sm text-muted-foreground">
 								{isCollapsed(section) ? `${section.items.length} ▾` : section.items.length}
 							</Text>
 						</View>
-					</TouchableRipple>
-					<Divider />
+					</Pressable>
+					<Separator />
 					{isCollapsed(section)
 						? null
 						: section.items.map((item) => <View key={keyOf(item)}>{renderItem(item)}</View>)}
@@ -75,16 +74,3 @@ export function Sections<T>({
 		</ScrollView>
 	);
 }
-
-const styles = StyleSheet.create({
-	page: { padding: spacing.md, paddingBottom: spacing.xl },
-	section: { marginBottom: spacing.lg },
-	heading: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		paddingVertical: spacing.sm,
-	},
-	empty: { paddingTop: spacing.xl * 2, alignItems: "center" },
-	muted: { opacity: 0.6 },
-});

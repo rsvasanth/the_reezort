@@ -156,21 +156,83 @@ function build(mode: Mode) {
 		"sidebar-ring": s("accent", 8),
 	};
 
-	return { core, sidebar };
+	return { core, sidebar, scales };
+}
+
+/**
+ * Elevation, surfaces and motion — the system mechanics behind radix-ui.com,
+ * rebuilt on our own scales rather than copied with its colours.
+ *
+ * The distinctive move is that every elevation shadow carries a hairline in its
+ * FIRST layer, mixed from the neutral scale's own step 6. Elevation and
+ * definition become inseparable: use a shadow token whole, never a border plus a
+ * shadow, or surfaces end up double-outlined.
+ *
+ * Surfaces are translucent rather than solid so panels composite over whatever
+ * sits behind them — which is what gives a flat canvas its depth, and what makes
+ * stacked tints read as layers instead of mud.
+ */
+function elevation(mode: Mode, scales: Record<string, string[]>) {
+	const dark = mode === "dark";
+	const line = scales.gray[5]; // step 6 — the subtle border step
+	const hairline = `0 0 0 1px color-mix(in oklab, ${dark ? "rgb(255 255 255 / 0.172)" : "rgb(0 0 0 / 0.086)"}, ${line} 25%)`;
+	const k = (a: number) => `rgb(0 0 0 / ${+(dark ? a : a * 0.55).toFixed(3)})`;
+
+	return {
+		/* Inset, for pressed and inlaid surfaces. */
+		"shadow-1": [
+			`inset 0 -1px 1px 0 ${dark ? "rgb(255 255 255 / 0.071)" : "rgb(0 0 0 / 0.04)"}`,
+			`inset 0 0 0 1px ${dark ? "rgb(255 255 255 / 0.071)" : "rgb(0 0 0 / 0.03)"}`,
+			`inset 0 3px 4px 0 ${k(0.3)}`,
+		].join(", "),
+		/* Resting cards and inputs. */
+		"shadow-2": [hairline, `0 1px 1px 0 ${k(0.4)}`, `0 2px 1px -1px ${k(0.4)}`, `0 1px 3px 0 ${k(0.3)}`].join(", "),
+		/* Hover lift, popovers. */
+		"shadow-3": [hairline, `0 2px 3px -2px ${k(0.15)}`, `0 3px 8px -2px ${k(0.4)}`, `0 4px 12px -4px ${k(0.5)}`].join(", "),
+		/* Showcase cards over artwork. */
+		"shadow-4": [hairline, `0 8px 40px ${k(0.15)}`, `0 12px 32px -16px ${k(0.3)}`].join(", "),
+		/* Dialogs. */
+		"shadow-5": [hairline, `0 12px 60px ${k(0.3)}`, `0 12px 32px -16px ${k(0.5)}`].join(", "),
+		/* Modals over artwork. */
+		"shadow-6": [hairline, `0 12px 60px ${k(0.2)}`, `0 16px 64px ${k(0.4)}`, `0 16px 36px -20px ${k(0.9)}`].join(", "),
+
+		/* Translucent panel fill — composites over the canvas rather than hiding it. */
+		"surface": dark ? "rgb(0 0 0 / 0.25)" : "rgb(255 255 255 / 0.8)",
+		"panel-translucent": dark ? "rgb(255 255 255 / 0.034)" : "rgb(255 255 255 / 0.7)",
+		"overlay": dark ? "rgb(0 0 0 / 0.6)" : "rgb(0 0 0 / 0.4)",
+	};
 }
 
 const light = build("light");
 const dark = build("dark");
+const lightElev = elevation("light", light.scales);
+const darkElev = elevation("dark", dark.scales);
+
+/**
+ * Motion. Durations are short and consistent; the reduced-motion fallback swaps
+ * transform-based movement for opacity rather than removing the transition, so
+ * state changes stay legible without animating position.
+ */
+const MOTION = `
+\t\t--duration-fast: 0.2s;
+\t\t--duration-slide: 0.25s;
+\t\t--duration-curtain: 0.6s;
+\t\t--ease-out: cubic-bezier(0, 0, 0.2, 1);`;
 
 const RADII = `
-\t\t/* Distinct steps: large surfaces, controls and pills must not collapse to one value. */
-\t\t--radius-sm: 0.25rem;
-\t\t--radius-md: 0.5rem;
-\t\t--radius-lg: 0.625rem;
-\t\t--radius-xl: 0.875rem;
-\t\t--radius-2xl: 1rem;
-\t\t--radius-3xl: 1.5rem;
-\t\t--radius: 0.625rem;`;
+\t\t/*
+\t\t * Radix's \`medium\` radius setting. Steps must stay distinct — collapsing
+\t\t * them onto one value flattens the difference between a pill, a control and
+\t\t * a panel. Buttons take lg (8px), cards take xl (12px).
+\t\t */
+\t\t--radius-sm: 0.1875rem;
+\t\t--radius-md: 0.25rem;
+\t\t--radius-lg: 0.375rem;
+\t\t--radius-xl: 0.5rem;
+\t\t--radius-2xl: 0.75rem;
+\t\t--radius-3xl: 1rem;
+\t\t--radius: 0.5rem;
+\t\t--radius-thumb: 9999px;`;
 
 const decls = (m: Record<string, string>) =>
 	Object.entries(m).map(([k, v]) => `\t\t--${k}: ${v};`).join("\n");
@@ -217,7 +279,9 @@ ${GENERATED}
 @layer base {
 \t:root {
 ${decls({ ...light.core, ...light.sidebar })}
+${decls(lightElev)}
 ${RADII}
+${MOTION}
 \t}
 
 \t* {
@@ -233,10 +297,12 @@ ${RADII}
 
 \t.light {
 ${decls({ ...light.core, ...light.sidebar })}
+${decls(lightElev)}
 \t}
 
 \t.dark {
 ${decls({ ...dark.core, ...dark.sidebar })}
+${decls(darkElev)}
 \t}
 }
 `;
@@ -248,10 +314,14 @@ const nativeCss = `${GENERATED}
 @layer base {
 \t:root {
 ${decls(light.core)}
+\t\t--surface: ${lightElev.surface};
+\t\t--overlay: ${lightElev.overlay};
 \t}
 
 \t.dark:root {
 ${decls(dark.core)}
+\t\t--surface: ${darkElev.surface};
+\t\t--overlay: ${darkElev.overlay};
 \t}
 }
 `;

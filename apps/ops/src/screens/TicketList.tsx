@@ -1,7 +1,6 @@
-import { StyleSheet, View } from "react-native";
-import { Card, Chip, Text } from "react-native-paper";
+import { Pressable, View } from "react-native";
 
-import { spacing } from "@reezort/ui";
+import { Badge, Card, CardContent, Text } from "@reezort/ui";
 
 import type { MaintenanceTicket } from "../session";
 import { Sections } from "./Sections";
@@ -13,6 +12,9 @@ import { shouldShowPriority } from "./taskActions";
  *
  * `maintenance_tickets` was already served by `sync_pull`; until now the client
  * simply never requested the collection, so the role had a backend and no app.
+ *
+ * The row is a Pressable wrapping a Card rather than a Card with an `onPress`,
+ * so `Card` stays the plain container it is on web. Tapping is a screen concern.
  */
 interface Props {
 	readonly tickets: readonly MaintenanceTicket[];
@@ -39,34 +41,25 @@ export function TicketList({
 			refreshing={refreshing}
 			onRefresh={onRefresh}
 			renderItem={(ticket) => (
-				<Card style={styles.card} mode="outlined" onPress={() => onOpen(ticket)}>
-					<Card.Content>
-						<Text variant="titleMedium">{rowTitle(ticket.room, "Ticket")}</Text>
-						<View style={styles.meta}>
-							<Text variant="bodySmall" style={styles.muted}>
-								{ticket.state}
-							</Text>
-							{queuedFor(ticket.name) ? (
-								<Text variant="bodySmall" style={styles.muted}>
-									· queued
-								</Text>
+				<Pressable className="mt-2 active:opacity-70" onPress={() => onOpen(ticket)}>
+					<Card>
+						<CardContent className="gap-1 p-4">
+							<Text className="font-medium">{rowTitle(ticket.room, "Ticket")}</Text>
+							<View className="flex-row gap-1">
+								<Text className="text-sm text-muted-foreground">{ticket.state}</Text>
+								{queuedFor(ticket.name) ? (
+									<Text className="text-sm text-muted-foreground">· queued</Text>
+								) : null}
+							</View>
+							{shouldShowPriority(ticket.priority) ? (
+								<Badge variant="secondary" className="mt-1">
+									<Text>{ticket.priority}</Text>
+								</Badge>
 							) : null}
-						</View>
-						{shouldShowPriority(ticket.priority) ? (
-							<Chip compact style={styles.chip}>
-								{ticket.priority}
-							</Chip>
-						) : null}
-					</Card.Content>
-				</Card>
+						</CardContent>
+					</Card>
+				</Pressable>
 			)}
 		/>
 	);
 }
-
-const styles = StyleSheet.create({
-	card: { marginTop: spacing.sm },
-	meta: { flexDirection: "row", gap: spacing.xs, marginTop: 2 },
-	chip: { alignSelf: "flex-start", marginTop: spacing.sm },
-	muted: { opacity: 0.7 },
-});

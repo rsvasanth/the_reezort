@@ -1,7 +1,7 @@
-import { ScrollView, StyleSheet, View } from "react-native";
-import { Button, Divider, List, Text } from "react-native-paper";
+import { ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import { ChevronRight } from "lucide-react-native";
 
-import { spacing } from "@reezort/ui";
+import { Button, Separator, Text } from "@reezort/ui";
 
 import { lastSyncedLabel, syncRows, type SyncState } from "./syncStatus";
 
@@ -10,6 +10,10 @@ import { lastSyncedLabel, syncRows, type SyncState } from "./syncStatus";
  *
  * The only screen that shows machinery, because it is the only screen for when
  * something is wrong. Everywhere else, the outbox is invisible.
+ *
+ * Paper's List.Item is replaced by a plain Pressable row; the chevron is drawn
+ * only for rows that actually navigate, which is what `row.navigates` has always
+ * meant.
  */
 interface Props {
 	readonly state: SyncState;
@@ -24,57 +28,51 @@ export function SyncScreen({ state, now, user, onSyncNow, onReview, onSignOut }:
 	const rows = syncRows(state.summary);
 
 	return (
-		<ScrollView contentContainerStyle={styles.page}>
+		<ScrollView className="flex-1 bg-background" contentContainerClassName="p-4">
 			{/* The headline, because it is the question being asked. */}
-			<Text variant="titleMedium">{lastSyncedLabel(state.lastSyncedAt, now)}</Text>
+			<Text className="text-base font-medium">{lastSyncedLabel(state.lastSyncedAt, now)}</Text>
 
-			<Button
-				mode="contained"
-				style={styles.sync}
-				loading={state.syncing}
-				disabled={state.syncing}
-				onPress={onSyncNow}
-			>
-				Sync now
+			<Button className="mb-6 mt-4" disabled={state.syncing} onPress={onSyncNow}>
+				{state.syncing ? <ActivityIndicator /> : <Text>Sync now</Text>}
 			</Button>
 
 			{rows.length === 0 ? (
-				<Text variant="bodySmall" style={styles.muted}>
+				<Text className="text-sm text-muted-foreground">
 					Everything on this phone has reached the server.
 				</Text>
 			) : null}
 
-			{rows.map((row) => (
-				<List.Item
-					key={row.key}
-					title={row.label}
-					titleStyle={row.emphasis ? undefined : styles.muted}
-					right={row.navigates ? (props) => <List.Icon {...props} icon="chevron-right" /> : undefined}
-					onPress={row.navigates ? onReview : undefined}
-				/>
-			))}
+			{rows.map((row) =>
+				row.navigates ? (
+					<Pressable
+						key={row.key}
+						onPress={onReview}
+						className="flex-row items-center justify-between py-3 active:opacity-70"
+					>
+						<Text className={row.emphasis ? undefined : "text-muted-foreground"}>
+							{row.label}
+						</Text>
+						<ChevronRight size={20} className="text-muted-foreground" />
+					</Pressable>
+				) : (
+					<View key={row.key} className="py-3">
+						<Text className={row.emphasis ? undefined : "text-muted-foreground"}>
+							{row.label}
+						</Text>
+					</View>
+				),
+			)}
 
-			<Divider style={styles.divider} />
+			<Separator className="mt-6" />
 
-			<View style={styles.account}>
-				<Text variant="bodySmall" style={styles.muted}>
-					Signed in as {user ?? "—"}
-				</Text>
+			<View className="mt-4 gap-1">
+				<Text className="text-sm text-muted-foreground">Signed in as {user ?? "—"}</Text>
 				{/* Rare and destructive, so it lives here rather than one thumb-slip
 				    from the round. */}
-				<Button onPress={onSignOut} style={styles.signOut}>
-					Sign out
+				<Button variant="ghost" className="self-start px-0" onPress={onSignOut}>
+					<Text>Sign out</Text>
 				</Button>
 			</View>
 		</ScrollView>
 	);
 }
-
-const styles = StyleSheet.create({
-	page: { padding: spacing.md },
-	sync: { marginTop: spacing.md, marginBottom: spacing.lg },
-	muted: { opacity: 0.7 },
-	divider: { marginTop: spacing.lg },
-	account: { marginTop: spacing.md },
-	signOut: { alignSelf: "flex-start", marginTop: spacing.xs },
-});

@@ -29,6 +29,7 @@ export { Button, buttonVariants, buttonTextVariants, type ButtonProps } from "./
 export { Badge, badgeVariants, badgeTextVariants, type BadgeProps } from "./badge";
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from "./card";
 export { Input } from "./input";
+export { Separator, type SeparatorProps } from "./separator";
 export { Checkbox } from "./checkbox";
 export { Switch, type SwitchProps } from "./switch";
 

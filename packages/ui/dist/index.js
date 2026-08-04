@@ -28,6 +28,7 @@ export { Button, buttonVariants, buttonTextVariants } from "./button";
 export { Badge, badgeVariants, badgeTextVariants } from "./badge";
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from "./card";
 export { Input } from "./input";
+export { Separator } from "./separator";
 export { Checkbox } from "./checkbox";
 export { Switch } from "./switch";
 export { spacing, MIN_TOUCH_TARGET, radius, COLORS } from "@reezort/tokens";

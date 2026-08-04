@@ -93,6 +93,8 @@
 		--art-violet: #ebe4ff;
 		--art-purple: #f2e2fc;
 		--art-deep: #e6f4fe;
+		--art-indigo: #edf2fe;
+		--art-pink: #fbdcef;
 		--art-opacity: 0.42;
 
 		/*
@@ -184,6 +186,8 @@
 		--art-violet: #ebe4ff;
 		--art-purple: #f2e2fc;
 		--art-deep: #e6f4fe;
+		--art-indigo: #edf2fe;
+		--art-pink: #fbdcef;
 		--art-opacity: 0.42;
 	}
 
@@ -245,6 +249,8 @@
 		--art-violet: #473876;
 		--art-purple: #8e4ec6;
 		--art-deep: #004074;
+		--art-indigo: #253974;
+		--art-pink: #d6409f;
 		--art-opacity: 0.5;
 	}
 }

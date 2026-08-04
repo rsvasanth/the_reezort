@@ -227,11 +227,19 @@ function elevation(mode: Mode, scales: Record<string, string[]>) {
 function artwork(mode: Mode) {
 	const d = mode === "dark";
 	const C = RadixColors as Record<string, Record<string, string>>;
+	/*
+	 * These map onto the seven pigment roles the artwork's gradients expect. The
+	 * bands reuse the same stop offsets with different roles, which is what makes
+	 * the layers agree on where the accent falls while disagreeing on everything
+	 * else — so the roles matter more than the individual colours.
+	 */
 	return {
-		"art-glow": d ? "#5b81fe" : "#8da2fb",
+		"art-glow": d ? "#5b81fe" : "#8da2fb", // the light source
 		"art-violet": d ? C.violetDark.violet6 : C.violet.violet4,
 		"art-purple": d ? C.purpleDark.purple9 : C.purple.purple4,
 		"art-deep": d ? C.blueDark.blue5 : C.blue.blue3,
+		"art-indigo": d ? C.indigoDark.indigo5 : C.indigo.indigo3,
+		"art-pink": d ? C.pinkDark.pink9 : C.pink.pink4,
 		/* How hard the whole composition is knocked back behind content. */
 		"art-opacity": d ? "0.5" : "0.42",
 	};

@@ -42,7 +42,7 @@ function Toast({ item }: { item: ToastItem }) {
 			role={item.kind === "error" ? "alert" : "status"}
 			className={cn(
 				"pointer-events-auto flex w-80 items-start gap-3 rounded-lg border border-border",
-				"bg-popover p-3 text-popover-foreground shadow-lg",
+				"bg-popover p-3 text-popover-foreground",
 				"animate-in fade-in-0 slide-in-from-top-2",
 			)}
 		>

@@ -29,6 +29,7 @@ export { Badge, badgeVariants, badgeTextVariants } from "./badge";
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from "./card";
 export { Input } from "./input";
 export { Separator } from "./separator";
+export { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, } from "./dialog";
 export { Checkbox } from "./checkbox";
 export { Switch } from "./switch";
 export { spacing, MIN_TOUCH_TARGET, radius, COLORS } from "@reezort/tokens";

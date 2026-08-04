@@ -20,6 +20,7 @@ import {
 	SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
 import { useHashRoute } from "@/hooks/use-hash-route"
+import { cn } from "@/lib/utils"
 
 export type NavItem = {
 	title: string
@@ -64,7 +65,15 @@ function LeafButton({ item, active }: { item: NavItem; active: boolean }) {
 		)
 	}
 	return (
-		<SidebarMenuButton asChild isActive={active} tooltip={item.title}>
+		<SidebarMenuButton
+			asChild
+			isActive={active}
+			tooltip={item.title}
+			className={cn(
+				"hover:bg-sidebar-primary/10",
+				"data-[active=true]:bg-sidebar-primary/15 data-[active=true]:text-sidebar-primary",
+			)}
+		>
 			<a href={item.url}>
 				{item.icon && <item.icon />}
 				<span>{item.title}</span>
@@ -110,6 +119,10 @@ function CategoryItem({
 				<CollapsibleTrigger asChild>
 					<SidebarMenuButton
 						tooltip={category.title}
+						className={cn(
+							"bg-sidebar-accent/40 hover:bg-sidebar-primary/10",
+							"data-[state=open]:bg-sidebar-accent/70",
+						)}
 						// Collapsed-with-active-child needs to read as active, since the
 						// child rows it would normally show are hidden.
 						isActive={!open && containsActive}
@@ -131,7 +144,14 @@ function CategoryItem({
 										</Badge>
 									</SidebarMenuSubButton>
 								) : (
-									<SidebarMenuSubButton asChild isActive={isItemActive(item.url, currentHash)}>
+									<SidebarMenuSubButton
+										asChild
+										isActive={isItemActive(item.url, currentHash)}
+										className={cn(
+											"hover:bg-sidebar-primary/10",
+											"data-[active=true]:bg-sidebar-primary/15 data-[active=true]:text-sidebar-primary",
+										)}
+									>
 										<a href={item.url}>
 											<span>{item.title}</span>
 										</a>

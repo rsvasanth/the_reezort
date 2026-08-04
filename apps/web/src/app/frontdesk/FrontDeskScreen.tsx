@@ -4,7 +4,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRightLeft, CalendarMinus, CalendarPlus, Clock, Loader2, LogIn, LogOut, ReceiptText, Shirt, UserX, UtensilsCrossed, Wine, ClipboardCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { ArrowRightLeft, CalendarMinus, CalendarPlus, Clock, Loader2, LogIn, LogOut, MoreHorizontal, ReceiptText, Shirt, UserX, UtensilsCrossed, Wine, ClipboardCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { IrdOrderSheet } from "@/components/folio/ird-order-sheet";
@@ -42,8 +42,15 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OccupancyTimeline } from "@/components/occupancy-timeline";
-import { WorkspacePage, KpiStrip } from "@/components/workspace/workspace";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import {
 	FolioApiError,
 	checkOut,
@@ -136,6 +143,25 @@ export default function FrontDeskScreen() {
 		}
 	}
 
+	/*
+	 * Due-out is its own queue, not a badge buried in the in-house list. It is the
+	 * work with a deadline attached, so it gets its own tab and its own count.
+	 */
+	const staying = board?.in_house.filter((s) => !s.due_out) ?? [];
+	const dueOut = board?.in_house.filter((s) => s.due_out) ?? [];
+	const stayActions: StayActions = {
+		onExtend: setExtending,
+		onEarlyDep: setEarlyDep,
+		onLateCheckout: setLateCheckout,
+		onMove: setMoving,
+		onIrd: setIrd,
+		onMinibar: setMinibar,
+		onLinen: setLinen,
+		onReadiness: setReadiness,
+		onOpenFolio: openFolio,
+		onCheckout: handleCheckout,
+	};
+
 	return (
 		<WorkspacePage
 			testId="frontdesk-screen"
@@ -148,20 +174,37 @@ export default function FrontDeskScreen() {
 					<Loader2 className="size-4 animate-spin" /> Loading…
 				</div>
 			) : board ? (
-				<>
-					<KpiStrip
-						items={[
-							{ label: "Arrivals", value: board.counts.arrivals },
-							{ label: "In-house", value: board.counts.in_house },
-							{ label: "Due out", value: board.counts.due_out, accent: board.counts.due_out > 0 ? "danger" : undefined },
-						]}
-					/>
+				<Tabs defaultValue="arriving" className="flex flex-1 flex-col gap-4">
+					{/*
+					 * Tabs, not stacked sections. The queues are peers rather than a sequence,
+					 * and stacking them meant scrolling a 14-day grid to reach the list you
+					 * came for. Counts sit on the tabs, which is why the KPI cards that used
+					 * to head this screen are gone — they restated the same three numbers.
+					 */}
+					<TabsList className="w-full justify-start overflow-x-auto">
+						<TabsTrigger value="arriving" data-testid="tab-arriving">
+							Arriving <TabCount n={board.counts.arrivals} />
+						</TabsTrigger>
+						<TabsTrigger value="inhouse" data-testid="tab-inhouse">
+							In-house <TabCount n={staying.length} />
+						</TabsTrigger>
+						<TabsTrigger value="dueout" data-testid="tab-dueout">
+							Due out <TabCount n={dueOut.length} danger={dueOut.length > 0} />
+						</TabsTrigger>
+						{noShows.length > 0 ? (
+							<TabsTrigger value="noshow" data-testid="tab-noshow">
+								No-shows <TabCount n={noShows.length} danger />
+							</TabsTrigger>
+						) : null}
+						{lateRequests.length > 0 ? (
+							<TabsTrigger value="latecheckout" data-testid="tab-latecheckout">
+								Late C/O <TabCount n={lateRequests.length} />
+							</TabsTrigger>
+						) : null}
+						<TabsTrigger value="forecast" data-testid="tab-forecast">Forecast</TabsTrigger>
+					</TabsList>
 
-					<OccupancyTimeline />
-
-					{/* Arrivals */}
-					<section className="flex flex-col gap-2">
-						<h2 className="text-sm font-semibold">Arrivals</h2>
+					<TabsContent value="arriving">
 						<div className="rounded-lg border">
 							<Table>
 								<TableHeader>
@@ -193,13 +236,8 @@ export default function FrontDeskScreen() {
 												<TableCell className="text-sm">{a.nights ?? "—"}</TableCell>
 												<TableCell><ArrivalReadinessBadges readiness={a.readiness} /></TableCell>
 												<TableCell className="text-right">
-													<Button
-														size="sm"
-														onClick={() => { window.location.hash = `#/check-in/${encodeURIComponent(a.reservation)}`; }}
-														data-testid={`checkin-${a.reservation}`}
-													>
-														<LogIn className="size-4" />
-														Check in
+													<Button size="sm" onClick={() => { window.location.hash = `#/check-in/${encodeURIComponent(a.reservation)}`; }} data-testid={`checkin-${a.reservation}`}>
+														<LogIn className="size-4" /> Check in
 													</Button>
 												</TableCell>
 											</TableRow>
@@ -208,98 +246,26 @@ export default function FrontDeskScreen() {
 								</TableBody>
 							</Table>
 						</div>
-					</section>
+					</TabsContent>
 
-					{/* In-house */}
-					<section className="flex flex-col gap-2">
-						<h2 className="text-sm font-semibold">In-house</h2>
-						<div className="rounded-lg border">
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>Guest</TableHead>
-										<TableHead>Room</TableHead>
-										<TableHead>Departure</TableHead>
-										<TableHead>Folio</TableHead>
-										<TableHead className="text-right">Action</TableHead>
-									</TableRow>
-								</TableHeader>
-								<TableBody>
-									{board.in_house.length === 0 ? (
-										<TableRow><TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">No in-house guests.</TableCell></TableRow>
-									) : (
-										board.in_house.map((s) => (
-											<TableRow key={s.stay} data-testid={`inhouse-${s.stay}`}>
-												<TableCell className="font-medium">{s.guest}</TableCell>
-												<TableCell className="text-sm">
-													<div className="flex items-center gap-2">
-														<RoomThumb image={s.room_image} label={s.room ?? "?"} size={32} />
-														<span>{s.room ?? "—"}</span>
-													</div>
-												</TableCell>
-												<TableCell className="text-sm">
-													{s.departure_date ?? "—"}
-													{s.due_out ? <Badge variant="destructive" className="ml-2">Due out</Badge> : null}
-												</TableCell>
-												<TableCell className="text-sm">{s.folio ?? "—"}</TableCell>
-												<TableCell className="text-right">
-													<div className="flex flex-wrap justify-end gap-1">
-														<Button size="sm" variant="ghost" onClick={() => setExtending(s)} data-testid={`extend-${s.stay}`}>
-															<CalendarPlus className="size-4" /> Extend
-														</Button>
-														<Button size="sm" variant="ghost" onClick={() => setEarlyDep(s)} data-testid={`early-dep-${s.stay}`}>
-															<CalendarMinus className="size-4" /> Early dep.
-														</Button>
-														<Button size="sm" variant="ghost" onClick={() => setLateCheckout(s)} data-testid={`late-co-${s.stay}`}>
-															<Clock className="size-4" /> Late C/O
-														</Button>
-														<Button size="sm" variant="ghost" onClick={() => setMoving(s)} data-testid={`move-${s.stay}`}>
-															<ArrowRightLeft className="size-4" /> Move
-														</Button>
-														<Button size="sm" variant="ghost" onClick={() => setIrd(s)} data-testid={`ird-${s.stay}`}>
-															<UtensilsCrossed className="size-4" /> Order
-														</Button>
-														<Button size="sm" variant="ghost" onClick={() => setMinibar(s)} data-testid={`minibar-${s.stay}`}>
-															<Wine className="size-4" /> Minibar
-														</Button>
-														<Button size="sm" variant="ghost" onClick={() => setLinen(s)} data-testid={`linen-${s.stay}`} disabled={!s.room}>
-															<Shirt className="size-4" /> Linen
-														</Button>
-														<Button size="sm" variant="outline" disabled={!s.folio} onClick={() => openFolio(s.folio)}>
-															<ReceiptText className="size-4" /> Open folio
-														</Button>
-														<Button size="sm" variant="ghost" onClick={() => setReadiness(s)} data-testid={`readiness-${s.stay}`}>
-															<ClipboardCheck className="size-4" /> Readiness
-														</Button>
-														<Button
-															size="sm"
-															variant={s.due_out ? "default" : "ghost"}
-															disabled={checkingOut === s.stay}
-															onClick={() => handleCheckout(s)}
-															data-testid={`checkout-${s.stay}`}
-														>
-															{checkingOut === s.stay ? <Loader2 className="size-4 animate-spin" /> : <LogOut className="size-4" />} Check out
-														</Button>
-													</div>
-												</TableCell>
-											</TableRow>
-										))
-									)}
-								</TableBody>
-							</Table>
-						</div>
-					</section>
+					<TabsContent value="inhouse">
+						<StayTable stays={staying} empty="No in-house guests." actions={stayActions} checkingOut={checkingOut} />
+					</TabsContent>
 
-					{/* No-Show Queue */}
+					<TabsContent value="dueout">
+						<StayTable stays={dueOut} empty="Nobody is due out." actions={stayActions} checkingOut={checkingOut} />
+					</TabsContent>
+
 					{noShows.length > 0 ? (
-						<NoShowSection eligible={noShows} onMarked={reload} />
+						<TabsContent value="noshow"><NoShowSection eligible={noShows} onMarked={reload} /></TabsContent>
 					) : null}
 
-					{/* Pending Late Checkout Requests */}
 					{lateRequests.length > 0 ? (
-						<LateCheckoutSection requests={lateRequests} onActioned={reload} />
+						<TabsContent value="latecheckout"><LateCheckoutSection requests={lateRequests} onActioned={reload} /></TabsContent>
 					) : null}
-				</>
+
+					<TabsContent value="forecast"><OccupancyTimeline /></TabsContent>
+				</Tabs>
 			) : (
 				<Card><CardContent className="py-8 text-sm text-muted-foreground">Could not load the front desk.</CardContent></Card>
 			)}
@@ -919,5 +885,148 @@ function LateCheckoutSection({ requests, onActioned }: { requests: LateCheckoutR
 				</Table>
 			</div>
 		</section>
+	);
+}
+
+/** A count on a tab label. Muted by default; only genuine exceptions go red. */
+function TabCount({ n, danger }: { n: number; danger?: boolean }) {
+	return (
+		<span
+			className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[11px] tabular-nums ${
+				danger ? "bg-danger/15 text-danger" : "bg-muted text-muted-foreground"
+			}`}
+		>
+			{n}
+		</span>
+	);
+}
+
+interface StayActions {
+	onExtend: (s: FrontDeskInHouse) => void;
+	onEarlyDep: (s: FrontDeskInHouse) => void;
+	onLateCheckout: (s: FrontDeskInHouse) => void;
+	onMove: (s: FrontDeskInHouse) => void;
+	onIrd: (s: FrontDeskInHouse) => void;
+	onMinibar: (s: FrontDeskInHouse) => void;
+	onLinen: (s: FrontDeskInHouse) => void;
+	onReadiness: (s: FrontDeskInHouse) => void;
+	onOpenFolio: (folio: string | null) => void;
+	onCheckout: (s: FrontDeskInHouse) => void;
+}
+
+/**
+ * One stay per row, with ONE primary action and everything else behind an
+ * overflow menu.
+ *
+ * This previously rendered ten buttons of equal weight per row — Extend, Early
+ * dep., Late C/O, Move, Order, Minibar, Linen, Open folio, Readiness, Check out
+ * — so nothing read as the thing to do. The primary is now derived from state:
+ * a guest who is due out needs checking out; anyone else, you are far more
+ * likely to be opening their folio.
+ */
+function StayTable({
+	stays,
+	empty,
+	actions,
+	checkingOut,
+}: {
+	stays: FrontDeskInHouse[];
+	empty: string;
+	actions: StayActions;
+	checkingOut: string | null;
+}) {
+	return (
+		<div className="rounded-lg border">
+			<Table>
+				<TableHeader>
+					<TableRow>
+						<TableHead>Guest</TableHead>
+						<TableHead>Room</TableHead>
+						<TableHead>Departure</TableHead>
+						<TableHead>Folio</TableHead>
+						<TableHead className="text-right">Action</TableHead>
+					</TableRow>
+				</TableHeader>
+				<TableBody>
+					{stays.length === 0 ? (
+						<TableRow>
+							<TableCell colSpan={5} className="py-6 text-center text-sm text-muted-foreground">{empty}</TableCell>
+						</TableRow>
+					) : (
+						stays.map((s) => (
+							<TableRow key={s.stay} data-testid={`inhouse-${s.stay}`}>
+								<TableCell className="font-medium">{s.guest}</TableCell>
+								<TableCell className="text-sm">
+									<div className="flex items-center gap-2">
+										<RoomThumb image={s.room_image} label={s.room ?? "?"} size={32} />
+										<span>{s.room ?? "—"}</span>
+									</div>
+								</TableCell>
+								<TableCell className="text-sm">
+									{s.departure_date ?? "—"}
+									{s.due_out ? <Badge variant="destructive" className="ml-2">Due out</Badge> : null}
+								</TableCell>
+								<TableCell className="text-sm">{s.folio ?? "—"}</TableCell>
+								<TableCell className="text-right">
+									<div className="flex items-center justify-end gap-1">
+										{s.due_out ? (
+											<Button size="sm" disabled={checkingOut === s.stay} onClick={() => actions.onCheckout(s)} data-testid={`checkout-${s.stay}`}>
+												{checkingOut === s.stay ? <Loader2 className="size-4 animate-spin" /> : <LogOut className="size-4" />} Check out
+											</Button>
+										) : (
+											<Button size="sm" variant="outline" disabled={!s.folio} onClick={() => actions.onOpenFolio(s.folio ?? null)}>
+												<ReceiptText className="size-4" /> Open folio
+											</Button>
+										)}
+										<DropdownMenu>
+											<DropdownMenuTrigger asChild>
+												<Button size="icon" variant="ghost" aria-label={`More actions for ${s.guest}`} data-testid={`more-${s.stay}`}>
+													<MoreHorizontal className="size-4" />
+												</Button>
+											</DropdownMenuTrigger>
+											<DropdownMenuContent align="end">
+												{s.due_out ? (
+													<DropdownMenuItem disabled={!s.folio} onSelect={() => actions.onOpenFolio(s.folio ?? null)}>
+														<ReceiptText className="size-4" /> Open folio
+													</DropdownMenuItem>
+												) : (
+													<DropdownMenuItem disabled={checkingOut === s.stay} onSelect={() => actions.onCheckout(s)} data-testid={`checkout-${s.stay}`}>
+														<LogOut className="size-4" /> Check out
+													</DropdownMenuItem>
+												)}
+												<DropdownMenuItem onSelect={() => actions.onExtend(s)} data-testid={`extend-${s.stay}`}>
+													<CalendarPlus className="size-4" /> Extend stay
+												</DropdownMenuItem>
+												<DropdownMenuItem onSelect={() => actions.onEarlyDep(s)} data-testid={`early-dep-${s.stay}`}>
+													<CalendarMinus className="size-4" /> Early departure
+												</DropdownMenuItem>
+												<DropdownMenuItem onSelect={() => actions.onLateCheckout(s)} data-testid={`late-co-${s.stay}`}>
+													<Clock className="size-4" /> Late checkout
+												</DropdownMenuItem>
+												<DropdownMenuItem onSelect={() => actions.onMove(s)} data-testid={`move-${s.stay}`}>
+													<ArrowRightLeft className="size-4" /> Move room
+												</DropdownMenuItem>
+												<DropdownMenuItem onSelect={() => actions.onIrd(s)} data-testid={`ird-${s.stay}`}>
+													<UtensilsCrossed className="size-4" /> Room service
+												</DropdownMenuItem>
+												<DropdownMenuItem onSelect={() => actions.onMinibar(s)} data-testid={`minibar-${s.stay}`}>
+													<Wine className="size-4" /> Minibar
+												</DropdownMenuItem>
+												<DropdownMenuItem disabled={!s.room} onSelect={() => actions.onLinen(s)} data-testid={`linen-${s.stay}`}>
+													<Shirt className="size-4" /> Linen
+												</DropdownMenuItem>
+												<DropdownMenuItem onSelect={() => actions.onReadiness(s)} data-testid={`readiness-${s.stay}`}>
+													<ClipboardCheck className="size-4" /> Readiness
+												</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
+									</div>
+								</TableCell>
+							</TableRow>
+						))
+					)}
+				</TableBody>
+			</Table>
+		</div>
 	);
 }

@@ -51,7 +51,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
 			style={{ "--sidebar-width": "18rem", "--header-height": "3rem" } as CSSProperties}
 		>
 			<AppSidebar />
-			<SidebarInset>
+			<SidebarInset className="bg-transparent">
 				<SiteHeader />
 				<div className="flex flex-1 flex-col outline-none">{children}</div>
 			</SidebarInset>

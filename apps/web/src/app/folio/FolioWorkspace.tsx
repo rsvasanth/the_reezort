@@ -241,7 +241,7 @@ export function FolioWorkspace({ folioName }: Props) {
 			}
 		>
 			<AppSidebar />
-			<SidebarInset>
+			<SidebarInset className="bg-transparent">
 				<SiteHeader />
 				<main className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 lg:px-6">
 					<div className="flex flex-wrap items-center justify-between gap-2">

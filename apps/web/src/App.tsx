@@ -13,7 +13,6 @@ import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { BrandWash } from "@/components/brand-wash";
 import { Toaster } from "@/components/ui/sonner";
 import data from "@/app/dashboard/data.json";
 import { FolioWorkspace } from "@/app/folio/FolioWorkspace";
@@ -84,7 +83,6 @@ function AppShell({ children }: { children: ReactNode }) {
 			>
 				Skip to main content
 			</a>
-			<BrandWash />
 			<AppSidebar />
 			<SidebarInset className="relative bg-transparent">
 				<SiteHeader />
@@ -143,7 +141,6 @@ function Workspace() {
 				} as CSSProperties
 			}
 		>
-			<BrandWash />
 			<AppSidebar />
 			<SidebarInset className="relative bg-transparent">
 				<SiteHeader />

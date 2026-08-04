@@ -98,7 +98,7 @@ export default function HousekeepingBoard() {
 			}
 		>
 			<AppSidebar />
-			<SidebarInset>
+			<SidebarInset className="bg-transparent">
 				<SiteHeader />
 				<main className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 lg:px-6">
 					{/* Top bar */}

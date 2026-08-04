@@ -139,33 +139,33 @@ export default function ReservationsList() {
 					</Button>
 				</div>
 			}
-		>
-
-			<div className="flex flex-wrap items-center gap-2">
-				<div className="relative w-72 max-w-full">
+			toolbar={
+				<>
+					<div className="relative w-72 max-w-full">
 					<Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
 					<Input
-						className="pl-8"
-						placeholder="Search guest name or reservation code…"
-						value={searchInput}
-						onChange={(e) => setSearchInput(e.target.value)}
-						data-testid="reservations-search"
+					className="pl-8"
+					placeholder="Search guest name or reservation code…"
+					value={searchInput}
+					onChange={(e) => setSearchInput(e.target.value)}
+					data-testid="reservations-search"
 					/>
-				</div>
-				<Select value={scope} onValueChange={(v) => setScope(v as "active" | "all")}>
+					</div>
+					<Select value={scope} onValueChange={(v) => setScope(v as "active" | "all")}>
 					<SelectTrigger className="w-64" data-testid="reservations-scope">
-						<SelectValue />
+					<SelectValue />
 					</SelectTrigger>
 					<SelectContent>
-						<SelectItem value="active">Active pipeline (default)</SelectItem>
-						<SelectItem value="all">All (incl. checked-in &amp; history)</SelectItem>
+					<SelectItem value="active">Active pipeline (default)</SelectItem>
+					<SelectItem value="all">All (incl. checked-in &amp; history)</SelectItem>
 					</SelectContent>
-				</Select>
-				<span className="text-sm text-muted-foreground">
+					</Select>
+					<span className="text-sm text-muted-foreground">
 					{totalCount === 0 ? "0 results" : `${rangeStart}–${rangeEnd} of ${totalCount}`}
-				</span>
-			</div>
-
+					</span>
+				</>
+			}
+		>
 			<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 				<Table>
 					<TableHeader>

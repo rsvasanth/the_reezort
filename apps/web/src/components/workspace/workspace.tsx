@@ -56,6 +56,7 @@ export function WorkspacePage({
 	title,
 	subtitle,
 	actions,
+	toolbar,
 	onBack,
 	testId,
 	children,
@@ -65,6 +66,8 @@ export function WorkspacePage({
 	title: ReactNode;
 	subtitle?: ReactNode;
 	actions?: ReactNode;
+	/** Filters and search. Shares a row with `actions` rather than stacking under it. */
+	toolbar?: ReactNode;
 	onBack?: () => void;
 	testId?: string;
 	children: ReactNode;
@@ -86,8 +89,11 @@ export function WorkspacePage({
 			animate="show"
 			className="flex min-w-0 flex-1 flex-col gap-6 px-4 py-6 lg:px-6"
 		>
-			{actions ? (
-				<div className="flex flex-wrap items-center justify-end gap-2">{actions}</div>
+			{toolbar || actions ? (
+				<div className="flex flex-wrap items-center justify-between gap-3">
+					<div className="flex min-w-0 flex-wrap items-center gap-2">{toolbar}</div>
+					{actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+				</div>
 			) : null}
 			{children}
 		</motion.main>

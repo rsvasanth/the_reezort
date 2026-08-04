@@ -8,29 +8,28 @@
  *                                 NativeWind classes cannot reach (nav chrome,
  *                                 status bar, Android system UI)
  *
- * Accent is Radix's stock `amber`, imported rather than generated: the generator
- * exists to DERIVE a scale from an arbitrary brand colour, and asking it to
- * approximate a published scale produces something close to but not the same as
- * `@radix-ui/colors`. Grays and the semantic colours are still derived, because
- * they come from owner-supplied seeds.
+ * Accent, grays and semantics are all derived from owner-supplied seeds through
+ * Radix's own generateRadixColors, so every step carries Radix's contrast
+ * guarantees. The accent briefly used Radix's published `amber` scale; the owner
+ * reverted to this custom bronze, which is darker and more restrained.
  */
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import * as RadixColors from "@radix-ui/colors";
 
 import { generateRadixColors } from "./generate-radix-colors.tsx";
 
+const ACCENT = "#A66407";
 const GRAY = { light: "#0A0D1E", dark: "#E5E5E6" };
 const BG = { light: "#FFFFFF", dark: "#111111" };
 
 /**
- * `warning` is orange, not its natural amber, because amber is the accent.
- * Roughly 87 utilities across the screens resolve to `warning`; at the accent's
- * hue those screens would flatten into a single colour.
+ * `warning` is pulled yellow, away from the bronze accent. Roughly 87 utilities
+ * across the screens resolve to `warning`; at the accent's own hue those screens
+ * would flatten into a single colour.
  */
-const SEEDS = { success: "#2F7D4F", warning: "#D2691E", danger: "#C0392B", info: "#3E6FB0" };
+const SEEDS = { success: "#2F7D4F", warning: "#C2A000", danger: "#C0392B", info: "#3E6FB0" };
 
 const hexToHsl = (hex: string) => {
 	let h = hex.replace("#", "");
@@ -65,10 +64,10 @@ const lum = (hex: string) => {
 /**
  * Foreground for a solid step, chosen by contrast rather than assumed white.
  *
- * Not a nicety. Stock amber-9 is #ffc53d; white on it is 1.58:1, far below the
- * 4.5:1 floor. Radix documents amber, yellow, lime, mint and sky as the scales
- * whose step 9 takes dark text. Hardcoding white would make every primary
- * button unreadable and no build step would catch it.
+ * Not a nicety. When the accent was briefly Radix's amber, step 9 (#ffc53d) gave
+ * white text 1.58:1 — far below the 4.5:1 floor. Radix documents amber, yellow,
+ * lime, mint and sky as scales whose step 9 takes dark text. Hardcoding white
+ * would make every primary button unreadable, and no build step would catch it.
  */
 const fgFor = (bg: string, scale: string[]) => {
 	const L = lum(bg);
@@ -82,11 +81,8 @@ const fgFor = (bg: string, scale: string[]) => {
 type Mode = "light" | "dark";
 
 function build(mode: Mode) {
-	const accent = Object.values(
-		mode === "light" ? RadixColors.amber : RadixColors.amberDark,
-	) as string[];
-	const scales: Record<string, string[]> = { accent };
-	for (const [name, seed] of Object.entries(SEEDS)) {
+	const scales: Record<string, string[]> = {};
+	for (const [name, seed] of Object.entries({ accent: ACCENT, ...SEEDS })) {
 		const r = generateRadixColors({
 			appearance: mode,
 			accent: seed,
@@ -183,10 +179,10 @@ const GENERATED = `/*
  * GENERATED — do not hand-edit. Run \`yarn workspace @reezort/tokens generate\`.
  * Source of truth: packages/tokens/scripts/emit-tokens.ts
  *
- * Accent is Radix's stock \`amber\`; grays and semantics are derived from the
- * owner's seeds through Radix's own generateRadixColors, so every step carries
- * Radix's contrast guarantees. Foregrounds are computed from WCAG luminance,
- * never assumed white — amber-9 takes dark text.
+ * Every scale is derived from an owner-supplied seed through Radix's own
+ * generateRadixColors, so each step carries Radix's contrast guarantees.
+ * Foregrounds are computed from WCAG luminance rather than assumed white — a
+ * light accent needs dark text, and nothing in a build would catch it if not.
  *
  * The variable NAMES are the cross-platform contract: \`bg-primary\` must mean the
  * same colour in a React Native screen as in a DOM one. Do not rename one side
@@ -194,15 +190,26 @@ const GENERATED = `/*
  */`;
 
 // ── 1. Web ───────────────────────────────────────────────────────────────────
-const webCss = `@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap");
+const webCss = `@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * \`font-display\` is the body sans, deliberately.
+ *
+ * It is applied to only 10 of 50 screens, and to six sets of tabular figures.
+ * That went unnoticed for months because under Carbon it resolved to IBM Plex
+ * Sans — the same family as body text — so it was a visual no-op and its
+ * placement never meant anything. Pointing a real display face at it made the
+ * inconsistency visible rather than creating it. Until a display face is
+ * actually chosen, one consistent face beats a serif on an arbitrary tenth of
+ * the app.
+ */
 @layer utilities {
 \t.font-display {
-\t\tfont-family: "Cormorant Garamond", ui-serif, Georgia, serif;
+\t\tfont-family: "Inter", ui-sans-serif, system-ui, sans-serif;
 \t}
 }
 

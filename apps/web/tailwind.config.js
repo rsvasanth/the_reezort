@@ -98,7 +98,7 @@ export default {
 					'"Segoe UI"',
 					"sans-serif",
 				],
-				serif: ['"Cormorant Garamond"', "ui-serif", "Georgia", "serif"],
+				serif: ["ui-serif", "Georgia", "serif"],
 				mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
 			},
 		},

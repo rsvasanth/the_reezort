@@ -2,10 +2,10 @@
  * GENERATED — do not hand-edit. Run `yarn workspace @reezort/tokens generate`.
  * Source of truth: packages/tokens/scripts/emit-tokens.ts
  *
- * Accent is Radix's stock `amber`; grays and semantics are derived from the
- * owner's seeds through Radix's own generateRadixColors, so every step carries
- * Radix's contrast guarantees. Foregrounds are computed from WCAG luminance,
- * never assumed white — amber-9 takes dark text.
+ * Every scale is derived from an owner-supplied seed through Radix's own
+ * generateRadixColors, so each step carries Radix's contrast guarantees.
+ * Foregrounds are computed from WCAG luminance rather than assumed white — a
+ * light accent needs dark text, and nothing in a build would catch it if not.
  *
  * The variable NAMES are the cross-platform contract: `bg-primary` must mean the
  * same colour in a React Native screen as in a DOM one. Do not rename one side
@@ -21,8 +21,8 @@
 		--card-foreground: 230 31% 15%;
 		--popover: 225 100% 99%;
 		--popover-foreground: 230 31% 15%;
-		--primary: 42 100% 62%;
-		--primary-foreground: 24 40% 22%;
+		--primary: 35 92% 34%;
+		--primary-foreground: 0 0% 100%;
 		--secondary: 228 71% 96%;
 		--secondary-foreground: 230 31% 15%;
 		--muted: 228 71% 96%;
@@ -33,24 +33,24 @@
 		--destructive-foreground: 0 0% 100%;
 		--border: 228 52% 89%;
 		--input: 229 48% 85%;
-		--ring: 38 75% 55%;
-		--brass: 42 100% 62%;
-		--brass-foreground: 24 40% 22%;
+		--ring: 31 73% 62%;
+		--brass: 35 92% 34%;
+		--brass-foreground: 0 0% 100%;
 		--success: 145 45% 34%;
 		--success-foreground: 0 0% 100%;
-		--warning: 26 85% 41%;
-		--warning-foreground: 20 60% 99%;
+		--warning: 47 100% 29%;
+		--warning-foreground: 48 71% 99%;
 		--info: 214 48% 47%;
 		--info-foreground: 0 0% 100%;
 		--danger: 6 63% 46%;
 		--danger-foreground: 0 0% 100%;
-		--chart-1: 42 100% 62%;
+		--chart-1: 35 92% 34%;
 		--chart-2: 214 48% 47%;
 		--chart-3: 145 45% 34%;
 		--chart-4: 6 63% 46%;
 		--chart-5: 228 22% 60%;
-		--brand-wash: 50 100% 81%;
-		--brand-wash-soft: 52 100% 88%;
+		--brand-wash: 36 100% 87%;
+		--brand-wash-soft: 39 100% 91%;
 	}
 
 	.dark:root {
@@ -60,8 +60,8 @@
 		--card-foreground: 240 3% 93%;
 		--popover: 240 2% 10%;
 		--popover-foreground: 240 3% 93%;
-		--primary: 42 100% 62%;
-		--primary-foreground: 36 29% 7%;
+		--primary: 35 92% 34%;
+		--primary-foreground: 0 0% 100%;
 		--secondary: 240 1% 14%;
 		--secondary-foreground: 240 3% 93%;
 		--muted: 240 1% 14%;
@@ -72,23 +72,23 @@
 		--destructive-foreground: 0 0% 100%;
 		--border: 240 2% 23%;
 		--input: 240 1% 28%;
-		--ring: 36 60% 35%;
-		--brass: 42 100% 62%;
-		--brass-foreground: 36 29% 7%;
+		--ring: 35 100% 31%;
+		--brass: 35 92% 34%;
+		--brass-foreground: 0 0% 100%;
 		--success: 141 42% 65%;
 		--success-foreground: 137 23% 6%;
-		--warning: 22 96% 70%;
-		--warning-foreground: 23 24% 7%;
+		--warning: 47 64% 58%;
+		--warning-foreground: 45 27% 6%;
 		--info: 215 92% 75%;
 		--info-foreground: 218 42% 7%;
 		--danger: 8 100% 75%;
 		--danger-foreground: 5 30% 7%;
-		--chart-1: 42 100% 62%;
+		--chart-1: 35 92% 34%;
 		--chart-2: 214 48% 47%;
 		--chart-3: 145 45% 34%;
 		--chart-4: 6 63% 46%;
 		--chart-5: 240 0% 43%;
-		--brand-wash: 37 100% 12%;
-		--brand-wash-soft: 36 71% 11%;
+		--brand-wash: 27 100% 14%;
+		--brand-wash-soft: 31 86% 11%;
 	}
 }

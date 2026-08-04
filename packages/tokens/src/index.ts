@@ -2,10 +2,10 @@
  * GENERATED — do not hand-edit. Run `yarn workspace @reezort/tokens generate`.
  * Source of truth: packages/tokens/scripts/emit-tokens.ts
  *
- * Accent is Radix's stock `amber`; grays and semantics are derived from the
- * owner's seeds through Radix's own generateRadixColors, so every step carries
- * Radix's contrast guarantees. Foregrounds are computed from WCAG luminance,
- * never assumed white — amber-9 takes dark text.
+ * Every scale is derived from an owner-supplied seed through Radix's own
+ * generateRadixColors, so each step carries Radix's contrast guarantees.
+ * Foregrounds are computed from WCAG luminance rather than assumed white — a
+ * light accent needs dark text, and nothing in a build would catch it if not.
  *
  * The variable NAMES are the cross-platform contract: `bg-primary` must mean the
  * same colour in a React Native screen as in a DOM one. Do not rename one side
@@ -60,15 +60,15 @@ export const COLORS: { readonly light: Palette; readonly dark: Palette } = {
 		foreground: "hsl(230 31% 15%)",
 		card: "hsl(225 100% 99%)",
 		cardForeground: "hsl(230 31% 15%)",
-		primary: "hsl(42 100% 62%)",
-		primaryForeground: "hsl(24 40% 22%)",
+		primary: "hsl(35 92% 34%)",
+		primaryForeground: "hsl(0 0% 100%)",
 		muted: "hsl(228 71% 96%)",
 		mutedForeground: "hsl(229 17% 43%)",
 		accent: "hsl(226 60% 93%)",
 		border: "hsl(228 52% 89%)",
 		destructive: "hsl(6 63% 46%)",
 		success: "hsl(145 45% 34%)",
-		warning: "hsl(26 85% 41%)",
+		warning: "hsl(47 100% 29%)",
 		info: "hsl(214 48% 47%)",
 		danger: "hsl(6 63% 46%)",
 	},
@@ -77,15 +77,15 @@ export const COLORS: { readonly light: Palette; readonly dark: Palette } = {
 		foreground: "hsl(240 3% 93%)",
 		card: "hsl(240 2% 10%)",
 		cardForeground: "hsl(240 3% 93%)",
-		primary: "hsl(42 100% 62%)",
-		primaryForeground: "hsl(36 29% 7%)",
+		primary: "hsl(35 92% 34%)",
+		primaryForeground: "hsl(0 0% 100%)",
 		muted: "hsl(240 1% 14%)",
 		mutedForeground: "hsl(240 1% 70%)",
 		accent: "hsl(240 1% 16%)",
 		border: "hsl(240 2% 23%)",
 		destructive: "hsl(6 63% 46%)",
 		success: "hsl(141 42% 65%)",
-		warning: "hsl(22 96% 70%)",
+		warning: "hsl(47 64% 58%)",
 		info: "hsl(215 92% 75%)",
 		danger: "hsl(8 100% 75%)",
 	},

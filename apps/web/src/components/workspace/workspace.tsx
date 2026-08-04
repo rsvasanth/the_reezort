@@ -2,7 +2,11 @@
  * Shared record-workspace primitives — the Folio-Workspace pattern, generalized
  * so every module's list + detail views look and behave consistently.
  *
- *   WorkspacePage  — full-page shell: badge + title + subtitle + actions, then body.
+ *   WorkspacePage  — full-page shell. The page's identity (badge, title,
+ *                    subtitle) is published to the app bar rather than drawn
+ *                    again below it: a 150px title block on every screen
+ *                    restated what the sidebar already says, and operational
+ *                    screens need the vertical space more than the restatement.
  *   RecordHeader   — the record header card (avatar/icon, title, links, id, status, meta).
  *   KpiStrip       — the metric tiles row.
  *
@@ -10,7 +14,7 @@
  * on their own full-page routes.
  */
 
-import type { ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 
 import { GuestAvatar } from "@/components/guest-avatar";
@@ -21,6 +25,30 @@ import { cn } from "@/lib/utils";
 import { pageEnter, staggerContainer, staggerItem, fadeIn } from "@/lib/motion";
 
 type BadgeVariant = "default" | "secondary" | "outline" | "destructive";
+
+export interface PageMeta {
+	badge?: string;
+	tag?: string;
+	title: ReactNode;
+	subtitle?: ReactNode;
+	onBack?: () => void;
+}
+
+const PageMetaContext = createContext<{
+	meta: PageMeta | null;
+	setMeta: (m: PageMeta | null) => void;
+}>({ meta: null, setMeta: () => {} });
+
+/** Lets the app bar show which page you are on. Wrap the whole app once. */
+export function PageMetaProvider({ children }: { children: ReactNode }) {
+	const [meta, setMeta] = useState<PageMeta | null>(null);
+	const value = useMemo(() => ({ meta, setMeta }), [meta]);
+	return <PageMetaContext.Provider value={value}>{children}</PageMetaContext.Provider>;
+}
+
+export function usePageMeta() {
+	return useContext(PageMetaContext);
+}
 
 export function WorkspacePage({
 	badge,
@@ -41,6 +69,15 @@ export function WorkspacePage({
 	testId?: string;
 	children: ReactNode;
 }) {
+	const { setMeta } = usePageMeta();
+	useEffect(() => {
+		setMeta({ badge, tag, title, subtitle, onBack });
+		return () => setMeta(null);
+		// `onBack` is a fresh closure each render on some screens, so it is
+		// deliberately not a dependency — re-registering on every render would loop.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [badge, tag, title, subtitle, setMeta]);
+
 	return (
 		<motion.main
 			data-testid={testId}
@@ -49,26 +86,9 @@ export function WorkspacePage({
 			animate="show"
 			className="flex min-w-0 flex-1 flex-col gap-6 px-4 py-6 lg:px-6"
 		>
-			<header className="flex flex-wrap items-start justify-between gap-4">
-				<div>
-					<div className="mb-2 flex items-center gap-2">
-						{onBack ? (
-							<button
-								type="button"
-								onClick={onBack}
-								className="text-sm text-muted-foreground hover:text-foreground"
-							>
-								← Back
-							</button>
-						) : null}
-						{badge ? <Badge variant="outline">{badge}</Badge> : null}
-						{tag ? <Badge variant="secondary">{tag}</Badge> : null}
-					</div>
-					<h1 className="text-3xl font-light leading-tight text-foreground md:text-4xl">{title}</h1>
-					{subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
-				</div>
-				{actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
-			</header>
+			{actions ? (
+				<div className="flex flex-wrap items-center justify-end gap-2">{actions}</div>
+			) : null}
 			{children}
 		</motion.main>
 	);

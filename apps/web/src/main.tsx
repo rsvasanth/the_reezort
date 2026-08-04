@@ -4,12 +4,15 @@ import './index.css'
 import App from './App.tsx'
 import { BrandWash } from './components/brand-wash'
 import { ThemeProvider } from './components/theme-provider'
+import { PageMetaProvider } from './components/workspace/workspace'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
-      <BrandWash />
-      <App />
+      <PageMetaProvider>
+        <BrandWash />
+        <App />
+      </PageMetaProvider>
     </ThemeProvider>
   </StrictMode>,
 )

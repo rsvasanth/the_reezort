@@ -84,9 +84,9 @@ function AppShell({ children }: { children: ReactNode }) {
 			>
 				Skip to main content
 			</a>
+			<BrandWash />
 			<AppSidebar />
-			<SidebarInset className="relative">
-				<BrandWash />
+			<SidebarInset className="relative bg-transparent">
 				<SiteHeader />
 				<div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
 					{children}
@@ -143,11 +143,11 @@ function Workspace() {
 				} as CSSProperties
 			}
 		>
+			<BrandWash />
 			<AppSidebar />
-			<SidebarInset className="relative">
-				<BrandWash />
+			<SidebarInset className="relative bg-transparent">
 				<SiteHeader />
-				<main className="flex flex-1 flex-col gap-6 bg-background py-6">
+				<main className="flex flex-1 flex-col gap-6 py-6">
 					<section className="px-4 lg:px-6">
 						<div className="grid gap-8 border-b pb-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-end">
 							<div className="max-w-3xl">

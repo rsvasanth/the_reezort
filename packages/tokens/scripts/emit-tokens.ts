@@ -212,10 +212,35 @@ function elevation(mode: Mode, scales: Record<string, string[]>) {
 	};
 }
 
+/**
+ * Palette for the ambient background artwork only. These never touch interface
+ * chrome — no control, badge or text may use them — they exist purely to build
+ * the canvas behind the shell.
+ *
+ * Pulled from Radix's published scales so they sit in the accent's family rather
+ * than being picked by eye. The glow is the one literal: it is the single colour
+ * the composition is built around, and no scale step matches it.
+ *
+ * Light mode deliberately takes much lower steps. The same hues at dark-mode
+ * strength over a near-white page would fight every surface on top of them.
+ */
+function artwork(mode: Mode) {
+	const d = mode === "dark";
+	const C = RadixColors as Record<string, Record<string, string>>;
+	return {
+		"art-glow": d ? "#5b81fe" : "#8da2fb",
+		"art-violet": d ? C.violetDark.violet6 : C.violet.violet4,
+		"art-purple": d ? C.purpleDark.purple9 : C.purple.purple4,
+		"art-deep": d ? C.blueDark.blue5 : C.blue.blue3,
+		/* How hard the whole composition is knocked back behind content. */
+		"art-opacity": d ? "0.5" : "0.42",
+	};
+}
+
 const light = build("light");
 const dark = build("dark");
-const lightElev = elevation("light", light.scales);
-const darkElev = elevation("dark", dark.scales);
+const lightElev = { ...elevation("light", light.scales), ...artwork("light") };
+const darkElev = { ...elevation("dark", dark.scales), ...artwork("dark") };
 
 /**
  * Motion. Durations are short and consistent; the reduced-motion fallback swaps

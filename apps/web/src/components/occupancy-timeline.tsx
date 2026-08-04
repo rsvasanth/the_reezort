@@ -127,10 +127,24 @@ function TimelineGrid({ data }: { data: OccupancyTimeline }) {
 	// Use CSS grid: header row + one row per villa. First column = room label.
 	const gridTemplateCols = `160px repeat(${columns}, minmax(60px, 1fr))`;
 
+	/*
+	 * Bookings that exist but are not yet placed in a room. Grouped by room type,
+	 * because that is the level they are actually sold at.
+	 */
+	const unassignedLanes = Object.entries(
+		reservations
+			.filter((r) => !r.room)
+			.reduce<Record<string, typeof reservations>>((acc, r) => {
+				const key = r.room_type ?? "Unassigned";
+				(acc[key] ??= []).push(r);
+				return acc;
+			}, {}),
+	).sort(([a], [b]) => a.localeCompare(b));
+
 	return (
 		<TooltipProvider delayDuration={100}>
-			<div className="overflow-x-auto">
-				<div className="min-w-[720px]">
+			<div className="min-w-0 max-w-full overflow-x-auto">
+				<div style={{ minWidth: 160 + columns * 60 }}>
 					{/* Header */}
 					<div className="grid gap-px bg-border" style={{ gridTemplateColumns: gridTemplateCols }}>
 						<div className="bg-background p-2 text-xs font-medium text-muted-foreground">Villa</div>
@@ -148,6 +162,25 @@ function TimelineGrid({ data }: { data: OccupancyTimeline }) {
 
 					{/* Rows */}
 					<div className="grid gap-px bg-border">
+						{unassignedLanes.map(([roomType, list]) => (
+							<div
+								key={`unassigned-${roomType}`}
+								className="relative grid gap-px bg-border"
+								style={{ gridTemplateColumns: gridTemplateCols }}
+								data-testid={`unassigned-lane-${roomType}`}
+							>
+								<div className="bg-muted/40 p-2 text-xs">
+									<div className="font-semibold">{roomType}</div>
+									<div className="text-[10px] text-muted-foreground">Unassigned · {list.length}</div>
+								</div>
+								{days.map((iso) => (
+									<div key={iso} className="min-h-[52px] bg-muted/20" data-day={iso} />
+								))}
+								{list.map((r) => (
+									<ReservationBar key={r.name} r={r} days={days} columns={columns} />
+								))}
+							</div>
+						))}
 						{rooms.map((room) => (
 							<div
 								key={room.name}
@@ -164,43 +197,9 @@ function TimelineGrid({ data }: { data: OccupancyTimeline }) {
 								})}
 
 								{/* Reservation bars for this room */}
-								{reservations.filter((r) => r.room === room.name).map((r) => {
-									const arrival = r.arrival_date;
-									const departure = r.departure_date;
-									const startCol = Math.max(dayIndex(arrival, days), 0);
-									// Departure day is checkout — draw up to (but not including) it visually.
-									const endCol = Math.min(dayIndex(departure, days), days.length);
-									if (endCol <= 0 || startCol >= days.length) return null;
-									const clampedStart = Math.max(startCol, 0);
-									const clampedEnd = endCol < 0 ? days.length : endCol;
-									if (clampedEnd <= clampedStart) return null;
-									const color = RES_COLOR[r.status] ?? RES_COLOR.Confirmed;
-									return (
-										<Tooltip key={r.name}>
-											<TooltipTrigger asChild>
-												<button
-													type="button"
-													onClick={() => { window.location.hash = `#/reservations/${encodeURIComponent(r.name)}`; }}
-													className={`absolute top-1 flex h-[48px] items-center gap-1 overflow-hidden rounded-md border ${color.bg} ${color.text} ${color.border} px-2 text-left text-xs shadow-sm transition-transform hover:z-10 hover:scale-[1.02]`}
-													style={{
-														left: `calc(160px + ((100% - 160px) / ${columns}) * ${clampedStart} + 2px)`,
-														width: `calc(((100% - 160px) / ${columns}) * ${clampedEnd - clampedStart} - 4px)`,
-													}}
-													data-testid={`res-block-${r.name}`}
-												>
-													<span className="truncate font-medium">{r.guest}</span>
-													<Badge variant="outline" className="ml-auto shrink-0 text-[10px]">{color.label}</Badge>
-												</button>
-											</TooltipTrigger>
-											<TooltipContent side="top" className="text-xs">
-												<div className="font-medium">{r.guest}</div>
-												<div>{r.name}</div>
-												<div>{r.arrival_date} → {r.departure_date} · {r.nights} night{r.nights === 1 ? "" : "s"}</div>
-												<div>Status: {r.status}</div>
-											</TooltipContent>
-										</Tooltip>
-									);
-								})}
+								{reservations.filter((r) => r.room === room.name).map((r) => (
+									<ReservationBar key={r.name} r={r} days={days} columns={columns} />
+								))}
 
 								{/* Task chips for this room (pinned to due_at day, or today if none) */}
 								{tasks.filter((t) => t.room === room.name).map((t) => {
@@ -256,5 +255,58 @@ function Legend() {
 				<span key={type} className={`inline-block rounded ${cls} px-1.5 py-0.5`}>{type}</span>
 			))}
 		</div>
+	);
+}
+
+type TimelineReservation = OccupancyTimeline["reservations"][number];
+
+/**
+ * One reservation drawn across the days it spans.
+ *
+ * Extracted so assigned rooms and the unassigned-by-room-type lanes render the
+ * identical bar — the two used to be one inline block, which is why unassigned
+ * bookings had nowhere to appear at all.
+ */
+function ReservationBar({
+	r,
+	days,
+	columns,
+}: {
+	r: TimelineReservation;
+	days: string[];
+	columns: number;
+}) {
+	const startCol = Math.max(dayIndex(r.arrival_date, days), 0);
+	// Departure day is checkout — draw up to but not including it.
+	const endCol = Math.min(dayIndex(r.departure_date, days), days.length);
+	if (endCol <= 0 || startCol >= days.length) return null;
+	const clampedEnd = endCol < 0 ? days.length : endCol;
+	if (clampedEnd <= startCol) return null;
+	const color = RES_COLOR[r.status] ?? RES_COLOR.Confirmed;
+
+	return (
+		<Tooltip>
+			<TooltipTrigger asChild>
+				<button
+					type="button"
+					onClick={() => { window.location.hash = `#/reservations/${encodeURIComponent(r.name)}`; }}
+					className={`absolute top-1 flex h-[48px] items-center gap-1 overflow-hidden rounded-md border ${color.bg} ${color.text} ${color.border} px-2 text-left text-xs transition-transform hover:z-10 hover:scale-[1.02]`}
+					style={{
+						left: `calc(160px + ((100% - 160px) / ${columns}) * ${startCol} + 2px)`,
+						width: `calc(((100% - 160px) / ${columns}) * ${clampedEnd - startCol} - 4px)`,
+					}}
+					data-testid={`res-block-${r.name}`}
+				>
+					<span className="truncate font-medium">{r.guest}</span>
+					<Badge variant="outline" className="ml-auto shrink-0 text-[10px]">{color.label}</Badge>
+				</button>
+			</TooltipTrigger>
+			<TooltipContent side="top" className="text-xs">
+				<div className="font-medium">{r.guest}</div>
+				<div>{r.name}</div>
+				<div>{r.arrival_date} → {r.departure_date} · {r.nights} night{r.nights === 1 ? "" : "s"}</div>
+				<div>Status: {r.status}{r.room ? "" : " · not yet assigned"}</div>
+			</TooltipContent>
+		</Tooltip>
 	);
 }

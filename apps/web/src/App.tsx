@@ -13,6 +13,7 @@ import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { BrandWash } from "@/components/brand-wash";
 import { Toaster } from "@/components/ui/sonner";
 import data from "@/app/dashboard/data.json";
 import { FolioWorkspace } from "@/app/folio/FolioWorkspace";
@@ -84,7 +85,8 @@ function AppShell({ children }: { children: ReactNode }) {
 				Skip to main content
 			</a>
 			<AppSidebar />
-			<SidebarInset>
+			<SidebarInset className="relative">
+				<BrandWash />
 				<SiteHeader />
 				<div id="main-content" tabIndex={-1} className="flex flex-1 flex-col outline-none">
 					{children}
@@ -142,7 +144,8 @@ function Workspace() {
 			}
 		>
 			<AppSidebar />
-			<SidebarInset>
+			<SidebarInset className="relative">
+				<BrandWash />
 				<SiteHeader />
 				<main className="flex flex-1 flex-col gap-6 bg-background py-6">
 					<section className="px-4 lg:px-6">

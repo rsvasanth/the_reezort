@@ -136,6 +136,16 @@ function build(mode: Mode) {
 		"chart-3": s("success", 9),
 		"chart-4": s("danger", 9),
 		"chart-5": s("gray", 9),
+		/**
+		 * Low accent steps, exposed for the ambient wash behind the app shell —
+		 * the same treatment radix-ui.com uses at the top of its own pages
+		 * (`linear-gradient(to bottom, var(--accent-4), transparent)`). Step 3/4
+		 * are Radix's "component background" steps: tinted enough to read as
+		 * brand, flat enough to put text on. Derived, not picked by eye, so the
+		 * wash follows whatever the accent becomes.
+		 */
+		"brand-wash": s("accent", 4),
+		"brand-wash-soft": s("accent", 3),
 	};
 
 	/** Web shell only — no native counterpart. */

@@ -49,6 +49,8 @@
 		--chart-3: 145 45% 34%;
 		--chart-4: 6 63% 46%;
 		--chart-5: 228 22% 60%;
+		--brand-wash: 50 100% 81%;
+		--brand-wash-soft: 52 100% 88%;
 	}
 
 	.dark:root {
@@ -86,5 +88,7 @@
 		--chart-3: 145 45% 34%;
 		--chart-4: 6 63% 46%;
 		--chart-5: 240 0% 43%;
+		--brand-wash: 37 100% 12%;
+		--brand-wash-soft: 36 71% 11%;
 	}
 }

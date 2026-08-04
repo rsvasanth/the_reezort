@@ -28,6 +28,8 @@ export default {
 					DEFAULT: "hsl(var(--brass))",
 					foreground: "hsl(var(--brass-foreground))",
 				},
+				"brand-wash": "hsl(var(--brand-wash))",
+				"brand-wash-soft": "hsl(var(--brand-wash-soft))",
 				chart: {
 					1: "hsl(var(--chart-1))",
 					2: "hsl(var(--chart-2))",

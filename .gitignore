@@ -5,3 +5,15 @@
 tags
 node_modules
 __pycache__
+
+# JS/TS build artifacts
+*.tsbuildinfo
+packages/*/dist
+apps/*/dist
+
+# Expo / React Native
+.expo/
+apps/*/android/build/
+apps/*/android/app/build/
+apps/*/android/.gradle/
+apps/*/ios/build/

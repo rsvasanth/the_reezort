@@ -420,7 +420,7 @@ function RoomsTab({ tree, onMutate }: { tree: PropertyTree; onMutate: MutateFn }
 				<span className="text-sm text-muted-foreground">{rooms.length} rooms</span>
 			</div>
 
-			<div className="rounded-lg border">
+			<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 				<Table>
 					<TableHeader>
 						<TableRow>

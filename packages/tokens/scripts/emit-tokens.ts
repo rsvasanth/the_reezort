@@ -263,7 +263,7 @@ function artwork(mode: Mode) {
 		 * nothing. Higher steps plus a slightly stronger knockback keeps it
 		 * present without competing with text.
 		 */
-		"art-opacity": d ? "0.5" : "0.55",
+		"art-opacity": d ? "0.3" : "0.38",
 	};
 }
 

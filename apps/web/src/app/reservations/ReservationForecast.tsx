@@ -84,7 +84,7 @@ export default function ReservationForecastScreen() {
 							<h3 className="flex items-center gap-2 text-sm font-semibold">
 								<CalendarClock className="size-4" /> Daily arrivals · {data.start_date} → {data.end_date}
 							</h3>
-							<div className="rounded-lg border">
+							<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 								<Table>
 									<TableHeader>
 										<TableRow>
@@ -114,7 +114,7 @@ export default function ReservationForecastScreen() {
 							<h3 className="text-sm font-semibold">
 								Deposit follow-up <Badge variant="secondary">{data.deposit_follow_up.length}</Badge>
 							</h3>
-							<div className="rounded-lg border">
+							<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 								<Table>
 									<TableHeader>
 										<TableRow>

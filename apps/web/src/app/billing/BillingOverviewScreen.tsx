@@ -77,7 +77,7 @@ export default function BillingOverviewScreen() {
 						</TabsList>
 
 						<TabsContent value="invoices" className="mt-4">
-							<div className="rounded-lg border">
+							<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 								<Table>
 									<TableHeader>
 										<TableRow>
@@ -110,7 +110,7 @@ export default function BillingOverviewScreen() {
 						</TabsContent>
 
 						<TabsContent value="payments" className="mt-4">
-							<div className="rounded-lg border">
+							<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 								<Table>
 									<TableHeader>
 										<TableRow>

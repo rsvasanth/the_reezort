@@ -130,7 +130,7 @@ export default function DishPerformanceTab({ outlet }: { outlet: string }) {
 				</div>
 			) : (
 				<>
-					<div className="rounded-lg border">
+					<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 						<Table data-testid="dish-performance">
 							<TableHeader>
 								<TableRow>

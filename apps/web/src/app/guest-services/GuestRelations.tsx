@@ -449,7 +449,7 @@ function RequestsTable({
 	onHandoff: (name: string) => void;
 }) {
 	return (
-		<div className="rounded-lg border" data-testid="requests-table">
+		<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]" data-testid="requests-table">
 			<Table>
 				<TableHeader>
 					<TableRow>
@@ -572,7 +572,7 @@ function ComplaintsTable({
 	onHandoff: (name: string) => void;
 }) {
 	return (
-		<div className="rounded-lg border" data-testid="complaints-table">
+		<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]" data-testid="complaints-table">
 			<Table>
 				<TableHeader>
 					<TableRow>

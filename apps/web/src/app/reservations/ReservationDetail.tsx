@@ -240,7 +240,7 @@ export default function ReservationDetail({ reservation }: { reservation: string
 			<Card>
 				<CardContent className="flex flex-col gap-3 p-6">
 					<h3 className="text-sm font-semibold">Rooms</h3>
-					<div className="rounded-lg border">
+					<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 						<Table>
 							<TableHeader>
 								<TableRow>

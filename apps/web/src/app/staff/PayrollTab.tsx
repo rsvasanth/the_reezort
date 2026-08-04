@@ -120,7 +120,7 @@ function SelfPane({ my, onDownload }: { my: MySlips | null; onDownload: (name: s
 			)}
 
 			{my?.slips.length ? (
-				<div className="rounded-lg border">
+				<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 					<Table>
 						<TableHeader>
 							<TableRow>
@@ -251,7 +251,7 @@ function ManagerPane({ onRunSubmitted }: { onRunSubmitted: () => Promise<void> }
 			{preview && preview.slips_preview.length ? (
 				<div>
 					<h3 className="mb-2 text-sm font-medium">Preview</h3>
-					<div className="rounded-lg border">
+					<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 						<Table>
 							<TableHeader>
 								<TableRow>
@@ -279,7 +279,7 @@ function ManagerPane({ onRunSubmitted }: { onRunSubmitted: () => Promise<void> }
 			{run && run.slips.length ? (
 				<div>
 					<h3 className="mb-2 text-sm font-medium">Slips generated</h3>
-					<div className="rounded-lg border">
+					<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 						<Table>
 							<TableHeader>
 								<TableRow>

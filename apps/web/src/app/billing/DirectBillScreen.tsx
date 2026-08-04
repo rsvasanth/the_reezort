@@ -108,7 +108,7 @@ export default function DirectBillScreen() {
 						]}
 					/>
 
-					<div className="rounded-lg border">
+					<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 						<Table>
 							<TableHeader>
 								<TableRow>

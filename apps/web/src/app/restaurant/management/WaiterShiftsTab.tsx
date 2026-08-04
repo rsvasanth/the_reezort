@@ -174,7 +174,7 @@ export default function WaiterShiftsTab({ outlet, outlets }: { outlet: string; o
 					<p className="text-sm text-muted-foreground">No waiter shifts on this day. Assign one above.</p>
 				</div>
 			) : (
-				<div className="rounded-lg border">
+				<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 					<Table data-testid="shifts-board">
 						<TableHeader>
 							<TableRow>

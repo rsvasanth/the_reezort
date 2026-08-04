@@ -138,7 +138,7 @@ export default function AdvancesTab() {
 						No advance requests yet.
 					</CardContent></Card>
 				) : (
-					<div className="rounded-lg border">
+					<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 						<Table>
 							<TableHeader>
 								<TableRow>
@@ -185,7 +185,7 @@ export default function AdvancesTab() {
 							<Check className="mr-1 inline size-4" /> No pending advance requests.
 						</CardContent></Card>
 					) : (
-						<div className="rounded-lg border">
+						<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 							<Table>
 								<TableHeader>
 									<TableRow>

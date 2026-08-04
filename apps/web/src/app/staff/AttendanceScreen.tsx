@@ -137,7 +137,7 @@ export default function AttendanceScreen() {
 					You do not have permission to view attendance. Ask a manager.
 				</CardContent></Card>
 			) : (
-				<div className="rounded-lg border">
+				<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 					<Table>
 						<TableHeader>
 							<TableRow>

@@ -149,7 +149,7 @@ export default function LeavesTab() {
 						No leave requests yet. Tap Request to file one.
 					</CardContent></Card>
 				) : (
-					<div className="rounded-lg border">
+					<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 						<Table>
 							<TableHeader>
 								<TableRow>
@@ -198,7 +198,7 @@ export default function LeavesTab() {
 							<Check className="mr-1 inline size-4" /> No pending leave requests.
 						</CardContent></Card>
 					) : (
-						<div className="rounded-lg border">
+						<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 							<Table>
 								<TableHeader>
 									<TableRow>

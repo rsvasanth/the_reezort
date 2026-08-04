@@ -205,7 +205,7 @@ export default function FrontDeskScreen() {
 					</TabsList>
 
 					<TabsContent value="arriving">
-						<div className="rounded-lg border">
+						<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 							<Table>
 								<TableHeader>
 									<TableRow>
@@ -768,7 +768,7 @@ function NoShowSection({ eligible, onMarked }: { eligible: NoShowEligible[]; onM
 				<UserX className="size-4 text-destructive" /> No-show review
 				<Badge variant="secondary">{eligible.length}</Badge>
 			</h2>
-			<div className="rounded-lg border">
+			<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 				<Table>
 					<TableHeader>
 						<TableRow>
@@ -836,7 +836,7 @@ function LateCheckoutSection({ requests, onActioned }: { requests: LateCheckoutR
 				<Clock className="size-4 text-amber-600" /> Pending late checkouts
 				<Badge variant="secondary">{requests.length}</Badge>
 			</h2>
-			<div className="rounded-lg border">
+			<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 				<Table>
 					<TableHeader>
 						<TableRow>
@@ -936,7 +936,7 @@ function StayTable({
 	checkingOut: string | null;
 }) {
 	return (
-		<div className="rounded-lg border">
+		<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 			<Table>
 				<TableHeader>
 					<TableRow>

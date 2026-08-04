@@ -215,7 +215,7 @@ export function OtaReviewSheet({ name, open, onOpenChange, onActioned }: Props) 
 							</dl>
 
 							{detail?.raw_payload ? (
-								<div className="rounded-lg border">
+								<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 									<button type="button" onClick={() => setRawOpen((v) => !v)} className="flex w-full items-center justify-between px-3 py-2 text-sm" data-testid="ota-raw-toggle">
 										<span className="text-muted-foreground">Raw payload</span>
 										<ChevronDown className={`size-4 transition-transform ${rawOpen ? "rotate-180" : ""}`} />

@@ -9,7 +9,7 @@
  * reachable via search/filter here (2026-07-10 audit fix).
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CalendarClock, ChevronLeft, ChevronRight, Loader2, Plus, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -32,7 +32,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { WorkspacePage, KpiStrip } from "@/components/workspace/workspace";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import {
 	FolioApiError,
 	cancelReservation,
@@ -110,15 +110,6 @@ export default function ReservationsList() {
 	const rangeStart = totalCount === 0 ? 0 : (page - 1) * PAGE_LENGTH + 1;
 	const rangeEnd = Math.min(page * PAGE_LENGTH, totalCount);
 
-	const kpis = useMemo(
-		() => [
-			{ label: "Matching", value: totalCount },
-			{ label: "This page", value: rows.length },
-			{ label: "Page", value: `${page} / ${totalPages}` },
-		],
-		[totalCount, rows.length, page, totalPages],
-	);
-
 	async function cancel(reservation: string) {
 		setBusy(reservation);
 		try {
@@ -149,7 +140,6 @@ export default function ReservationsList() {
 				</div>
 			}
 		>
-			<KpiStrip items={kpis} />
 
 			<div className="flex flex-wrap items-center gap-2">
 				<div className="relative w-72 max-w-full">
@@ -176,7 +166,7 @@ export default function ReservationsList() {
 				</span>
 			</div>
 
-			<div className="rounded-lg border">
+			<div className="rounded-lg border border-border/60 bg-[var(--card-surface)]">
 				<Table>
 					<TableHeader>
 						<TableRow>

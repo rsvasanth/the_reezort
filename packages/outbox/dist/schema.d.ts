@@ -1,0 +1,8 @@
+/**
+ * Client-side SQLite schema, per `data-model.md`.
+ *
+ * `pending_upload.outbox_id` cascades: resolving a conflict in favour of the
+ * server deletes the parent write, and its photos must go with it or the worker
+ * retries an attachment that can never land.
+ */
+export declare const SCHEMA = "\nCREATE TABLE IF NOT EXISTS outbox (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  client_request_id TEXT NOT NULL UNIQUE,\n  action TEXT NOT NULL,\n  payload_json TEXT NOT NULL,\n  target_doctype TEXT,\n  target_name TEXT,\n  base_modified TEXT,\n  state TEXT NOT NULL DEFAULT 'pending',\n  attempts INTEGER NOT NULL DEFAULT 0,\n  last_error TEXT,\n  retry_after INTEGER,\n  conflict_json TEXT,\n  resolved_from_conflict INTEGER NOT NULL DEFAULT 0,\n  created_at INTEGER NOT NULL\n);\nCREATE INDEX IF NOT EXISTS outbox_state_id ON outbox (state, id);\nCREATE TABLE IF NOT EXISTS pending_upload (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  client_request_id TEXT NOT NULL UNIQUE,\n  outbox_id INTEGER NOT NULL REFERENCES outbox(id) ON DELETE CASCADE,\n  local_uri TEXT NOT NULL,\n  content_hash TEXT NOT NULL,\n  state TEXT NOT NULL DEFAULT 'pending',\n  attempts INTEGER NOT NULL DEFAULT 0\n);\nCREATE INDEX IF NOT EXISTS pending_upload_outbox ON pending_upload (outbox_id);\nCREATE TABLE IF NOT EXISTS cache_meta (\n  collection TEXT PRIMARY KEY,\n  watermark TEXT,\n  last_synced_at INTEGER NOT NULL\n);\nCREATE TABLE IF NOT EXISTS cache_document (\n  collection TEXT NOT NULL,\n  name TEXT NOT NULL,\n  data_json TEXT NOT NULL,\n  cached_at INTEGER NOT NULL,\n  PRIMARY KEY (collection, name)\n);\nCREATE INDEX IF NOT EXISTS cache_document_cached_at ON cache_document (cached_at);\n";

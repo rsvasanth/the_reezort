@@ -1,0 +1,23 @@
+/**
+ * Write-behind outbox for the ops app. Ops only — the guest app is online-first.
+ *
+ * Drain order is strictly by row id, so a photo upload never precedes the write
+ * it attaches to. Every row carries a client-generated idempotency key and the
+ * `modified` timestamp it was based on; the server rejects rather than clobbers
+ * (see data-model.md). Conflicts surface as "needs review" — never auto-resolved.
+ *
+ * The state machine and the resolution semantics are pure functions over rows,
+ * deliberately free of SQLite and of the network: that is where silent data loss
+ * would live, so it is the part that has to be exhaustively testable. The
+ * expo-sqlite adapter belongs in the ops app.
+ */
+export { SCHEMA } from "./schema";
+export { eligibleUploads } from "./uploads";
+export { createCacheRepository } from "./cache";
+export { syncPullOnce, SYNC_PULL } from "./pullTransport";
+export { drainUploads, ATTACH_FILE } from "./uploadTransport";
+export { drainOnce, fromWireResult, toWireOperation, SYNC_PUSH, } from "./transport";
+export { createOutboxRepository } from "./repository";
+export { applySyncResult, nextBatch, retryDelayMs } from "./drain";
+export { keepMine, keepServer } from "./resolve";
+export { isTerminal, needsReview, } from "./types";

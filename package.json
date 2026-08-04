@@ -3,13 +3,34 @@
   "private": true,
   "version": "0.0.1",
   "description": "Five-star resort operations layer for ERPNext",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "postinstall": "cd resort-app && yarn install",
-    "dev": "cd resort-app && yarn dev",
-    "build": "cd resort-app && yarn build",
-    "lint": "cd resort-app && yarn lint",
-    "test": "yarn lint"
+    "dev": "yarn workspace resort-app dev",
+    "build": "yarn workspace resort-app build",
+    "lint": "yarn workspace resort-app lint",
+    "preview": "yarn workspace resort-app preview",
+    "test:e2e": "yarn workspace resort-app test:e2e",
+    "ops": "yarn workspace @reezort/ops start",
+    "guest": "yarn workspace @reezort/guest start",
+    "check:contracts": "node apps/web/scripts/check-doctype-parity.mjs",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run",
+    "test:live": "vitest run packages/outbox/src/live.test.ts",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.14",
+    "typescript": "~6.0.3",
+    "vitest": "^3"
   },
   "author": "Alphaworkz",
-  "license": "MIT"
+  "license": "MIT",
+  "resolutions": {
+    "react-native": "0.85.3",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  }
 }

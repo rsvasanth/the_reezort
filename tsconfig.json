@@ -1,0 +1,11 @@
+{
+	"//": "Solution file for `tsc -b`. Without one the script fails on TS5083 before type-checking anything. Apps are excluded: they are noEmit leaf configs, not composite projects, and are checked by their own `yarn workspace <app> typecheck` (the web app has its own solution file at apps/web/tsconfig.json).",
+	"files": [],
+	"references": [
+		{ "path": "./packages/domain-types" },
+		{ "path": "./packages/api-client" },
+		{ "path": "./packages/outbox" },
+		{ "path": "./packages/tokens" },
+		{ "path": "./packages/ui" }
+	]
+}

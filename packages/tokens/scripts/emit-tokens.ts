@@ -8,28 +8,34 @@
  *                                 NativeWind classes cannot reach (nav chrome,
  *                                 status bar, Android system UI)
  *
- * Accent, grays and semantics are all derived from owner-supplied seeds through
- * Radix's own generateRadixColors, so every step carries Radix's contrast
- * guarantees. The accent briefly used Radix's published `amber` scale; the owner
- * reverted to this custom bronze, which is darker and more restrained.
+ * The accent is Radix's published `indigo`, imported rather than generated. When
+ * the brand simply IS a published scale, importing gives the exact values with
+ * their contrast guarantees intact; the generator exists to DERIVE a scale from
+ * an arbitrary brand colour, and asking it to approximate a published one lands
+ * close but not equal.
+ *
+ * Grays and the semantic colours are still derived, from owner-supplied seeds.
+ * The gray seeds already produce a blue-leaning neutral, which is what pairs
+ * with indigo — the same relationship slate has to indigo on radix-ui.com.
  */
 import { writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 
+import * as RadixColors from "@radix-ui/colors";
+
 import { generateRadixColors } from "./generate-radix-colors.tsx";
 
-const ACCENT = "#A66407";
 const GRAY = { light: "#0A0D1E", dark: "#E5E5E6" };
 const BG = { light: "#FFFFFF", dark: "#111111" };
 
 /**
- * `warning` is pulled yellow, away from the bronze accent. Roughly 87 utilities
- * across the screens resolve to `warning`; at the accent's own hue those screens
- * would flatten into a single colour.
+ * Semantic seeds, held clear of the accent. `info` is teal rather than blue:
+ * against an indigo accent a blue info sits ~16 degrees away and stops reading as
+ * a separate state. `warning` stays yellow, well clear of both.
  */
-const SEEDS = { success: "#2F7D4F", warning: "#C2A000", danger: "#C0392B", info: "#3E6FB0" };
+const SEEDS = { success: "#2F7D4F", warning: "#C2A000", danger: "#C0392B", info: "#0D7490" };
 
 const hexToHsl = (hex: string) => {
 	let h = hex.replace("#", "");
@@ -81,8 +87,11 @@ const fgFor = (bg: string, scale: string[]) => {
 type Mode = "light" | "dark";
 
 function build(mode: Mode) {
-	const scales: Record<string, string[]> = {};
-	for (const [name, seed] of Object.entries({ accent: ACCENT, ...SEEDS })) {
+	const accent = Object.values(
+		mode === "light" ? RadixColors.indigo : RadixColors.indigoDark,
+	) as string[];
+	const scales: Record<string, string[]> = { accent };
+	for (const [name, seed] of Object.entries(SEEDS)) {
 		const r = generateRadixColors({
 			appearance: mode,
 			accent: seed,

@@ -11,27 +11,28 @@
 }
 
 /*
- * THE REEZORT tokens, generated from a Radix custom palette.
+ * THE REEZORT tokens. Generated — do not hand-edit. See scripts/palette/.
  *
- * Seeds (owner decision, 2026-08-03) — accent #A66407, gray #0A0D1E light /
- * #E5E5E6 dark, background #FFFFFF light / #111111 dark. This supersedes the
- * accent previously extracted from `#/book` (#b08d57): the brand direction is
- * now a deeper bronze on cool neutrals rather than brass on warm ivory. The
- * `#/book` marketing site still renders its own palette explicitly and is
- * deliberately untouched.
+ * Accent is Radix's stock `amber` (owner decision, 2026-08-03), replacing the
+ * custom #A66407 bronze that briefly preceded it and, before that, the #b08d57
+ * brass extracted from `#/book`. The `#/book` marketing site still renders its
+ * own palette explicitly and is deliberately untouched.
  *
- * Produced by Radix's own `generateRadixColors` rather than by hand, so the
- * twelve steps carry Radix's contrast guarantees. Regenerate rather than
- * hand-edit: the seeds above are the source of truth.
+ * Grays are generated from the owner's seeds (#0A0D1E light / #E5E5E6 dark) via
+ * Radix's own `generateRadixColors`, vendored in scripts/palette/, so the twelve
+ * steps carry Radix's contrast guarantees.
+ *
+ * `--primary-foreground` is COMPUTED, not assumed. Stock amber-9 (#ffc53d) is a
+ * light colour: white text on it is 1.58:1, far below AA. The generator picks
+ * the readable end of the scale per step, so an accent change can never
+ * silently make every primary button unreadable.
+ *
+ * `warning` sits at hue 26 (orange) rather than its natural amber, because
+ * amber is now the accent — roughly 87 utilities resolve to warning, and at the
+ * accent's hue those screens would flatten into one colour.
  *
  * Values are HSL triples, not hex, because Tailwind needs `hsl(var(--x))` to
  * inject alpha for the `/25`-style opacity modifiers used across the app.
- *
- * Semantic colours (success/warning/info/danger) run through the same generator
- * on the same grays, but are pulled to distinct hues. `warning` in particular is
- * held at hue 47 against primary's 35 — roughly 87 utilities across the screens
- * resolve to `warning`, so if it read as primary a lot of screens would flatten
- * into one colour.
  */
 @layer base {
 	:root {
@@ -41,8 +42,8 @@
 		--card-foreground: 230 31% 15%;
 		--popover: 225 100% 99%;
 		--popover-foreground: 230 31% 15%;
-		--primary: 35 92% 34%;
-		--primary-foreground: 0 0% 100%;
+		--primary: 42 100% 62%;
+		--primary-foreground: 24 40% 22%;
 		--secondary: 228 71% 96%;
 		--secondary-foreground: 230 31% 15%;
 		--muted: 228 71% 96%;
@@ -53,30 +54,30 @@
 		--destructive-foreground: 0 0% 100%;
 		--border: 228 52% 89%;
 		--input: 229 48% 85%;
-		--ring: 31 73% 62%;
-		--brass: 35 92% 34%;
-		--brass-foreground: 0 0% 100%;
+		--ring: 38 75% 55%;
+		--brass: 42 100% 62%;
+		--brass-foreground: 24 40% 22%;
 		--success: 145 45% 34%;
 		--success-foreground: 0 0% 100%;
-		--warning: 47 100% 29%;
-		--warning-foreground: 0 0% 100%;
+		--warning: 26 85% 41%;
+		--warning-foreground: 20 60% 99%;
 		--info: 214 48% 47%;
 		--info-foreground: 0 0% 100%;
 		--danger: 6 63% 46%;
 		--danger-foreground: 0 0% 100%;
-		--chart-1: 35 92% 34%;
+		--chart-1: 42 100% 62%;
 		--chart-2: 214 48% 47%;
 		--chart-3: 145 45% 34%;
 		--chart-4: 6 63% 46%;
 		--chart-5: 228 22% 60%;
 		--sidebar-background: 225 100% 98%;
 		--sidebar-foreground: 229 17% 43%;
-		--sidebar-primary: 35 92% 34%;
-		--sidebar-primary-foreground: 0 0% 100%;
+		--sidebar-primary: 42 100% 62%;
+		--sidebar-primary-foreground: 24 40% 22%;
 		--sidebar-accent: 226 60% 93%;
 		--sidebar-accent-foreground: 230 31% 15%;
 		--sidebar-border: 228 52% 89%;
-		--sidebar-ring: 31 73% 62%;
+		--sidebar-ring: 38 75% 55%;
 
 
 		/* Distinct steps: large surfaces, controls and pills must not collapse to one value. */
@@ -107,8 +108,8 @@
 		--card-foreground: 230 31% 15%;
 		--popover: 225 100% 99%;
 		--popover-foreground: 230 31% 15%;
-		--primary: 35 92% 34%;
-		--primary-foreground: 0 0% 100%;
+		--primary: 42 100% 62%;
+		--primary-foreground: 24 40% 22%;
 		--secondary: 228 71% 96%;
 		--secondary-foreground: 230 31% 15%;
 		--muted: 228 71% 96%;
@@ -119,30 +120,30 @@
 		--destructive-foreground: 0 0% 100%;
 		--border: 228 52% 89%;
 		--input: 229 48% 85%;
-		--ring: 31 73% 62%;
-		--brass: 35 92% 34%;
-		--brass-foreground: 0 0% 100%;
+		--ring: 38 75% 55%;
+		--brass: 42 100% 62%;
+		--brass-foreground: 24 40% 22%;
 		--success: 145 45% 34%;
 		--success-foreground: 0 0% 100%;
-		--warning: 47 100% 29%;
-		--warning-foreground: 0 0% 100%;
+		--warning: 26 85% 41%;
+		--warning-foreground: 20 60% 99%;
 		--info: 214 48% 47%;
 		--info-foreground: 0 0% 100%;
 		--danger: 6 63% 46%;
 		--danger-foreground: 0 0% 100%;
-		--chart-1: 35 92% 34%;
+		--chart-1: 42 100% 62%;
 		--chart-2: 214 48% 47%;
 		--chart-3: 145 45% 34%;
 		--chart-4: 6 63% 46%;
 		--chart-5: 228 22% 60%;
 		--sidebar-background: 225 100% 98%;
 		--sidebar-foreground: 229 17% 43%;
-		--sidebar-primary: 35 92% 34%;
-		--sidebar-primary-foreground: 0 0% 100%;
+		--sidebar-primary: 42 100% 62%;
+		--sidebar-primary-foreground: 24 40% 22%;
 		--sidebar-accent: 226 60% 93%;
 		--sidebar-accent-foreground: 230 31% 15%;
 		--sidebar-border: 228 52% 89%;
-		--sidebar-ring: 31 73% 62%;
+		--sidebar-ring: 38 75% 55%;
 	}
 
 	.dark {
@@ -152,8 +153,8 @@
 		--card-foreground: 240 3% 93%;
 		--popover: 240 2% 10%;
 		--popover-foreground: 240 3% 93%;
-		--primary: 35 92% 34%;
-		--primary-foreground: 0 0% 100%;
+		--primary: 42 100% 62%;
+		--primary-foreground: 36 29% 7%;
 		--secondary: 240 1% 14%;
 		--secondary-foreground: 240 3% 93%;
 		--muted: 240 1% 14%;
@@ -164,29 +165,29 @@
 		--destructive-foreground: 0 0% 100%;
 		--border: 240 2% 23%;
 		--input: 240 1% 28%;
-		--ring: 35 100% 31%;
-		--brass: 35 92% 34%;
-		--brass-foreground: 0 0% 100%;
+		--ring: 36 60% 35%;
+		--brass: 42 100% 62%;
+		--brass-foreground: 36 29% 7%;
 		--success: 141 42% 65%;
-		--success-foreground: 0 0% 100%;
-		--warning: 47 64% 58%;
-		--warning-foreground: 0 0% 100%;
+		--success-foreground: 137 23% 6%;
+		--warning: 22 96% 70%;
+		--warning-foreground: 23 24% 7%;
 		--info: 215 92% 75%;
-		--info-foreground: 0 0% 100%;
+		--info-foreground: 218 42% 7%;
 		--danger: 8 100% 75%;
-		--danger-foreground: 0 0% 100%;
-		--chart-1: 35 92% 34%;
+		--danger-foreground: 5 30% 7%;
+		--chart-1: 42 100% 62%;
 		--chart-2: 214 48% 47%;
 		--chart-3: 145 45% 34%;
 		--chart-4: 6 63% 46%;
 		--chart-5: 240 0% 43%;
 		--sidebar-background: 240 3% 7%;
 		--sidebar-foreground: 240 1% 70%;
-		--sidebar-primary: 35 92% 34%;
-		--sidebar-primary-foreground: 0 0% 100%;
+		--sidebar-primary: 42 100% 62%;
+		--sidebar-primary-foreground: 36 29% 7%;
 		--sidebar-accent: 240 1% 16%;
 		--sidebar-accent-foreground: 240 3% 93%;
 		--sidebar-border: 240 2% 23%;
-		--sidebar-ring: 35 100% 31%;
+		--sidebar-ring: 36 60% 35%;
 	}
 }

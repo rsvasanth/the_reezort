@@ -50,3 +50,35 @@ export interface SyncResult {
     readonly serverValues?: Readonly<Record<string, unknown>>;
     readonly yourValues?: Readonly<Record<string, unknown>>;
 }
+export type CaptureStage = "Check-In" | "Check-Out";
+export type OverallCondition = "Good" | "Minor Issues" | "Damage Noted";
+export interface ConditionPhoto {
+    /** File URL returned by Frappe's upload_file. */
+    image: string;
+    caption?: string;
+    area?: string;
+}
+export interface ConditionCapture {
+    name: string;
+    capture_stage: CaptureStage;
+    captured_by: string;
+    captured_at: string;
+    overall_condition: OverallCondition | null;
+    notes: string | null;
+    photos: ConditionPhoto[];
+}
+export interface CaptureRoomConditionInput {
+    stay: string;
+    capture_stage: CaptureStage;
+    photos: ConditionPhoto[];
+    overall_condition?: OverallCondition;
+    notes?: string;
+}
+export interface CaptureRoomConditionResult {
+    capture: ConditionCapture;
+    /** True when the server returned an existing capture rather than creating one. */
+    reused: boolean;
+}
+export interface GetRoomConditionCapturesResult {
+    captures: ConditionCapture[];
+}

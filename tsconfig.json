@@ -6,6 +6,7 @@
 		{ "path": "./packages/api-client" },
 		{ "path": "./packages/outbox" },
 		{ "path": "./packages/tokens" },
-		{ "path": "./packages/ui" }
+		{ "path": "./packages/ui" },
+		{ "path": "./packages/lib" }
 	]
 }

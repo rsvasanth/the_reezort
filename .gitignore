@@ -17,3 +17,9 @@ apps/*/android/build/
 apps/*/android/app/build/
 apps/*/android/.gradle/
 apps/*/ios/build/
+
+# Expo prebuild output — generated from app.json + config plugins, never edited by hand.
+# apps/guest already omits it; apps/ops was committed at RN 0.81 and silently rotted
+# against the RN 0.85 upgrade (hermesc moved), which broke the build.
+apps/*/android/
+apps/*/ios/

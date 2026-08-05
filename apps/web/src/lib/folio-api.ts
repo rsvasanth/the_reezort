@@ -25,11 +25,72 @@ export type FolioMessage = {
 	message: string;
 };
 
+/** Turns Frappe's HTML-bearing messages into something a toast can show. */
+function stripHtml(value: string): string {
+	return value
+		.replace(/<br\s*\/?>/gi, " ")
+		.replace(/<[^>]+>/g, "")
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
+/**
+ * Reads the reason out of a `frappe.throw`.
+ *
+ * A throw does NOT come back in the house `{ok, data, blockers}` envelope — it
+ * returns Frappe's own error body, so `blockers` is empty and callers fall back
+ * to the technical string. That is why validation failures surfaced as
+ * "…delete_record failed with 417" instead of "Cannot delete — other records
+ * still reference it", hiding a message the backend had already written well.
+ *
+ * `_server_messages` is doubly encoded: a JSON string holding an array of JSON
+ * strings, each usually `{"message": "...", "title": "Message"}` but sometimes
+ * a bare string. Both forms are handled; the traceback is the last resort.
+ */
+function frappeServerMessages(body: unknown): FolioMessage[] {
+	if (!body || typeof body !== "object") return [];
+	const raw = body as Record<string, unknown>;
+	const found: FolioMessage[] = [];
+
+	if (typeof raw._server_messages === "string") {
+		let entries: unknown;
+		try {
+			entries = JSON.parse(raw._server_messages);
+		} catch {
+			entries = undefined;
+		}
+		if (Array.isArray(entries)) {
+			for (const entry of entries) {
+				if (typeof entry !== "string") continue;
+				let text = entry;
+				try {
+					const decoded = JSON.parse(entry) as { message?: unknown };
+					if (typeof decoded?.message === "string") text = decoded.message;
+				} catch {
+					// A bare string entry — already the message.
+				}
+				const message = stripHtml(text);
+				if (message) found.push({ code: "server_message", message });
+			}
+		}
+	}
+	if (found.length) return found;
+
+	// Traceback tail, e.g. "frappe.exceptions.ValidationError: <the reason>".
+	if (typeof raw.exception === "string" && raw.exception.trim()) {
+		const message = stripHtml(raw.exception.replace(/^[\w.]*(?:Error|Exception):\s*/, ""));
+		if (message) return [{ code: "exception", message }];
+	}
+	return [];
+}
+
 export class FolioApiError extends Error {
 	readonly status: number;
 	readonly blockers: FolioMessage[];
 	readonly warnings: FolioMessage[];
 	readonly rawEnvelope?: FolioApiEnvelope<unknown>;
+	/** The "<method> failed with <status>" string — for logs, not for users. */
+	readonly technicalMessage: string;
 
 	constructor(
 		message: string,
@@ -40,10 +101,19 @@ export class FolioApiError extends Error {
 			rawEnvelope?: FolioApiEnvelope<unknown>;
 		}
 	) {
-		super(message);
+		// Every caller builds this the same way — envelope blockers if the house
+		// envelope came back, otherwise Frappe's own error body — so deriving it
+		// here fixes the message for all 28 API modules at once rather than
+		// asking each to remember.
+		const blockers = options.blockers?.length
+			? options.blockers
+			: frappeServerMessages(options.rawEnvelope);
+
+		super(blockers[0]?.message ?? message);
 		this.name = "FolioApiError";
+		this.technicalMessage = message;
 		this.status = options.status;
-		this.blockers = options.blockers ?? [];
+		this.blockers = blockers;
 		this.warnings = options.warnings ?? [];
 		this.rawEnvelope = options.rawEnvelope;
 	}

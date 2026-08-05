@@ -47,6 +47,7 @@ import {
 	createBuilding,
 	createFloor,
 	createRoomType,
+	setRoomTypeRate,
 	createRoomsBulk,
 	createAmenity,
 	deleteRecord,
@@ -554,13 +555,14 @@ function RoomTypeRow({ t, onMutate }: { t: TreeRoomType; onMutate: MutateFn }) {
 					min="0"
 					value={rate}
 					onChange={(e) => setRate(e.target.value)}
+					onFocus={(e) => e.target.select()}
 					data-testid={`rate-${t.room_type_code}`}
 				/>
 				<Button
 					variant="outline"
 					size="sm"
 					disabled={!dirty}
-					onClick={() => onMutate(() => updateRecord("Room Type", t.name, { nightly_rate: parseFloat(rate) || 0 }), "Rate updated")}
+					onClick={() => onMutate(() => setRoomTypeRate(t.name, parseFloat(rate) || 0), "Rate updated")}
 				>
 					Set
 				</Button>
@@ -582,9 +584,9 @@ function RoomTypesTab({ tree, onMutate }: { tree: PropertyTree; onMutate: Mutate
 				<div className="grid grid-cols-[1.3fr_0.9fr_0.6fr_0.6fr_0.9fr_auto] items-end gap-2">
 					<Field label="Name"><Input value={rt.room_type_name} onChange={(e) => setRt({ ...rt, room_type_name: e.target.value })} placeholder="Signature Arch Villa" /></Field>
 					<Field label="Code"><Input value={rt.room_type_code} onChange={(e) => setRt({ ...rt, room_type_code: e.target.value })} placeholder="SAV" /></Field>
-					<Field label="Adults"><Input type="number" value={rt.standard_adults} onChange={(e) => setRt({ ...rt, standard_adults: e.target.value })} /></Field>
-					<Field label="Max"><Input type="number" value={rt.max_occupancy} onChange={(e) => setRt({ ...rt, max_occupancy: e.target.value })} /></Field>
-					<Field label="₹/night"><Input type="number" min="0" value={rt.nightly_rate} onChange={(e) => setRt({ ...rt, nightly_rate: e.target.value })} placeholder="18000" /></Field>
+					<Field label="Adults"><Input type="number" value={rt.standard_adults} onChange={(e) => setRt({ ...rt, standard_adults: e.target.value })} onFocus={(e) => e.target.select()} /></Field>
+					<Field label="Max"><Input type="number" value={rt.max_occupancy} onChange={(e) => setRt({ ...rt, max_occupancy: e.target.value })} onFocus={(e) => e.target.select()} /></Field>
+					<Field label="₹/night"><Input type="number" min="0" value={rt.nightly_rate} onChange={(e) => setRt({ ...rt, nightly_rate: e.target.value })} onFocus={(e) => e.target.select()} placeholder="18000" /></Field>
 					<Button disabled={!rt.room_type_name || !rt.room_type_code} onClick={() => onMutate(() => createRoomType({ resort_property: tree.resort_property, room_type_name: rt.room_type_name, room_type_code: rt.room_type_code, standard_adults: parseInt(rt.standard_adults, 10) || 2, max_occupancy: parseInt(rt.max_occupancy, 10) || 2, nightly_rate: parseFloat(rt.nightly_rate) || 0 }), "Room type added").then(() => setRt({ room_type_name: "", room_type_code: "", standard_adults: "2", max_occupancy: "2", nightly_rate: "" }))}><Plus className="size-4" /></Button>
 				</div>
 			</CardContent>
@@ -997,6 +999,11 @@ const LOCATION_TYPES: ServiceLocationType[] = [
 	"Restaurant", "Bar", "Cafe", "Room Service", "Spa", "Gym", "Pool", "Retail", "Activity", "Other",
 ];
 
+/** Must stay in step with REVENUE_LOCATION_TYPES in service_location.py. */
+const REVENUE_LOCATION_TYPES = new Set<ServiceLocationType>([
+	"Restaurant", "Bar", "Cafe", "Room Service", "Spa", "Retail", "Activity",
+]);
+
 function LocationsTab({
 	resortProperty,
 	buildings,
@@ -1012,12 +1019,19 @@ function LocationsTab({
 	const [editingLocation, setEditingLocation] = useState<ServiceLocation | null>(null);
 	const [createOpen, setCreateOpen] = useState(false);
 
+	// Service Location refuses to save a revenue outlet that can neither bill
+	// direct nor post to a folio. The form previously never collected either
+	// flag, so both arrived as 0 and every revenue location — including the
+	// default type, Restaurant — failed validation. Folio posting is on by
+	// default because that is the normal resort outlet.
 	const emptyForm = {
 		location_name: "",
 		location_code: "",
 		location_type: "Restaurant" as ServiceLocationType,
 		building: "",
 		floor: "",
+		can_post_to_folio: true,
+		can_bill_direct: false,
 	};
 	const [form, setForm] = useState(emptyForm);
 	const [saving, setSaving] = useState(false);
@@ -1046,6 +1060,8 @@ function LocationsTab({
 				location_type: form.location_type,
 				building: form.building || undefined,
 				floor: form.floor || undefined,
+				can_post_to_folio: form.can_post_to_folio,
+				can_bill_direct: form.can_bill_direct,
 			});
 			toast.success("Location created");
 			setCreateOpen(false);
@@ -1106,10 +1122,18 @@ function LocationsTab({
 			location_type: loc.location_type,
 			building: loc.building ?? "",
 			floor: loc.floor ?? "",
+			can_post_to_folio: !!loc.can_post_to_folio,
+			can_bill_direct: !!loc.can_bill_direct,
 		});
 	}
 
 	const floorsForBuilding = floors.filter((f) => f.building === form.building);
+	// Mirrors REVENUE_LOCATION_TYPES in service_location.py — Gym, Pool and
+	// Other are the non-revenue types and carry no billing requirement.
+	const billingPolicyMissing =
+		REVENUE_LOCATION_TYPES.has(form.location_type) &&
+		!form.can_post_to_folio &&
+		!form.can_bill_direct;
 
 	return (
 		<div className="flex flex-col gap-4">
@@ -1227,6 +1251,29 @@ function LocationsTab({
 								options={[{ value: "", label: "None" }, ...floorsForBuilding.map((f) => ({ value: f.name, label: f.floor_label }))]}
 							/>
 						) : null}
+						<div className="flex flex-col gap-2 rounded-lg border p-3">
+							<div className="flex items-center justify-between gap-3">
+								<Label htmlFor="can-post-folio" className="text-sm font-normal">Post to guest folio</Label>
+								<Switch
+									id="can-post-folio"
+									checked={form.can_post_to_folio}
+									onCheckedChange={(v) => setForm({ ...form, can_post_to_folio: v })}
+								/>
+							</div>
+							<div className="flex items-center justify-between gap-3">
+								<Label htmlFor="can-bill-direct" className="text-sm font-normal">Bill direct</Label>
+								<Switch
+									id="can-bill-direct"
+									checked={form.can_bill_direct}
+									onCheckedChange={(v) => setForm({ ...form, can_bill_direct: v })}
+								/>
+							</div>
+							{billingPolicyMissing ? (
+								<p className="text-xs text-destructive">
+									A {form.location_type.toLowerCase()} earns revenue, so it needs at least one of these.
+								</p>
+							) : null}
+						</div>
 					</div>
 					<DialogFooter>
 						<DialogClose asChild>
@@ -1234,7 +1281,7 @@ function LocationsTab({
 						</DialogClose>
 						<Button
 							onClick={handleCreate}
-							disabled={saving || !form.location_name || !form.location_code}
+							disabled={saving || !form.location_name || !form.location_code || billingPolicyMissing}
 							data-testid="confirm-create-location"
 						>
 							{saving ? <Loader2 className="size-4 animate-spin" /> : null}

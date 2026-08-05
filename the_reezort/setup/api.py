@@ -55,7 +55,20 @@ def ensure_room_item(item_code, item_name, nightly_rate, company=None):
 
 	rate = flt(nightly_rate)
 	if rate > 0:
-		price_list = frappe.db.get_value("Price List", {"selling": 1, "enabled": 1}, "name") or "Standard Selling"
+		# The fallback used to be the literal "Standard Selling". On a site where
+		# ERPNext's default price lists were never created that name does not
+		# exist, so the Item Price insert died with a LinkValidationError whose
+		# text ("Could not find Price List: Standard Selling") told an operator
+		# nothing about what to do. Say what is actually wrong instead.
+		price_list = frappe.db.get_value("Price List", {"selling": 1, "enabled": 1}, "name")
+		if not price_list:
+			frappe.throw(
+				_(
+					"No enabled selling Price List exists, so a nightly rate cannot be "
+					"stored. Create one in ERPNext (for example Standard Selling), or "
+					"add the room type without a rate and price it later."
+				)
+			)
 		existing = frappe.db.get_value(
 			"Item Price", {"item_code": item_code, "price_list": price_list, "selling": 1}, "name"
 		)
@@ -419,6 +432,29 @@ def create_room_type(payload):
 		{"room_type": _room_type_data(frappe.get_doc("Room Type", doc.name)), "reused": False},
 		next_actions=["create_rooms"],
 	)
+
+
+@frappe.whitelist()
+def set_room_type_rate(room_type, nightly_rate):
+	"""Set a room type's nightly rate.
+
+	`nightly_rate` is not a Room Type field — it lives on the linked ERPNext
+	Item's selling Item Price, which is what availability, estimates and folio
+	room charges all read. The console previously tried to write it through
+	`update_record`, whose whitelist silently drops unknown fields, so the rate
+	never actually changed. This routes through the same item/price helper
+	`create_room_type` uses.
+	"""
+	_require_permission("Room Type", "write")
+	rate = flt(nightly_rate)
+	# ensure_room_item only writes a price when the rate is positive, so a zero
+	# here would report success and change nothing — the exact bug above.
+	if rate <= 0:
+		frappe.throw(_("Nightly rate must be greater than zero."))
+
+	doc = frappe.get_doc("Room Type", room_type)
+	_attach_room_rate(doc.name, doc.room_type_code, doc.room_type_name, rate)
+	return _envelope({"room_type": _room_type_data(doc), "nightly_rate": rate})
 
 
 @frappe.whitelist()

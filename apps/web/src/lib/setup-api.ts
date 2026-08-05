@@ -357,6 +357,23 @@ export async function createRoomType(
 	return callSetup("the_reezort.setup.api.create_room_type", { method: "POST", body: { payload } });
 }
 
+/**
+ * Sets a room type's nightly rate.
+ *
+ * Not `updateRecord`: the rate is an ERPNext Item Price, not a Room Type field,
+ * and update_record's field whitelist drops anything it does not know — so that
+ * path reported success while changing nothing.
+ */
+export async function setRoomTypeRate(
+	roomType: string,
+	nightlyRate: number
+): Promise<{ nightly_rate: number }> {
+	return callSetup("the_reezort.setup.api.set_room_type_rate", {
+		method: "POST",
+		body: { room_type: roomType, nightly_rate: nightlyRate },
+	});
+}
+
 export async function createRoomsBulk(payload: CreateRoomsBulkPayload): Promise<BulkRoomResult> {
 	return callSetup("the_reezort.setup.api.create_rooms_bulk", { method: "POST", body: { payload } });
 }

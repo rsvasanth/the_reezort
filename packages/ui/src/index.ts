@@ -40,5 +40,45 @@ export {
 } from "./dialog";
 export { Checkbox } from "./checkbox";
 export { Switch, type SwitchProps } from "./switch";
+export { Label } from "./label";
+export { Textarea } from "./textarea";
+export { Skeleton } from "./skeleton";
+export { Avatar, AvatarImage, AvatarFallback } from "./avatar";
+export { Collapsible, CollapsibleTrigger, CollapsibleContent } from "./collapsible";
+export { Tabs, TabsList, TabsTrigger, TabsContent } from "./tabs";
+export { ToggleGroup, ToggleGroupItem, toggleVariants } from "./toggle-group";
+export {
+	Select,
+	SelectGroup,
+	SelectValue,
+	SelectTrigger,
+	SelectContent,
+	SelectLabel,
+	SelectItem,
+	SelectSeparator,
+} from "./select";
+export { Sheet, SheetContent, SheetHeader, SheetFooter, SheetTitle, SheetDescription } from "./sheet";
+export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "./table";
+
+/**
+ * Deliberately NOT ported, with reasons — so the next person does not read the
+ * gap as unfinished work:
+ *
+ * - `breadcrumb`  Native navigation is a stack with a back affordance. A
+ *                 breadcrumb trail restates what the header and back button
+ *                 already say.
+ * - `tooltip`     Requires hover. On touch there is no equivalent that is not a
+ *                 long-press easter egg, so the label belongs on screen instead.
+ * - `sidebar`     Belongs to navigation, not the component library — expo-router
+ *                 owns drawers, and the ops shell already has a tab bar.
+ * - `dropdown-menu` Reaches native as an action sheet, which is a Sheet with a
+ *                 list. Adding a second overlay primitive for it would duplicate
+ *                 Sheet without adding behaviour.
+ * - `chart`       Needs a React Native charting library, which is a dependency
+ *                 decision rather than a wrapper. Blocks the analytics surfaces
+ *                 only, which are late in the surface map.
+ * - `sonner`      Already implemented as the toast in the ops shell. It becomes a
+ *                 shared component when a second app needs it.
+ */
 
 export { spacing, MIN_TOUCH_TARGET, radius, COLORS, type Spacing } from "@reezort/tokens";

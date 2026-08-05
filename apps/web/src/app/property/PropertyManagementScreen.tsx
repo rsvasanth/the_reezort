@@ -35,13 +35,13 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import {
-	Dialog,
-	DialogContent,
-	DialogHeader,
-	DialogTitle,
-	DialogFooter,
-	DialogClose,
-} from "@/components/ui/dialog";
+	Sheet,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+	SheetFooter,
+	SheetClose,
+} from "@/components/ui/sheet";
 import {
 	FolioApiError,
 	createBuilding,
@@ -793,12 +793,12 @@ function BlocksTab({
 				</div>
 			)}
 
-			<Dialog open={createOpen} onOpenChange={setCreateOpen}>
-				<DialogContent className="sm:max-w-md">
-					<DialogHeader>
-						<DialogTitle>Create inventory block</DialogTitle>
-					</DialogHeader>
-					<div className="flex flex-col gap-3 py-2">
+			<Sheet open={createOpen} onOpenChange={setCreateOpen}>
+				<SheetContent>
+					<SheetHeader>
+						<SheetTitle>Create inventory block</SheetTitle>
+					</SheetHeader>
+					<div className="mt-4 flex flex-col gap-3">
 						<Picker
 							label="Block type"
 							value={form.block_type}
@@ -858,10 +858,10 @@ function BlocksTab({
 							<Label htmlFor="hard-block" className="text-sm">Hard block (prevents allocation)</Label>
 						</div>
 					</div>
-					<DialogFooter>
-						<DialogClose asChild>
+					<SheetFooter className="mt-4">
+						<SheetClose asChild>
 							<Button variant="outline">Cancel</Button>
-						</DialogClose>
+						</SheetClose>
 						<Button
 							onClick={handleCreate}
 							disabled={
@@ -877,9 +877,9 @@ function BlocksTab({
 							{saving ? <Loader2 className="size-4 animate-spin" /> : null}
 							Create block
 						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+					</SheetFooter>
+				</SheetContent>
+			</Sheet>
 		</div>
 	);
 }
@@ -1219,12 +1219,12 @@ function LocationsTab({
 			)}
 
 			{/* Create dialog */}
-			<Dialog open={createOpen} onOpenChange={setCreateOpen}>
-				<DialogContent className="sm:max-w-md">
-					<DialogHeader>
-						<DialogTitle>Add service location</DialogTitle>
-					</DialogHeader>
-					<div className="flex flex-col gap-3 py-2">
+			<Sheet open={createOpen} onOpenChange={setCreateOpen}>
+				<SheetContent>
+					<SheetHeader>
+						<SheetTitle>Add service location</SheetTitle>
+					</SheetHeader>
+					<div className="mt-4 flex flex-col gap-3">
 						<Field label="Name">
 							<Input value={form.location_name} onChange={(e) => setForm({ ...form, location_name: e.target.value })} placeholder="Main Restaurant" />
 						</Field>
@@ -1275,10 +1275,10 @@ function LocationsTab({
 							) : null}
 						</div>
 					</div>
-					<DialogFooter>
-						<DialogClose asChild>
+					<SheetFooter className="mt-4">
+						<SheetClose asChild>
 							<Button variant="outline">Cancel</Button>
-						</DialogClose>
+						</SheetClose>
 						<Button
 							onClick={handleCreate}
 							disabled={saving || !form.location_name || !form.location_code || billingPolicyMissing}
@@ -1287,17 +1287,17 @@ function LocationsTab({
 							{saving ? <Loader2 className="size-4 animate-spin" /> : null}
 							Add location
 						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+					</SheetFooter>
+				</SheetContent>
+			</Sheet>
 
 			{/* Edit dialog */}
-			<Dialog open={!!editingLocation} onOpenChange={(open) => { if (!open) setEditingLocation(null); }}>
-				<DialogContent className="sm:max-w-md">
-					<DialogHeader>
-						<DialogTitle>Edit {editingLocation?.location_name}</DialogTitle>
-					</DialogHeader>
-					<div className="flex flex-col gap-3 py-2">
+			<Sheet open={!!editingLocation} onOpenChange={(open) => { if (!open) setEditingLocation(null); }}>
+				<SheetContent>
+					<SheetHeader>
+						<SheetTitle>Edit {editingLocation?.location_name}</SheetTitle>
+					</SheetHeader>
+					<div className="mt-4 flex flex-col gap-3">
 						<Field label="Name">
 							<Input value={form.location_name} onChange={(e) => setForm({ ...form, location_name: e.target.value })} />
 						</Field>
@@ -1322,15 +1322,15 @@ function LocationsTab({
 							/>
 						) : null}
 					</div>
-					<DialogFooter>
+					<SheetFooter className="mt-4">
 						<Button variant="outline" onClick={() => setEditingLocation(null)}>Cancel</Button>
 						<Button onClick={handleUpdate} disabled={saving || !form.location_name} data-testid="confirm-edit-location">
 							{saving ? <Loader2 className="size-4 animate-spin" /> : null}
 							Save changes
 						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+					</SheetFooter>
+				</SheetContent>
+			</Sheet>
 		</div>
 	);
 }
@@ -1569,9 +1569,9 @@ function SpacesTab({
 				onToggle={(name, active) => setSpaRoomActive(name, active).then(load).catch((e) => reportError(e, "Could not update"))}
 			/>
 
-			<Dialog open={dialog === "event"} onOpenChange={(o) => { if (!o) setDialog(null); }}>
-				<DialogContent className="sm:max-w-md">
-					<DialogHeader><DialogTitle>Add event space</DialogTitle></DialogHeader>
+			<Sheet open={dialog === "event"} onOpenChange={(o) => { if (!o) setDialog(null); }}>
+				<SheetContent>
+					<SheetHeader><SheetTitle>Add event space</SheetTitle></SheetHeader>
 					<div className="grid gap-3">
 						<Field label="Name"><Input value={ev.space_name} onChange={(e) => setEv({ ...ev, space_name: e.target.value })} /></Field>
 						<Field label="Code"><Input value={ev.space_code} onChange={(e) => setEv({ ...ev, space_code: e.target.value })} /></Field>
@@ -1589,16 +1589,16 @@ function SpacesTab({
 						</Field>
 						<Field label="Capacity"><Input type="number" value={ev.capacity} onChange={(e) => setEv({ ...ev, capacity: e.target.value })} /></Field>
 					</div>
-					<DialogFooter>
-						<DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+					<SheetFooter className="mt-4">
+						<SheetClose asChild><Button variant="outline">Cancel</Button></SheetClose>
 						<Button onClick={saveEvent} disabled={saving || !ev.space_name || !ev.space_code}>{saving ? <Loader2 className="size-4 animate-spin" /> : null} Create</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+					</SheetFooter>
+				</SheetContent>
+			</Sheet>
 
-			<Dialog open={dialog === "area"} onOpenChange={(o) => { if (!o) setDialog(null); }}>
-				<DialogContent className="sm:max-w-md">
-					<DialogHeader><DialogTitle>Add activity area</DialogTitle></DialogHeader>
+			<Sheet open={dialog === "area"} onOpenChange={(o) => { if (!o) setDialog(null); }}>
+				<SheetContent>
+					<SheetHeader><SheetTitle>Add activity area</SheetTitle></SheetHeader>
 					<div className="grid gap-3">
 						<Field label="Name"><Input value={ar.area_name} onChange={(e) => setAr({ ...ar, area_name: e.target.value })} /></Field>
 						<Field label="Code"><Input value={ar.area_code} onChange={(e) => setAr({ ...ar, area_code: e.target.value })} /></Field>
@@ -1610,28 +1610,28 @@ function SpacesTab({
 						</Field>
 						<Field label="Capacity"><Input type="number" value={ar.capacity} onChange={(e) => setAr({ ...ar, capacity: e.target.value })} /></Field>
 					</div>
-					<DialogFooter>
-						<DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+					<SheetFooter className="mt-4">
+						<SheetClose asChild><Button variant="outline">Cancel</Button></SheetClose>
 						<Button onClick={saveArea} disabled={saving || !ar.area_name || !ar.area_code}>{saving ? <Loader2 className="size-4 animate-spin" /> : null} Create</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+					</SheetFooter>
+				</SheetContent>
+			</Sheet>
 
-			<Dialog open={dialog === "spa"} onOpenChange={(o) => { if (!o) setDialog(null); }}>
-				<DialogContent className="sm:max-w-md">
-					<DialogHeader><DialogTitle>Add spa room</DialogTitle></DialogHeader>
+			<Sheet open={dialog === "spa"} onOpenChange={(o) => { if (!o) setDialog(null); }}>
+				<SheetContent>
+					<SheetHeader><SheetTitle>Add spa room</SheetTitle></SheetHeader>
 					<div className="grid gap-3">
 						<Field label="Name"><Input value={sp.spa_room_name} onChange={(e) => setSp({ ...sp, spa_room_name: e.target.value })} /></Field>
 						<Field label="Code"><Input value={sp.spa_room_code} onChange={(e) => setSp({ ...sp, spa_room_code: e.target.value })} /></Field>
 						<Field label="Capacity"><Input type="number" value={sp.capacity} onChange={(e) => setSp({ ...sp, capacity: e.target.value })} /></Field>
 						<Field label="Turnover buffer (min)"><Input type="number" value={sp.default_duration_buffer} onChange={(e) => setSp({ ...sp, default_duration_buffer: e.target.value })} /></Field>
 					</div>
-					<DialogFooter>
-						<DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+					<SheetFooter className="mt-4">
+						<SheetClose asChild><Button variant="outline">Cancel</Button></SheetClose>
 						<Button onClick={saveSpa} disabled={saving || !sp.spa_room_name || !sp.spa_room_code}>{saving ? <Loader2 className="size-4 animate-spin" /> : null} Create</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+					</SheetFooter>
+				</SheetContent>
+			</Sheet>
 		</div>
 	);
 }

@@ -1,7 +1,15 @@
 {
   "extends": "../../tsconfig.base.json",
   "//": "No `baseUrl`: TypeScript 6 deprecates it, and the workspace `paths` in tsconfig.base.json already resolve relative to that file.",
-  "compilerOptions": { "noEmit": true },
-  "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules"]
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "nativewind-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

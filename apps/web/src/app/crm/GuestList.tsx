@@ -24,13 +24,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetFooter,
+	SheetHeader,
+	SheetTitle,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -119,13 +119,13 @@ function NewGuestDialog({ onClose, onDone }: { onClose: () => void; onDone: (id:
 	}
 
 	return (
-		<Dialog open onOpenChange={onClose}>
-			<DialogContent className="max-w-sm">
-				<DialogHeader>
-					<DialogTitle>New guest profile</DialogTitle>
-					<DialogDescription>Create or find an existing guest by email / phone.</DialogDescription>
-				</DialogHeader>
-				<div className="grid gap-3 py-2">
+		<Sheet open onOpenChange={onClose}>
+			<SheetContent>
+				<SheetHeader>
+					<SheetTitle>New guest profile</SheetTitle>
+					<SheetDescription>Create or find an existing guest by email / phone.</SheetDescription>
+				</SheetHeader>
+				<div className="mt-4 grid gap-3">
 					<div className="grid gap-1.5">
 						<Label>Full name <span className="text-destructive">*</span></Label>
 						<Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="e.g. Asha Mehta" />
@@ -139,15 +139,15 @@ function NewGuestDialog({ onClose, onDone }: { onClose: () => void; onDone: (id:
 						<Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="optional" />
 					</div>
 				</div>
-				<DialogFooter>
+				<SheetFooter className="mt-4">
 					<Button variant="outline" onClick={onClose}>Cancel</Button>
 					<Button onClick={save} disabled={saving}>
 						{saving && <Loader2 className="mr-2 size-4 animate-spin" />}
 						Create
 					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
 	);
 }
 
@@ -178,12 +178,12 @@ function QuickFeedbackDialog({ onClose, onDone }: { onClose: () => void; onDone:
 	}
 
 	return (
-		<Dialog open onOpenChange={onClose}>
-			<DialogContent className="max-w-sm">
-				<DialogHeader>
-					<DialogTitle>Submit feedback</DialogTitle>
-				</DialogHeader>
-				<div className="grid gap-3 py-2">
+		<Sheet open onOpenChange={onClose}>
+			<SheetContent>
+				<SheetHeader>
+					<SheetTitle>Submit feedback</SheetTitle>
+				</SheetHeader>
+				<div className="mt-4 grid gap-3">
 					<div className="grid gap-1.5">
 						<Label>Context</Label>
 						<Select value={context} onValueChange={(v) => setContext(v as FeedbackContext)}>
@@ -204,15 +204,15 @@ function QuickFeedbackDialog({ onClose, onDone }: { onClose: () => void; onDone:
 						<Textarea value={comments} onChange={(e) => setComments(e.target.value)} placeholder="Guest remarks…" />
 					</div>
 				</div>
-				<DialogFooter>
+				<SheetFooter className="mt-4">
 					<Button variant="outline" onClick={onClose}>Cancel</Button>
 					<Button onClick={save} disabled={saving}>
 						{saving && <Loader2 className="mr-2 size-4 animate-spin" />}
 						Submit
 					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
 	);
 }
 

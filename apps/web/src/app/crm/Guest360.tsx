@@ -29,13 +29,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetFooter,
+	SheetHeader,
+	SheetTitle,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -272,13 +272,13 @@ function ConsentDialog({
 	}
 
 	return (
-		<Dialog open onOpenChange={onClose}>
-			<DialogContent className="max-w-sm">
-				<DialogHeader>
-					<DialogTitle>Record consent</DialogTitle>
-					<DialogDescription>Log a new guest consent or withdrawal.</DialogDescription>
-				</DialogHeader>
-				<div className="grid gap-3 py-2">
+		<Sheet open onOpenChange={onClose}>
+			<SheetContent>
+				<SheetHeader>
+					<SheetTitle>Record consent</SheetTitle>
+					<SheetDescription>Log a new guest consent or withdrawal.</SheetDescription>
+				</SheetHeader>
+				<div className="mt-4 grid gap-3">
 					<div className="grid gap-1.5">
 						<Label>Purpose</Label>
 						<Select value={purpose} onValueChange={(v) => setPurpose(v as ConsentPurpose)}>
@@ -313,15 +313,15 @@ function ConsentDialog({
 						</Select>
 					</div>
 				</div>
-				<DialogFooter>
+				<SheetFooter className="mt-4">
 					<Button variant="outline" onClick={onClose}>Cancel</Button>
 					<Button onClick={save} disabled={saving}>
 						{saving && <Loader2 className="mr-2 size-4 animate-spin" />}
 						Save
 					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
 	);
 }
 
@@ -360,13 +360,13 @@ function PreferenceDialog({
 	}
 
 	return (
-		<Dialog open onOpenChange={onClose}>
-			<DialogContent className="max-w-sm">
-				<DialogHeader>
-					<DialogTitle>Add preference</DialogTitle>
-					<DialogDescription>Record a guest preference or allergy.</DialogDescription>
-				</DialogHeader>
-				<div className="grid gap-3 py-2">
+		<Sheet open onOpenChange={onClose}>
+			<SheetContent>
+				<SheetHeader>
+					<SheetTitle>Add preference</SheetTitle>
+					<SheetDescription>Record a guest preference or allergy.</SheetDescription>
+				</SheetHeader>
+				<div className="mt-4 grid gap-3">
 					<div className="grid gap-1.5">
 						<Label>Type</Label>
 						<Select value={type} onValueChange={(v) => setType(v as PreferenceType)}>
@@ -394,15 +394,15 @@ function PreferenceDialog({
 						</Select>
 					</div>
 				</div>
-				<DialogFooter>
+				<SheetFooter className="mt-4">
 					<Button variant="outline" onClick={onClose}>Cancel</Button>
 					<Button onClick={save} disabled={saving}>
 						{saving && <Loader2 className="mr-2 size-4 animate-spin" />}
 						Save
 					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
 	);
 }
 
@@ -431,21 +431,21 @@ function EnrollDialog({
 	}
 
 	return (
-		<Dialog open onOpenChange={onClose}>
-			<DialogContent className="max-w-sm">
-				<DialogHeader>
-					<DialogTitle>Enrol in loyalty</DialogTitle>
-					<DialogDescription>Enrol this guest in the default REEZORT Rewards programme.</DialogDescription>
-				</DialogHeader>
-				<DialogFooter>
+		<Sheet open onOpenChange={onClose}>
+			<SheetContent>
+				<SheetHeader>
+					<SheetTitle>Enrol in loyalty</SheetTitle>
+					<SheetDescription>Enrol this guest in the default REEZORT Rewards programme.</SheetDescription>
+				</SheetHeader>
+				<SheetFooter className="mt-4">
 					<Button variant="outline" onClick={onClose}>Cancel</Button>
 					<Button onClick={save} disabled={saving}>
 						{saving && <Loader2 className="mr-2 size-4 animate-spin" />}
 						Enrol
 					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
 	);
 }
 
@@ -484,12 +484,12 @@ function AccrualDialog({
 	}
 
 	return (
-		<Dialog open onOpenChange={onClose}>
-			<DialogContent className="max-w-sm">
-				<DialogHeader>
-					<DialogTitle>Post loyalty transaction</DialogTitle>
-				</DialogHeader>
-				<div className="grid gap-3 py-2">
+		<Sheet open onOpenChange={onClose}>
+			<SheetContent>
+				<SheetHeader>
+					<SheetTitle>Post loyalty transaction</SheetTitle>
+				</SheetHeader>
+				<div className="mt-4 grid gap-3">
 					<div className="grid gap-1.5">
 						<Label>Type</Label>
 						<Select value={txnType} onValueChange={(v) => setTxnType(v as TransactionType)}>
@@ -510,15 +510,15 @@ function AccrualDialog({
 						<Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Optional" />
 					</div>
 				</div>
-				<DialogFooter>
+				<SheetFooter className="mt-4">
 					<Button variant="outline" onClick={onClose}>Cancel</Button>
 					<Button onClick={save} disabled={saving}>
 						{saving && <Loader2 className="mr-2 size-4 animate-spin" />}
 						Post
 					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
 	);
 }
 
@@ -559,13 +559,13 @@ function FeedbackDialog({
 	}
 
 	return (
-		<Dialog open onOpenChange={onClose}>
-			<DialogContent className="max-w-sm">
-				<DialogHeader>
-					<DialogTitle>Submit feedback</DialogTitle>
-					<DialogDescription>Record guest feedback on behalf of the guest.</DialogDescription>
-				</DialogHeader>
-				<div className="grid gap-3 py-2">
+		<Sheet open onOpenChange={onClose}>
+			<SheetContent>
+				<SheetHeader>
+					<SheetTitle>Submit feedback</SheetTitle>
+					<SheetDescription>Record guest feedback on behalf of the guest.</SheetDescription>
+				</SheetHeader>
+				<div className="mt-4 grid gap-3">
 					<div className="grid gap-1.5">
 						<Label>Context</Label>
 						<Select value={context} onValueChange={(v) => setContext(v as FeedbackContext)}>
@@ -586,15 +586,15 @@ function FeedbackDialog({
 						<Textarea value={comments} onChange={(e) => setComments(e.target.value)} placeholder="Guest remarks…" />
 					</div>
 				</div>
-				<DialogFooter>
+				<SheetFooter className="mt-4">
 					<Button variant="outline" onClick={onClose}>Cancel</Button>
 					<Button onClick={save} disabled={saving}>
 						{saving && <Loader2 className="mr-2 size-4 animate-spin" />}
 						Submit
 					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+				</SheetFooter>
+			</SheetContent>
+		</Sheet>
 	);
 }
 

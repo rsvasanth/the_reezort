@@ -181,7 +181,7 @@ export default function FrontDeskScreen() {
 					 * came for. Counts sit on the tabs, which is why the KPI cards that used
 					 * to head this screen are gone — they restated the same three numbers.
 					 */}
-					<TabsList className="w-full justify-start overflow-x-auto">
+					<TabsList>
 						<TabsTrigger value="arriving" data-testid="tab-arriving">
 							Arriving <TabCount n={board.counts.arrivals} />
 						</TabsTrigger>

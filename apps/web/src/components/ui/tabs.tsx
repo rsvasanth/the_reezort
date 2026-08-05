@@ -12,7 +12,11 @@ const TabsList = React.forwardRef<
 	<TabsPrimitive.List
 		ref={ref}
 		className={cn(
-			"inline-flex items-center justify-center gap-1 border-b border-border",
+			// `inline-flex` sized to content with no wrap and no scroll, so a long tab row
+			// (Property Management has ten, ~1,025px) pushed the whole document sideways.
+			// Scroll the row itself instead; `max-w-full` is what stops it forcing the page.
+			"flex w-full max-w-full items-center justify-start gap-1 overflow-x-auto border-b border-border",
+			"[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
 			className,
 		)}
 		{...props}
@@ -27,7 +31,7 @@ const TabsTrigger = React.forwardRef<
 	<TabsPrimitive.Trigger
 		ref={ref}
 		className={cn(
-			"inline-flex items-center justify-center whitespace-nowrap border-b-2 border-transparent",
+			"inline-flex shrink-0 items-center justify-center whitespace-nowrap border-b-2 border-transparent",
 			"px-4 py-2 text-sm font-medium text-muted-foreground transition-colors -mb-px",
 			"hover:text-foreground",
 			"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",

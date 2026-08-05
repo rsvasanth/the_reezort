@@ -59,10 +59,15 @@ export function MyDayClock() {
 		}
 	}
 
+	// Was `hidden … md:flex`, which meant display:none on every phone — so
+	// clocking in, the most phone-bound task in the product, was impossible for
+	// the staff who only ever use a phone. The task count hides on narrow screens
+	// instead, since the app bar is tight there and the count is informational;
+	// the clock button itself always renders.
 	return (
-		<div className="hidden items-center gap-2 md:flex">
+		<div className="flex items-center gap-2">
 			{day.open_tasks > 0 ? (
-				<Badge variant="secondary" data-testid="my-open-tasks">
+				<Badge variant="secondary" className="hidden sm:inline-flex" data-testid="my-open-tasks">
 					{day.open_tasks} task{day.open_tasks > 1 ? "s" : ""}
 				</Badge>
 			) : null}

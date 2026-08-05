@@ -18,6 +18,7 @@ import {
 	SidebarMenuSub,
 	SidebarMenuSubButton,
 	SidebarMenuSubItem,
+	useSidebar,
 } from "@/components/ui/sidebar"
 import { useHashRoute } from "@/hooks/use-hash-route"
 import { cn } from "@/lib/utils"
@@ -57,6 +58,21 @@ const TONE: Record<number, { icon: string; rest: string; open: string }> = {
 
 // Whether a nav item's URL matches the current hash route. Matches the exact
 // hash and sub-routes (e.g. "#/analytics" is active on "#/analytics/revenue").
+/**
+ * Closes the mobile drawer when a nav row is tapped.
+ *
+ * Nav rows are plain anchors pointing at same-page hash URLs, so navigating
+ * fires a hashchange rather than a load. The shell is not remounted and
+ * `openMobile` stays true, leaving the drawer covering the screen it just
+ * navigated to. Desktop is unaffected — there is no drawer to close.
+ */
+function useCloseDrawerOnNavigate() {
+	const { isMobile, setOpenMobile } = useSidebar()
+	return () => {
+		if (isMobile) setOpenMobile(false)
+	}
+}
+
 function isItemActive(itemUrl: string, currentHash: string): boolean {
 	const hashIndex = itemUrl.indexOf("#")
 	if (hashIndex === -1) {
@@ -69,6 +85,7 @@ function isItemActive(itemUrl: string, currentHash: string): boolean {
 
 /** A single leaf row, used both at top level and inside a category. */
 function LeafButton({ item, active }: { item: NavItem; active: boolean }) {
+	const closeDrawer = useCloseDrawerOnNavigate()
 	if (item.status === "soon") {
 		return (
 			<SidebarMenuButton
@@ -94,7 +111,7 @@ function LeafButton({ item, active }: { item: NavItem; active: boolean }) {
 				"data-[active=true]:bg-sidebar-primary/15 data-[active=true]:text-sidebar-primary",
 			)}
 		>
-			<a href={item.url}>
+			<a href={item.url} onClick={closeDrawer}>
 				{item.icon && <item.icon />}
 				<span>{item.title}</span>
 			</a>
@@ -117,6 +134,7 @@ function CategoryItem({
 	category: NavCategory
 	currentHash: string
 }) {
+	const closeDrawer = useCloseDrawerOnNavigate()
 	const tone = category.tone ? TONE[category.tone] : undefined
 	const containsActive = category.items.some((item) => isItemActive(item.url, currentHash))
 	const [open, setOpen] = React.useState(containsActive)
@@ -173,7 +191,7 @@ function CategoryItem({
 											"data-[active=true]:bg-sidebar-primary/15 data-[active=true]:text-sidebar-primary",
 										)}
 									>
-										<a href={item.url}>
+										<a href={item.url} onClick={closeDrawer}>
 											<span>{item.title}</span>
 										</a>
 									</SidebarMenuSubButton>

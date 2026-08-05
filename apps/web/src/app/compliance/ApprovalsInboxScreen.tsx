@@ -5,6 +5,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, ExternalLink, Loader2, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
@@ -90,7 +91,7 @@ export default function ApprovalsInboxScreen() {
 	useEffect(() => { reload(); }, [reload]);
 
 	return (
-		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6" data-testid="approvals-inbox">
+		<WorkspacePage title="Approvals" subtitle="Requests waiting on your decision." testId="approvals-inbox">
 			<header className="flex flex-wrap items-start justify-between gap-4">
 				<div>
 					<Badge variant="outline" className="mb-2 gap-1">
@@ -147,7 +148,7 @@ export default function ApprovalsInboxScreen() {
 					/>
 				</TabsContent>
 			</Tabs>
-		</main>
+		</WorkspacePage>
 	);
 }
 

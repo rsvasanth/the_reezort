@@ -8,6 +8,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import { useFrappeAuth } from "frappe-react-sdk";
 import { motion } from "motion/react";
 import {
@@ -128,22 +129,22 @@ export default function RevenueDashboard() {
 
 	if (state === "loading") {
 		return (
-			<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6">
+			<WorkspacePage title="Revenue" subtitle="Rooms, F&B and ancillary performance.">
 				<Skeleton className="h-9 w-48" />
 				<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 					{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
 				</div>
 				<Skeleton className="h-72 rounded-xl" />
-			</main>
+			</WorkspacePage>
 		);
 	}
 
 	if (state === "error" || !summary || !trend || !channels) {
 		return (
-			<main className="flex flex-1 flex-col items-center justify-center gap-3 ">
+			<WorkspacePage title="Revenue" subtitle="Rooms, F&B and ancillary performance.">
 				<p className="text-sm text-muted-foreground">Could not load revenue analytics.</p>
 				<Button variant="outline" onClick={load}><RefreshCw className="mr-1.5 size-4" /> Retry</Button>
-			</main>
+			</WorkspacePage>
 		);
 	}
 
@@ -152,7 +153,7 @@ export default function RevenueDashboard() {
 	const goToPeriod = () => gotoReservations(summary.from_date, summary.to_date);
 
 	return (
-		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6">
+		<WorkspacePage title="Revenue" subtitle="Rooms, F&B and ancillary performance.">
 			<div className="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<div className="mb-2 flex items-center gap-2">
@@ -233,7 +234,7 @@ export default function RevenueDashboard() {
 					</Card>
 				</>
 			)}
-		</main>
+		</WorkspacePage>
 	);
 }
 

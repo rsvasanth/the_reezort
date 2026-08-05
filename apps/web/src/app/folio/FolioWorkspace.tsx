@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import type { CSSProperties } from "react";
 
 import { AppSidebar } from "@/components/app-sidebar";
@@ -243,7 +244,7 @@ export function FolioWorkspace({ folioName }: Props) {
 			<AppSidebar />
 			<SidebarInset className="bg-transparent">
 				<SiteHeader />
-				<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6">
+				<WorkspacePage title="Folio" subtitle="Charges, payments and settlement.">
 					<div className="flex flex-wrap items-center justify-between gap-2">
 						<Badge variant="outline">
 							{snapshotState === "live"
@@ -275,7 +276,7 @@ export function FolioWorkspace({ folioName }: Props) {
 						onPrintFarewell={handlePrintFarewell}
 						checkingOut={checkingOut}
 					/>
-				</main>
+				</WorkspacePage>
 
 				{detail && snapshotState !== "mock" && (
 					<>

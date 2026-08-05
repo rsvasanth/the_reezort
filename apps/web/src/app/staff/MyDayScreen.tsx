@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import { Clock, Download, Loader2, LogIn, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
@@ -108,7 +109,7 @@ export default function MyDayScreen() {
 	const firstName = (day?.employee_name?.split(" ")[0] ?? day?.user ?? "").trim();
 
 	return (
-		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6" data-testid="my-day-screen">
+		<WorkspacePage title="My day" subtitle="Your shift, tasks and approvals." testId="my-day-screen">
 			<header>
 				<Badge variant="outline" className="mb-2">My day</Badge>
 				<h1 className="text-3xl font-light text-foreground md:text-4xl">
@@ -207,6 +208,6 @@ export default function MyDayScreen() {
 					</CardContent>
 				</Card>
 			) : null}
-		</main>
+		</WorkspacePage>
 	);
 }

@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import { motion } from "motion/react";
 import { ExternalLink, FileSearch, Loader2 } from "lucide-react";
 
@@ -75,7 +76,7 @@ export default function AuditTrailScreen() {
 	}, [events]);
 
 	return (
-		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6" data-testid="audit-trail">
+		<WorkspacePage title="Audit trail" subtitle="Who changed what, and when." testId="audit-trail">
 			<header>
 				<Badge variant="outline" className="mb-2 gap-1">
 					<FileSearch className="size-3" /> Compliance
@@ -163,7 +164,7 @@ export default function AuditTrailScreen() {
 					))}
 				</motion.ol>
 			)}
-		</main>
+		</WorkspacePage>
 	);
 }
 

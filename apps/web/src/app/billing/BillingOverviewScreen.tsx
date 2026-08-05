@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import { Loader2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +45,7 @@ export default function BillingOverviewScreen() {
 	const cur = data?.currency ?? "INR";
 
 	return (
-		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6" data-testid="billing-screen">
+		<WorkspacePage title="Billing overview" subtitle="Folios, postings and outstanding balances." testId="billing-screen">
 			<header>
 				<Badge variant="outline" className="mb-2">Billing</Badge>
 				<h1 className="text-3xl font-light text-foreground md:text-4xl">Billing</h1>
@@ -142,7 +143,7 @@ export default function BillingOverviewScreen() {
 					</Tabs>
 				</>
 			) : null}
-		</main>
+		</WorkspacePage>
 	);
 }
 

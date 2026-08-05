@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import { Field } from "@/components/workspace/field";
 import { CalendarDays, Loader2, Plus, Pencil, Power, Trash2, Wand2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -197,7 +198,7 @@ export default function PropertyManagementScreen() {
 	}
 
 	return (
-		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6" data-testid="property-mgmt">
+		<WorkspacePage title="Properties & rooms" subtitle="Buildings, floors, rooms and rate setup." testId="property-mgmt">
 			<header className="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<Badge variant="outline" className="mb-2">Property management</Badge>
@@ -322,7 +323,7 @@ export default function PropertyManagementScreen() {
 					) : null}
 				</>
 			)}
-		</main>
+		</WorkspacePage>
 	);
 }
 

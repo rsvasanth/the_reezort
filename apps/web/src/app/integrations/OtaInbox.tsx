@@ -7,6 +7,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import { motion } from "motion/react";
 import { ArrowRight, RefreshCw, Search, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -92,7 +93,7 @@ export default function OtaInbox() {
 	const messages = useMemo(() => data?.messages ?? [], [data]);
 
 	return (
-		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6">
+		<WorkspacePage title="OTA inbox" subtitle="Channel bookings and sync status.">
 			<div className="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<div className="mb-2 flex items-center gap-2">
@@ -180,7 +181,7 @@ export default function OtaInbox() {
 
 			<OtaUploadSheet open={uploadOpen} onOpenChange={setUploadOpen} sources={data?.sources} onIngested={() => load(true)} />
 			<OtaReviewSheet name={reviewName} open={reviewName !== null} onOpenChange={(v) => !v && setReviewName(null)} onActioned={() => load(true)} />
-		</main>
+		</WorkspacePage>
 	);
 }
 

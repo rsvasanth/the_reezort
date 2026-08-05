@@ -6,6 +6,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import {
 	AlertCircle,
 	CreditCard,
@@ -421,14 +422,10 @@ function FeedbackTab() {
 
 export default function GuestList() {
 	return (
-		<div className="flex flex-col gap-6 p-4 lg:p-6">
-			{/* Page header */}
-			<div>
-				<h1 className="text-2xl font-semibold">CRM &amp; loyalty</h1>
-				<p className="mt-1 text-sm text-muted-foreground">
-					Guest profiles, loyalty memberships, and feedback.
-				</p>
-			</div>
+		<WorkspacePage
+			title="CRM & loyalty"
+			subtitle="Guest profiles, loyalty memberships, and feedback."
+		>
 
 			<Tabs defaultValue="guests">
 				<TabsList className="mb-2">
@@ -470,6 +467,6 @@ export default function GuestList() {
 					<FeedbackTab />
 				</TabsContent>
 			</Tabs>
-		</div>
+		</WorkspacePage>
 	);
 }

@@ -16,6 +16,7 @@ import type { CSSProperties } from "react";
 import { RefreshCw } from "lucide-react";
 
 import { AppSidebar } from "@/components/app-sidebar";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -100,10 +101,11 @@ export default function HousekeepingBoard() {
 			<AppSidebar />
 			<SidebarInset className="bg-transparent">
 				<SiteHeader />
-				<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6">
-					{/* Top bar */}
-					<div className="flex flex-wrap items-center justify-between gap-2">
-						<div className="flex items-center gap-2">
+				<WorkspacePage
+					title="Housekeeping"
+					subtitle="Room status, cleaning tasks and linen across the property."
+					toolbar={
+						<>
 							<Badge variant="outline">
 								{snapshotState === "live"
 									? "Live board"
@@ -118,8 +120,10 @@ export default function HousekeepingBoard() {
 									Offline — showing demo data
 								</Badge>
 							)}
-						</div>
-						<div className="flex items-center gap-2">
+						</>
+					}
+					actions={
+						<>
 							{rooms.length > 0 ? (
 								<Badge variant="secondary">{rooms.length} room{rooms.length === 1 ? "" : "s"}</Badge>
 							) : null}
@@ -134,8 +138,9 @@ export default function HousekeepingBoard() {
 									Refresh
 								</Button>
 							)}
-						</div>
-					</div>
+						</>
+					}
+				>
 
 					{/* Summary strip (only when data is present) */}
 					{(snapshotState === "live" || snapshotState === "mock") && rooms.length > 0 && (
@@ -151,7 +156,7 @@ export default function HousekeepingBoard() {
 						onRetry={load}
 						onMutated={load}
 					/>
-				</main>
+				</WorkspacePage>
 			</SidebarInset>
 		</SidebarProvider>
 	);

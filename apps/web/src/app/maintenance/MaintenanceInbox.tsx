@@ -7,6 +7,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import { useFrappeAuth } from "frappe-react-sdk";
 import { motion } from "motion/react";
 import { AlertTriangle, Loader2, MessageSquarePlus, Plus, RefreshCw, Search, Wrench } from "lucide-react";
@@ -187,7 +188,7 @@ export default function MaintenanceInbox() {
 		(counts["Verification Required"] ?? 0);
 
 	return (
-		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6">
+		<WorkspacePage title="Maintenance inbox" subtitle="Reported faults awaiting triage.">
 			<div className="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<div className="mb-2 flex items-center gap-2">
@@ -284,7 +285,7 @@ export default function MaintenanceInbox() {
 				onClose={() => setNoteTicket(null)}
 				onSaved={() => load(true)}
 			/>
-		</main>
+		</WorkspacePage>
 	);
 }
 

@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import { Field } from "@/components/workspace/field";
 import { useFrappeAuth } from "frappe-react-sdk";
 import { Loader2, Plus, AlarmClock, UserPlus } from "lucide-react";
@@ -113,7 +114,7 @@ export default function ServiceDeskScreen() {
 	}
 
 	return (
-		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6" data-testid="servicedesk-screen">
+		<WorkspacePage title="Service desk" subtitle="Guest requests routed to departments." testId="servicedesk-screen">
 			<header className="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<Badge variant="outline" className="mb-2">Service desk</Badge>
@@ -232,7 +233,7 @@ export default function ServiceDeskScreen() {
 					priorities={board?.priorities ?? []}
 				/>
 			) : null}
-		</main>
+		</WorkspacePage>
 	);
 }
 

@@ -5,6 +5,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -194,13 +195,10 @@ export default function CashierCloseScreen() {
 	const editable = active && ["Open", "Closing", "Reopened"].includes(active.close_status);
 
 	return (
-		<div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6">
-			<div>
-				<h1 className="text-2xl font-semibold tracking-tight">Cashier Close</h1>
-				<p className="text-muted-foreground text-sm">
-					Reconcile counted cash against system-collected payments and close the shift.
-				</p>
-			</div>
+		<WorkspacePage
+			title="Cashier close"
+			subtitle="Reconcile counted cash against system-collected payments and close the shift."
+		>
 
 			{/* Open shift */}
 			<Card>
@@ -443,6 +441,6 @@ export default function CashierCloseScreen() {
 					)}
 				</CardContent>
 			</Card>
-		</div>
+		</WorkspacePage>
 	);
 }

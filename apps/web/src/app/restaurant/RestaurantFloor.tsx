@@ -7,6 +7,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import { motion } from "motion/react";
 import { ChefHat, Loader2, Plus, RefreshCw, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -110,7 +111,7 @@ export default function RestaurantFloor() {
 	const occupied = tables.filter((t) => t.open_order).length;
 
 	return (
-		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6">
+		<WorkspacePage title="Restaurant floor" subtitle="Tables, covers and service state.">
 			<div className="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<div className="mb-2 flex items-center gap-2">
@@ -186,7 +187,7 @@ export default function RestaurantFloor() {
 					))}
 				</div>
 			)}
-		</main>
+		</WorkspacePage>
 	);
 }
 

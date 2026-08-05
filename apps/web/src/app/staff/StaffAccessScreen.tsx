@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import { Field } from "@/components/workspace/field";
 import { CreditCard, Loader2, Plus, Pencil, UserCheck, UserX } from "lucide-react";
 import { downloadStaffIdCard } from "@/lib/staff-id-card";
@@ -90,7 +91,7 @@ export default function StaffAccessScreen() {
 	}
 
 	return (
-		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6" data-testid="staff-screen">
+		<WorkspacePage title="Staff & access" subtitle="People, roles and permissions." testId="staff-screen">
 			<header className="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<Badge variant="outline" className="mb-2">Staff &amp; Access</Badge>
@@ -199,7 +200,7 @@ export default function StaffAccessScreen() {
 					onSaved={reload}
 				/>
 			) : null}
-		</main>
+		</WorkspacePage>
 	);
 }
 

@@ -7,6 +7,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import { AnimatePresence, motion } from "motion/react";
 import { ChefHat, Clock, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -106,7 +107,7 @@ export default function KitchenScreen() {
 	}
 
 	return (
-		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6">
+		<WorkspacePage title="Kitchen" subtitle="Live tickets by course and station.">
 			<div className="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<div className="mb-2 flex items-center gap-2">
@@ -150,7 +151,7 @@ export default function KitchenScreen() {
 					</AnimatePresence>
 				</div>
 			)}
-		</main>
+		</WorkspacePage>
 	);
 }
 

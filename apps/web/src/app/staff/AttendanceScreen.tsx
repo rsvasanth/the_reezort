@@ -5,6 +5,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { WorkspacePage } from "@/components/workspace/workspace";
 import { Loader2, LogIn, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
@@ -98,7 +99,7 @@ export default function AttendanceScreen() {
 	}
 
 	return (
-		<main className="flex flex-1 flex-col gap-6  px-4 py-6 lg:px-6" data-testid="attendance-screen">
+		<WorkspacePage title="Attendance" subtitle="Clock-ins, shifts and exceptions." testId="attendance-screen">
 			<header className="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<Badge variant="outline" className="mb-2">Attendance &amp; roster</Badge>
@@ -237,6 +238,6 @@ export default function AttendanceScreen() {
 					<PayrollTab />
 				</TabsContent>
 			</Tabs>
-		</main>
+		</WorkspacePage>
 	);
 }

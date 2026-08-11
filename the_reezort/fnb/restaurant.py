@@ -553,7 +553,10 @@ def add_items(order: str, items: list[dict] | str) -> dict:
 				"menu_item": menu_item,
 				"item_name": menu_row.item_name,
 				"quantity": qty,
-				"rate": flt(row.get("rate") or menu_row.price),
+				# Price always comes from the menu catalog — never trust a
+				# client-supplied rate. No caller has ever legitimately needed
+				# to override it here.
+				"rate": flt(menu_row.price),
 				"chef_note": row.get("chef_note"),
 				"line_status": "Draft",
 			},
@@ -710,7 +713,20 @@ def close_walk_in(order: str, payments: list[dict] | str | None = None) -> dict:
 	if doc.state not in {"Served", "Bill Pending"}:
 		frappe.throw(_("Order {0} must be Served or Bill Pending to close.").format(order))
 
+	# The bill is already partitioned, so closing it whole would submit a second
+	# full-value invoice on top of the split invoices — observed billing 1654.96
+	# against a 1103.30 check. merge_orders has always checked this; close_walk_in
+	# never did.
+	if _has_open_split(order):
+		frappe.throw(
+			_(
+				"Order {0} is split across bill portions. Settle each portion, or "
+				"cancel the split plan, before closing the whole order."
+			).format(order)
+		)
+
 	payments = json.loads(payments) if isinstance(payments, str) else (payments or [])
+	remaining = 0.0
 
 	from the_reezort.billing.erpnext_posting import (
 		build_and_submit_sales_invoice,
@@ -825,8 +841,15 @@ def close_walk_in(order: str, payments: list[dict] | str | None = None) -> dict:
 	doc.erpnext_sales_invoice = sales_invoice.name
 	if payment_entry_name:
 		doc.erpnext_payment_entry = payment_entry_name
-	doc.state = "Settled"
-	doc.settled_at = now_datetime()
+	# Only call it settled when the money actually arrived. This used to flip
+	# unconditionally, so paying 10 against a 1103.30 bill left the invoice
+	# submitted and Partly Paid while the cashier saw "Settled" — and the retry
+	# short-circuit above then made the balance uncollectable through this path.
+	if flt(remaining) > 0.01:
+		doc.state = "Bill Pending"
+	else:
+		doc.state = "Settled"
+		doc.settled_at = now_datetime()
 	doc.flags.ignore_permissions = True
 	doc.save()
 	record_audit_event(

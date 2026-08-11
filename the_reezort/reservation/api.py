@@ -729,6 +729,29 @@ def confirm_reservation(
 			# Overbooking override — audited + gated by the reservation_override policy.
 			_authorize_override(reservation, shortfall, approval_request)
 
+	# A reservation must never confirm at zero because nobody priced the room.
+	#
+	# _room_rate returns 0 when the room type's ERPNext item has no Item Price
+	# row, which is indistinguishable from a deliberate zero. The deposit gate
+	# below then computes 20% of 0, finds it satisfied, and confirms a booking
+	# that collects no money — silently. Refuse instead, and name the room type
+	# so an operator knows what to price.
+	if flt(doc.total_estimated_amount) <= 0:
+		unpriced = sorted(
+			{
+				row.room_type
+				for row in (doc.rooms or [])
+				if row.room_type and not _room_rate(row.room_type, 1)
+			}
+		)
+		if unpriced:
+			frappe.throw(
+				_(
+					"Cannot confirm: no nightly rate is set for {0}, so this booking "
+					"is priced at zero. Set the rate on the room type before confirming."
+				).format(", ".join(unpriced))
+			)
+
 	# Owner policy: a Partial/Full deposit must be paid before confirmation.
 	pct = DEPOSIT_POLICY_PERCENT.get(doc.deposit_policy or "None", 0)
 	if pct > 0:

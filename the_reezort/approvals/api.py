@@ -257,8 +257,21 @@ def decide_request(name, decision, notes=""):
 	if req.requester == frappe.session.user:
 		frappe.throw(_("Approver cannot approve their own request."), frappe.PermissionError)
 
+	# Fail closed. This was `if policy and policy not in roles`, so a request
+	# whose policy row is missing — which is the normal state on any site where
+	# seed_approval_policies has not been run — skipped the role check entirely
+	# and let anyone decide it. It only avoided being exploitable because a
+	# dangling link happens to trip save() later, which is luck, not a control.
 	policy = frappe.db.get_value("Approval Policy", req.policy, "approver_role")
-	if policy and policy not in frappe.get_roles():
+	if not policy:
+		frappe.throw(
+			_(
+				"Approval policy {0} is missing, so this request cannot be decided. "
+				"Run seed_approval_policies on this site."
+			).format(req.policy),
+			frappe.PermissionError,
+		)
+	if policy not in frappe.get_roles():
 		frappe.throw(_("You do not hold the required role ({0}).").format(policy), frappe.PermissionError)
 
 	if decision not in {"Approved", "Rejected"}:

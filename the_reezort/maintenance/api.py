@@ -44,6 +44,11 @@ from the_reezort.staff.api import _envelope
 from the_reezort.utils import as_dict as _as_dict
 from the_reezort.utils import require_permission as _require_permission_generic
 
+# SQL cannot express this ordering here: Frappe's order_by validator splits on
+# commas and rejects the FIELD() expression this used to rely on, which threw
+# for every caller and meant the board never loaded. Rank in Python instead.
+_PRIORITY_RANK = {"Urgent": 0, "High": 1, "Normal": 2, "Low": 3}
+
 # State machine — forward transitions only.
 # Reported→Duplicate is a lateral escape when the reporter learns the issue
 # is already being tracked. Once Resolved, only the reporter (or a manager)
@@ -226,10 +231,14 @@ def list_tickets(
 		"Maintenance Ticket",
 		filters=filters,
 		fields=["name"],
-		order_by="escalated desc, field(priority,'Urgent','High','Normal','Low'), reported_at asc",
+		order_by="escalated desc, reported_at asc",
 		limit_page_length=limit,
 	)
 	tickets = [_ticket_dict(frappe.get_doc("Maintenance Ticket", r.name)) for r in rows]
+	tickets.sort(key=lambda t: (
+		0 if t.get("escalated") else 1,
+		_PRIORITY_RANK.get(t.get("priority"), len(_PRIORITY_RANK)),
+	))
 	if search:
 		needle = search.strip().lower()
 		tickets = [

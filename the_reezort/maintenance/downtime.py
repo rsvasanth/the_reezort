@@ -19,6 +19,11 @@ from the_reezort.staff.api import _envelope
 from the_reezort.utils import as_dict as _as_dict
 from the_reezort.utils import require_permission as _require_permission
 
+# SQL cannot express this ordering here: Frappe's order_by validator splits on
+# commas and rejects the FIELD() expression this used to rely on, which threw
+# for every caller and meant the board never loaded. Rank in Python instead.
+_DOWNTIME_PRIORITY_RANK = {"Safety Critical": 0, "Revenue Blocking": 1, "Guest Impacting": 2, "Urgent": 3, "High": 4, "Normal": 5, "Low": 6}
+
 
 # ---------- helpers ----------
 
@@ -463,10 +468,14 @@ def get_engineering_board(property: str, filters: dict | str | None = None) -> d
         "Maintenance Ticket",
         filters=query_filters,
         fields=["name"],
-        order_by="escalated desc, field(priority,'Safety Critical','Revenue Blocking','Guest Impacting','Urgent','High','Normal','Low'), reported_at asc",
+        order_by="escalated desc, reported_at asc",
         limit_page_length=200,
     )
     tickets = [_ticket_dict(frappe.get_doc("Maintenance Ticket", r.name)) for r in rows]
+    tickets.sort(key=lambda t: (
+    	0 if t.get("escalated") else 1,
+    	_DOWNTIME_PRIORITY_RANK.get(t.get("priority"), len(_DOWNTIME_PRIORITY_RANK)),
+    ))
 
     counts: dict[str, int] = {}
     for t in tickets:

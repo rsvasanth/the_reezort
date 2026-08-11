@@ -33,9 +33,23 @@ export function SignaturePad({
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
+	/**
+	 * Pointer position in canvas backing-store coordinates.
+	 *
+	 * The backing store is a fixed 460x150 but the element is laid out
+	 * `w-full max-w-[460px]`, so on a phone it renders ~330px wide. Feeding raw
+	 * CSS pixels to the 2D context drew the ink ~1.4x off the finger and left
+	 * the right quarter of the pad unreachable. Scaling by the ratio of backing
+	 * store to rendered size fixes both, and is a no-op at >=460px — which is
+	 * why this never showed up on a desktop.
+	 */
 	function point(e: React.PointerEvent<HTMLCanvasElement>): [number, number] {
-		const rect = e.currentTarget.getBoundingClientRect();
-		return [e.clientX - rect.left, e.clientY - rect.top];
+		const canvas = e.currentTarget;
+		const rect = canvas.getBoundingClientRect();
+		if (!rect.width || !rect.height) return [0, 0];
+		const scaleX = canvas.width / rect.width;
+		const scaleY = canvas.height / rect.height;
+		return [(e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY];
 	}
 
 	function start(e: React.PointerEvent<HTMLCanvasElement>) {

@@ -5,6 +5,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
 import { useFrappeAuth } from "frappe-react-sdk";
 import {
 	AlarmClock,
@@ -811,12 +812,11 @@ function NewRequestSheet({
 						/>
 					</Field>
 					<Field label="Notes for guest (optional)">
-						<textarea
+						<Textarea
 							value={form.guest_visible_notes}
 							onChange={(e) => patch("guest_visible_notes", e.target.value)}
 							rows={3}
-							className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-						/>
+							/>
 					</Field>
 				</div>
 				<SheetFooter>
@@ -944,13 +944,12 @@ function NewComplaintSheet({
 						/>
 					</Field>
 					<Field label="Details">
-						<textarea
+						<Textarea
 							value={form.details}
 							onChange={(e) => patch("details", e.target.value)}
 							rows={4}
 							placeholder="Full description of the complaint"
-							className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-							data-testid="cmp-details"
+								data-testid="cmp-details"
 						/>
 					</Field>
 					<Field label="Desired resolution (optional)">
@@ -1084,13 +1083,12 @@ function ProposeRecoverySheet({
 						/>
 					</Field>
 					<Field label="Reason">
-						<textarea
+						<Textarea
 							value={form.reason}
 							onChange={(e) => patch("reason", e.target.value)}
 							rows={3}
 							placeholder="Justify the recovery action"
-							className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-							data-testid="rec-reason"
+								data-testid="rec-reason"
 						/>
 					</Field>
 					<label className="flex cursor-pointer items-center gap-2 text-sm">

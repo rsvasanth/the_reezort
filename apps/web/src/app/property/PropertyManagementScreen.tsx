@@ -582,7 +582,7 @@ function RoomTypesTab({ tree, onMutate }: { tree: PropertyTree; onMutate: Mutate
 				{tree.room_types.map((t) => (
 					<RoomTypeRow key={t.name} t={t} onMutate={onMutate} />
 				))}
-				<div className="grid grid-cols-[1.3fr_0.9fr_0.6fr_0.6fr_0.9fr_auto] items-end gap-2">
+				<div className="grid grid-cols-2 items-end gap-2 md:grid-cols-[1.3fr_0.9fr_0.6fr_0.6fr_0.9fr_auto]">
 					<Field label="Name"><Input value={rt.room_type_name} onChange={(e) => setRt({ ...rt, room_type_name: e.target.value })} placeholder="Signature Arch Villa" /></Field>
 					<Field label="Code"><Input value={rt.room_type_code} onChange={(e) => setRt({ ...rt, room_type_code: e.target.value })} placeholder="SAV" /></Field>
 					<Field label="Adults"><Input type="number" value={rt.standard_adults} onChange={(e) => setRt({ ...rt, standard_adults: e.target.value })} onFocus={(e) => e.target.select()} /></Field>
@@ -827,7 +827,7 @@ function BlocksTab({
 								options={roomTypes.map((rt) => ({ value: rt.name, label: rt.room_type_name }))}
 							/>
 						)}
-						<div className="grid grid-cols-2 gap-3">
+						<div className="grid gap-3 sm:grid-cols-2">
 							<Field label="Start date">
 								<Input
 									type="date"

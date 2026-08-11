@@ -472,7 +472,7 @@ export default function RoomWorkspace({ roomName }: { roomName: string | null })
 									</p>
 								) : (
 									connections.map((row, index) => (
-										<div key={index} className="grid grid-cols-[1.2fr_1fr_1fr_auto] items-end gap-2">
+										<div key={index} className="grid grid-cols-1 items-end gap-2 md:grid-cols-[1.2fr_1fr_1fr_auto]">
 											<LabeledSelect
 												label="Room"
 												value={row.connected_room}

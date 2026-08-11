@@ -3,17 +3,27 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 /** Plain semantic table elements on brand tokens. 17+ screens import these names. */
-const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
-	({ className, ...props }, ref) => (
-		<div className="relative w-full overflow-auto">
-			<table
-				ref={ref}
-				className={cn("w-full caption-bottom text-sm", className)}
-				{...props}
-			/>
-		</div>
-	),
-)
+const Table = React.forwardRef<
+	HTMLTableElement,
+	React.HTMLAttributes<HTMLTableElement> & {
+		/**
+		 * Width below which the table scrolls instead of compressing. Without
+		 * one, `table-layout: auto` shrinks to min-content before the wrapper
+		 * ever scrolls, so on a phone a six-column table wraps every cell to
+		 * three or four lines — unreadable — rather than scrolling cleanly.
+		 */
+		minWidth?: number
+	}
+>(({ className, minWidth = 720, ...props }, ref) => (
+	<div className="relative w-full overflow-x-auto overscroll-x-contain">
+		<table
+			ref={ref}
+			style={{ minWidth }}
+			className={cn("w-full caption-bottom text-sm", className)}
+			{...props}
+		/>
+	</div>
+))
 Table.displayName = "Table"
 
 const TableHeader = React.forwardRef<
@@ -65,7 +75,7 @@ const TableHead = React.forwardRef<
 	<th
 		ref={ref}
 		className={cn(
-			"h-10 px-3 text-left align-middle text-xs font-medium uppercase tracking-wider text-muted-foreground",
+			"h-10 whitespace-nowrap px-3 text-left align-middle text-xs font-medium uppercase tracking-wider text-muted-foreground",
 			"[&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
 			className,
 		)}
@@ -81,7 +91,7 @@ const TableCell = React.forwardRef<
 	<td
 		ref={ref}
 		className={cn(
-			"px-3 py-2.5 align-middle",
+			"whitespace-nowrap px-3 py-2.5 align-middle",
 			"[&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
 			className,
 		)}

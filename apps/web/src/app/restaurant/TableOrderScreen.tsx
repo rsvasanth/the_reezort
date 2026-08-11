@@ -233,7 +233,7 @@ export default function TableOrderScreen({ order: orderName }: { order: string |
 				</div>
 
 				{/* Order rail */}
-				<div className="flex flex-col gap-4 xl:sticky xl:top-4">
+				<div className="order-first flex flex-col gap-4 xl:order-none xl:sticky xl:top-4">
 					{order.items.length > 0 ? (
 						<div className="rounded-xl border bg-card">
 							<div className="border-b px-4 py-3">

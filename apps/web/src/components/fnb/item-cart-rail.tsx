@@ -62,7 +62,7 @@ export function ItemCartRail({
 					) : null}
 				</div>
 				{count > 0 && onClear ? (
-					<Button variant="ghost" size="icon" className="size-7" aria-label="Clear order" onClick={onClear}>
+					<Button variant="ghost" size="icon" className="size-10 md:size-7" aria-label="Clear order" onClick={onClear}>
 						<Trash2 className="size-3.5" />
 					</Button>
 				) : null}
@@ -95,7 +95,7 @@ export function ItemCartRail({
 									<Button
 										variant="ghost"
 										size="icon"
-										className="size-7"
+										className="size-10 md:size-7"
 										aria-label={`${item.item_name} minus`}
 										onClick={() => onRemove(item.name)}
 									>
@@ -105,7 +105,7 @@ export function ItemCartRail({
 									<Button
 										variant="ghost"
 										size="icon"
-										className="size-7"
+										className="size-10 md:size-7"
 										aria-label={`${item.item_name} plus`}
 										onClick={() => onAdd(item.name)}
 									>

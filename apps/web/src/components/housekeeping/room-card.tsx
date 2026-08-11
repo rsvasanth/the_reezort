@@ -257,7 +257,7 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 							<Button
 								size="sm"
 								variant="outline"
-								className="h-7 text-xs"
+								className="h-10 text-xs md:h-7"
 								disabled={busy}
 								onClick={handleCreateTask}
 							>
@@ -273,7 +273,7 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 							<Button
 								size="sm"
 								variant="outline"
-								className="h-7 text-xs"
+								className="h-10 text-xs md:h-7"
 								onClick={() => setLinenOpen(true)}
 								data-testid={`linen-${room.room_number}`}
 							>
@@ -293,7 +293,7 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 						{showStart && (
 							<Button
 								size="sm"
-								className="h-7 text-xs"
+								className="h-10 text-xs md:h-7"
 								disabled={busy}
 								onClick={handleStart}
 							>
@@ -311,7 +311,7 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 									<Button
 										size="sm"
 										variant="outline"
-										className="h-7 text-xs"
+										className="h-10 text-xs md:h-7"
 										disabled={busy}
 										data-testid={`dnd-${room.room_number}`}
 									>
@@ -330,7 +330,7 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 							<Button
 								size="sm"
 								variant="outline"
-								className="h-7 text-xs"
+								className="h-10 text-xs md:h-7"
 								disabled={busy}
 								onClick={handlePause}
 							>
@@ -346,7 +346,7 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 							<Button
 								size="sm"
 								variant="outline"
-								className="h-7 text-xs"
+								className="h-10 text-xs md:h-7"
 								disabled={busy}
 								onClick={() => setCompleteOpen(true)}
 							>
@@ -358,7 +358,7 @@ export function RoomCard({ room, isMock, onMutated }: Props) {
 							<Button
 								size="sm"
 								variant="outline"
-								className="h-7 text-xs"
+								className="h-10 text-xs md:h-7"
 								disabled={busy}
 								onClick={() => setInspectOpen(true)}
 							>
@@ -452,7 +452,7 @@ function AssignMenu({
 	return (
 		<DropdownMenu onOpenChange={(open) => { if (open) void loadStaffOnce(); }}>
 			<DropdownMenuTrigger asChild>
-				<Button size="sm" variant="outline" className="h-7 text-xs" disabled={busy} data-testid={`assign-${taskId}`}>
+				<Button size="sm" variant="outline" className="h-10 text-xs md:h-7" disabled={busy} data-testid={`assign-${taskId}`}>
 					{busy ? <RefreshCw className="mr-1 size-3 animate-spin" /> : <UserPlus className="mr-1 size-3" />}
 					Assign
 				</Button>

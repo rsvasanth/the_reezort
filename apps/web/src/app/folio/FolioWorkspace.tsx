@@ -438,7 +438,7 @@ function BodyContent({
 						onLineCorrected={onRetry}
 					/>
 				</div>
-				<div className="flex flex-col gap-4">
+				<div className="order-first flex flex-col gap-4 xl:order-none">
 					<FolioSettlementRail
 						totals={detail.totals}
 						balanceStatus={detail.balance_status}

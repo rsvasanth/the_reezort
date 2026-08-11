@@ -11,10 +11,32 @@ from the_reezort.reservation.api import (
 	search_availability,
 	set_reservation_bill_to,
 )
+from the_reezort.setup.bootstrap import seed_erpnext_demo_masters
 
 
 class TestReservationAPI(FrappeTestCase):
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		# ERPNext's own before_tests hook unconditionally wipes every Item Price
+		# row at the start of a bench run-tests invocation (erpnext.setup.utils.
+		# before_tests). Re-seed the room-rate pricing this module depends on —
+		# otherwise every estimated/deposit amount silently prices at 0.
+		company = frappe.db.get_value("Company", {}, "name")
+		if company:
+			seed_erpnext_demo_masters(company, currency=frappe.db.get_value("Company", company, "default_currency") or "INR")
+
 	def setUp(self):
+		# Several endpoints under test (create_quote_or_hold, confirm_reservation, ...)
+		# call frappe.db.commit() internally — a real production requirement, but it
+		# defeats FrappeTestCase's rollback-based isolation (which only undoes
+		# uncommitted work at class teardown), permanently leaking test data into
+		# this site on every run. Suppress commits for the duration of each test;
+		# reads within the same transaction still see the writes.
+		self._real_commit = frappe.db.commit
+		frappe.db.commit = lambda *a, **k: None
+		self.addCleanup(lambda: setattr(frappe.db, "commit", self._real_commit))
+
 		self.company = frappe.db.get_value("Company", {}, "name")
 		if not self.company:
 			self.skipTest("ERPNext Company is required for reservation tests.")
@@ -137,6 +159,10 @@ class TestReservationAPI(FrappeTestCase):
 	# ---------- overbooking override approval gate (spec 002) ----------
 
 	def _seed_override_policy(self, auto_role=None):
+		# Approval Policy autonames on (action, threshold_amount) alone, so every
+		# call here — from any test in this class — targets the same row. Clear
+		# it first so tests don't collide with each other or with a prior run.
+		frappe.db.delete("Approval Policy", {"action": "reservation_override", "threshold_amount": 0})
 		return frappe.get_doc(
 			{
 				"doctype": "Approval Policy",

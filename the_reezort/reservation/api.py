@@ -32,6 +32,15 @@ ALL_RESERVATION_STATUSES = (
 )
 
 
+def _lock_property_for_booking(property_name):
+	"""Serialize the availability-check-then-hold-insert sequence for a
+	property behind a row lock, so two concurrent requests for the same
+	dates can't both read the same last unit as available and both create
+	a Room Hold for it. The lock is released when the caller's transaction
+	commits or rolls back (every call site here commits explicitly)."""
+	frappe.db.get_value("Resort Property", property_name, "name", for_update=True)
+
+
 def _validate_stay_dates(arrival_date, departure_date):
 	if not arrival_date or not departure_date:
 		frappe.throw(_("Arrival date and departure date are required."))
@@ -435,6 +444,7 @@ def create_quote_or_hold(
 	if not rooms:
 		frappe.throw(_("At least one room request is required."))
 
+	_lock_property_for_booking(property)
 	available_by_type = {row["room_type"]: row for row in _availability_rows(property, arrival_date, departure_date)}
 	requested_count = Counter(row.get("room_type") for row in rooms)
 	for room_type, count in requested_count.items():
@@ -698,6 +708,7 @@ def confirm_reservation(
 	allow_override = bool(int(allow_override or 0)) if str(allow_override).isdigit() else bool(allow_override)
 	hold_active = bool(_reservation_active_holds(reservation))
 	if not hold_active:
+		_lock_property_for_booking(doc.resort_property)
 		available = _available_counts_excluding(
 			doc.resort_property, doc.arrival_date, doc.departure_date, reservation
 		)

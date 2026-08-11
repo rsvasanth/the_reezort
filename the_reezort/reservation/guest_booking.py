@@ -27,6 +27,7 @@ from frappe.utils import add_to_date, flt, getdate, now_datetime, today
 from the_reezort.reservation.api import (
 	_availability_rows,
 	_get_or_create_guest_profile,
+	_lock_property_for_booking,
 	_property_currency,
 	_validate_stay_dates,
 )
@@ -136,6 +137,7 @@ def guest_request_booking(
 	booker = _validate_booker(booker)
 
 	# Availability re-check (never trust the client's selection).
+	_lock_property_for_booking(property)
 	available = {row["room_type"]: row for row in _availability_rows(property, arrival_date, departure_date)}
 	if available.get(room_type, {}).get("available_count", 0) < quantity:
 		frappe.throw(_("Sorry — that room type is no longer available for those dates."))

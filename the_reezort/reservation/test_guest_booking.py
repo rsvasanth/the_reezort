@@ -11,23 +11,61 @@ from the_reezort.reservation.guest_booking import (
 	guest_request_booking,
 	guest_search,
 )
+from the_reezort.setup.bootstrap import seed_erpnext_demo_masters
 
 
 class TestGuestBooking(FrappeTestCase):
+	@classmethod
+	def setUpClass(cls):
+		super().setUpClass()
+		# ERPNext's own before_tests hook unconditionally wipes every Item Price
+		# row at the start of a bench run-tests invocation (erpnext.setup.utils.
+		# before_tests). Re-seed the room-rate pricing this module depends on —
+		# otherwise every quoted/estimated amount silently prices at 0.
+		company = frappe.db.get_value("Company", {}, "name")
+		if company:
+			seed_erpnext_demo_masters(company, currency=frappe.db.get_value("Company", company, "default_currency") or "INR")
+
 	def setUp(self):
+		# guest_request_booking() commits internally (real production requirement),
+		# which defeats FrappeTestCase's rollback-based isolation and permanently
+		# leaks Guest Profile / Reservation / Room Hold rows into this site on every
+		# run. Suppress commits for the duration of each test.
+		self._real_commit = frappe.db.commit
+		frappe.db.commit = lambda *a, **k: None
+		self.addCleanup(lambda: setattr(frappe.db, "commit", self._real_commit))
+
 		self.company = frappe.db.get_value("Company", {}, "name")
 		if not self.company:
 			self.skipTest("ERPNext Company required.")
 		self.seed = seed_demo_property(company=self.company)
 		self.property = self.seed["property"]
-		self.arrival = add_days(today(), 14)
-		self.departure = add_days(today(), 16)
+		# FrappeTestCase only rolls back at class teardown, not between tests, so
+		# every test method in this class runs against the same DB state the
+		# previous ones left behind. A fixed date range would make the handful of
+		# room-booking tests here compete for the same 5-room DLX inventory and
+		# fail in whichever order happens to exhaust it first — offset the window
+		# per test method so each one books against its own slice of the calendar.
+		day_offset = 14 + (abs(hash(self._testMethodName)) % 300)
+		self.arrival = add_days(today(), day_offset)
+		self.departure = add_days(today(), day_offset + 2)
 		self.room_type = frappe.db.get_value(
 			"Room Type", {"resort_property": self.property, "room_type_code": "DLX"}, "name"
 		)
+		# Guest identity emails are suffixed per test run so a run's assertions
+		# never depend on (or collide with) another run's leftover Guest Profile /
+		# Reservation state for a "fixed" address like "spammer.web@example.com".
+		self._run = frappe.generate_hash(length=6)
 
-	def _booker(self, email="guest.web@example.com"):
-		return {"full_name": "Web Guest", "email": email, "phone": "+919812345678"}
+	def _email(self, label):
+		return f"{label}.{self._run}@example.com"
+
+	def _booker(self, email=None):
+		# _get_or_create_guest_profile() also matches on phone, so this must be
+		# unique per test run too — otherwise two tests with different emails
+		# but the same fixed phone silently collapse onto one Guest Profile and
+		# each other's holds count toward MAX_ACTIVE_HOLDS_PER_GUEST.
+		return {"full_name": "Web Guest", "email": email or self._email("guest.web"), "phone": f"+9198{self._run}00"}
 
 	# ---- search ----
 
@@ -75,7 +113,7 @@ class TestGuestBooking(FrappeTestCase):
 			)
 
 	def test_request_caps_active_holds_per_guest(self):
-		email = "spammer.web@example.com"
+		email = self._email("spammer.web")
 		for _i in range(MAX_ACTIVE_HOLDS_PER_GUEST):
 			guest_request_booking(
 				property=self.property,
@@ -97,15 +135,16 @@ class TestGuestBooking(FrappeTestCase):
 	# ---- lookup ----
 
 	def test_lookup_requires_matching_email(self):
+		email = self._email("lookup.web")
 		booked = guest_request_booking(
 			property=self.property,
 			arrival_date=self.arrival,
 			departure_date=self.departure,
 			room_type=self.room_type,
-			booker=self._booker(email="lookup.web@example.com"),
+			booker=self._booker(email=email),
 		)
 		# Correct email → returns status.
-		found = guest_lookup_booking(reference=booked["reference"], email="lookup.web@example.com")
+		found = guest_lookup_booking(reference=booked["reference"], email=email)
 		self.assertEqual(found["reference"], booked["reference"])
 		self.assertEqual(found["status"], "Hold")
 		# Wrong email → generic not-found (no enumeration).
@@ -122,7 +161,7 @@ class TestGuestBooking(FrappeTestCase):
 			arrival_date=self.arrival,
 			departure_date=self.departure,
 			room_type=self.room_type,
-			booker=self._booker(email="deposit.web@example.com"),
+			booker=self._booker(email=self._email("deposit.web")),
 		)
 		doc = frappe.get_doc("Reservation", booked["reference"])
 		self.assertEqual(doc.deposit_policy, "Partial")
@@ -139,7 +178,7 @@ class TestGuestBooking(FrappeTestCase):
 			arrival_date=self.arrival,
 			departure_date=self.departure,
 			room_type=self.room_type,
-			booker=self._booker(email="pay.web@example.com"),
+			booker=self._booker(email=self._email("pay.web")),
 		)
 		with self.assertRaises(frappe.ValidationError):
 			guest_deposit_order(reference=booked["reference"], email="attacker@example.com")
@@ -149,7 +188,8 @@ class TestGuestBooking(FrappeTestCase):
 		(no email) must get the email backfilled when a later booking supplies
 		one — otherwise the email-gated lookup/deposit endpoints can never match
 		this guest again even though they gave a valid email on this booking."""
-		phone = "+919812340099"
+		phone = f"+9198{self._run}01"
+		email = self._email("backfill.web")
 		stale = frappe.get_doc(
 			{"doctype": "Guest Profile", "guest_full_name": "Phone Only Guest", "phone": phone}
 		).insert(ignore_permissions=True)
@@ -160,13 +200,13 @@ class TestGuestBooking(FrappeTestCase):
 			arrival_date=self.arrival,
 			departure_date=self.departure,
 			room_type=self.room_type,
-			booker={"full_name": "Phone Only Guest", "email": "backfill.web@example.com", "phone": phone},
+			booker={"full_name": "Phone Only Guest", "email": email, "phone": phone},
 		)
 		res = frappe.get_doc("Reservation", booked["reference"])
 		self.assertEqual(res.booker_guest_profile, stale.name)
 		stale.reload()
-		self.assertEqual(stale.email, "backfill.web@example.com")
+		self.assertEqual(stale.email, email)
 
 		# The lookup now succeeds with the backfilled email.
-		found = guest_lookup_booking(reference=booked["reference"], email="backfill.web@example.com")
+		found = guest_lookup_booking(reference=booked["reference"], email=email)
 		self.assertEqual(found["reference"], booked["reference"])

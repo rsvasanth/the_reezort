@@ -267,7 +267,6 @@ def _validate_and_save_checklist_result(task_doc, checklist=None, notes=None, ph
 	supplied_items = _checklist_items(checklist_payload)
 	supplied_by_key = {_item_key(item): item for item in supplied_items}
 	photo_by_key = _photos_by_item(photos)
-	has_exception = bool(exception_approval or task_doc.exception_approval)
 
 	for item in supplied_items:
 		key = _item_key(item)
@@ -284,6 +283,24 @@ def _validate_and_save_checklist_result(task_doc, checklist=None, notes=None, ph
 			continue
 		if template_item.requires_photo and (not result_item or not result_item.get("photo")):
 			missing_photos.append(template_item.item_label)
+
+	# An "exception" is only real when it clears the approval gate — a bare
+	# truthy string from the caller no longer buys a bypass. When there's
+	# nothing missing, there's nothing to gate, so skip the call entirely.
+	has_exception = False
+	if missing_mandatory or missing_photos:
+		from the_reezort.approvals.api import require_approval
+
+		proceed, request_name = require_approval(
+			action="housekeeping_exception",
+			source_doctype="Housekeeping Task",
+			source_name=task_doc.name,
+			payload={"missing_mandatory": missing_mandatory, "missing_photos": missing_photos},
+			approval_request=exception_approval or task_doc.exception_approval,
+		)
+		has_exception = bool(proceed)
+		if has_exception:
+			task_doc.exception_approval = request_name
 
 	if missing_mandatory and not has_exception:
 		frappe.throw(_("Mandatory checklist items missing: {0}").format(", ".join(missing_mandatory)))
@@ -328,10 +345,6 @@ def complete_task(task, checklist=None, notes=None, photos=None, exception_appro
 		frappe.throw(_("DND, refused, or access issue tasks cannot be completed without resolution."))
 
 	completion_notes = notes if notes is not None else completion_notes
-	if exception_approval:
-		task_doc.exception_approval = exception_approval
-		if not frappe.db.exists("DocType", "Housekeeping Exception Approval"):
-			task_doc.flags.ignore_links = True
 	checklist_result = _validate_and_save_checklist_result(
 		task_doc,
 		checklist=checklist,

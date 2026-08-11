@@ -41,7 +41,9 @@ class FolioLine(Document):
 		self.update_folio_totals()
 
 	def on_trash(self):
-		self.update_folio_totals()
+		# Frappe calls on_trash() before the row is actually deleted, so a plain
+		# recompute here would still count this line — exclude it explicitly.
+		self.update_folio_totals(exclude_line=self.name)
 
 	def validate_unique_idempotency_key(self):
 		if not self.idempotency_key:
@@ -81,10 +83,10 @@ class FolioLine(Document):
 			if self.get(fieldname) != previous.get(fieldname):
 				frappe.throw(_("Folio Line cannot be edited after it is {0}.").format(previous.line_status))
 
-	def update_folio_totals(self):
+	def update_folio_totals(self, exclude_line=None):
 		if not self.guest_folio or not frappe.db.exists("Guest Folio", self.guest_folio):
 			return
 
 		folio = frappe.get_doc("Guest Folio", self.guest_folio)
-		folio.recalculate_totals()
+		folio.recalculate_totals(exclude_line=exclude_line)
 		folio.db_update()

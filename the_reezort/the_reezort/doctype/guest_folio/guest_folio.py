@@ -19,10 +19,14 @@ class GuestFolio(Document):
 		if frappe.db.exists("Guest Folio", filters):
 			frappe.throw(_("Only one primary folio is allowed for a stay."))
 
-	def recalculate_totals(self):
+	def recalculate_totals(self, exclude_line=None):
+		filters = {"guest_folio": self.name, "line_status": ["!=", "Voided"]}
+		if exclude_line:
+			filters["name"] = ["!=", exclude_line]
+
 		lines = frappe.get_all(
 			"Folio Line",
-			filters={"guest_folio": self.name, "line_status": ["!=", "Voided"]},
+			filters=filters,
 			fields=["line_type", "amount", "discount_amount"],
 		)
 

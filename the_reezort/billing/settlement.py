@@ -10,7 +10,7 @@ import json
 
 import frappe
 from frappe import _
-from frappe.utils import flt
+from frappe.utils import flt, today
 
 from the_reezort.billing.erpnext_posting import (
 	build_and_submit_sales_invoice,
@@ -92,25 +92,93 @@ def _mark_lines_posted(charge_lines, sales_invoice):
 		)
 
 
+def _record_settlement_lines(folio, sales_invoice, payments, payment_entries, idempotency_key, total_taxes):
+	"""Record the settlement payment(s) and invoice tax as real Folio Lines.
+
+	Guest Folio.recalculate_totals() derives total_paid/total_taxes_estimated/
+	outstanding_amount from Folio Line rows alone, and it re-runs on every
+	future line insert — so if a settlement payment only ever lived as a
+	direct field write (the old behavior), the very next charge posted to
+	this folio would silently erase it, reopening a "paid" balance. Payment
+	Reference and Tax Preview lines are exactly the line types
+	recalculate_totals already knows how to fold in; recording the real
+	payment/tax as lines makes them survive any future recompute instead of
+	being a one-off snapshot that gets overwritten.
+	"""
+	for index, (payment, payment_entry) in enumerate(zip(payments, payment_entries)):
+		amount = flt(payment.get("amount"))
+		if amount <= 0:
+			continue
+		frappe.get_doc(
+			{
+				"doctype": "Folio Line",
+				"guest_folio": folio.name,
+				"line_type": "Payment Reference",
+				"source_module": "PMS",
+				"source_doctype": "Sales Invoice",
+				"source_name": sales_invoice,
+				"idempotency_key": f"{idempotency_key}:payment:{index}",
+				"service_date": today(),
+				"qty": 1,
+				"rate": amount,
+				"amount": amount,
+				"tax_treatment": "Standard",
+				"description": " · ".join(
+					filter(None, [f"Settlement · {payment.get('mode_of_payment') or payment.get('payment_kind')}", payment.get("reference_no")])
+				),
+				"erpnext_sales_invoice": sales_invoice,
+				"erpnext_payment_entry": payment_entry,
+			}
+		).insert(ignore_permissions=True)
+
+	total_taxes = flt(total_taxes)
+	if total_taxes > 0:
+		# Room check-in (pms.api._post_tax_estimate) already posts a pre-settlement
+		# GST *estimate* as its own Tax Preview line. Void any such estimates now
+		# that the real invoice tax is known, so recalculate_totals doesn't sum
+		# the estimate and the authoritative figure together.
+		frappe.db.set_value(
+			"Folio Line",
+			{"guest_folio": folio.name, "line_type": "Tax Preview", "line_status": ["!=", "Voided"]},
+			"line_status",
+			"Voided",
+		)
+		frappe.get_doc(
+			{
+				"doctype": "Folio Line",
+				"guest_folio": folio.name,
+				"line_type": "Tax Preview",
+				"source_module": "PMS",
+				"source_doctype": "Sales Invoice",
+				"source_name": sales_invoice,
+				"idempotency_key": f"{idempotency_key}:tax",
+				"service_date": today(),
+				"qty": 1,
+				"rate": total_taxes,
+				"amount": total_taxes,
+				"tax_treatment": "Standard",
+				"description": f"Tax · {sales_invoice}",
+				"erpnext_sales_invoice": sales_invoice,
+			}
+		).insert(ignore_permissions=True)
+
+
 def _finalize_folio(folio, sales_invoice, payments_total, grand_total, deposit_total=0, total_taxes=0):
 	# Effective paid = settlement payments + the deposit advance already collected.
 	effective_paid = flt(payments_total) + flt(deposit_total)
 	fully_paid = effective_paid >= grand_total and grand_total > 0
-	# Bake the invoice's tax into total_taxes_estimated so the folio's balance
-	# equation closes at the front desk:
-	#   total_charges + total_taxes_estimated − total_discounts − total_paid = outstanding_amount
-	# Without this, the settlement rail shows Taxes = 0 while outstanding already
-	# includes GST, and the visible sum reads as inconsistent to guests.
+	# total_paid / total_taxes_estimated / outstanding_amount are NOT written
+	# here — they're derived by Guest Folio.recalculate_totals() from the
+	# Payment Reference / Tax Preview lines _record_settlement_lines() just
+	# inserted (each insert's after_insert hook already recomputed and saved
+	# them). Only the status fields, which recalculate_totals doesn't touch,
+	# are set directly.
 	frappe.db.set_value(
 		"Guest Folio",
 		folio.name,
 		{
 			"posting_status": "Posted",
 			"folio_status": "Settled" if fully_paid else "Ready for Settlement",
-			"balance_status": "Settled" if fully_paid else "Outstanding",
-			"total_paid": effective_paid,
-			"total_taxes_estimated": flt(total_taxes),
-			"outstanding_amount": max(grand_total - effective_paid, 0),
 		},
 		update_modified=False,
 	)
@@ -161,6 +229,10 @@ def settle_folio(guest_folio, payments=None, idempotency_key=None):
 		payment_entries = [_create_payment_entry(folio, sales_invoice.name, p) for p in payments]
 		payments_total = sum(flt(p.get("amount")) for p in payments)
 		_mark_lines_posted(charge_lines, sales_invoice.name)
+		_record_settlement_lines(
+			folio, sales_invoice.name, payments, payment_entries, idempotency_key,
+			total_taxes=flt(sales_invoice.total_taxes_and_charges),
+		)
 		_finalize_folio(
 			folio,
 			sales_invoice.name,

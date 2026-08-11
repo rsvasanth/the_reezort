@@ -951,11 +951,18 @@ def capture_restaurant_payment(order: str, razorpay_order_id: str, razorpay_paym
 	from the_reezort.billing.razorpay_gateway import (
 		_authoritative_amount,
 		_ensure_razorpay_mode_of_payment,
+		_verify_order_is_for,
 		verify_signature,
 	)
 
 	if not verify_signature(razorpay_order_id, razorpay_payment_id, razorpay_signature):
 		frappe.throw(_("Razorpay signature verification failed."))
+
+	# A valid signature only proves this payment belongs to this order — it
+	# does not prove the order was created for THIS restaurant order. Without
+	# this check, a payment on the caller's own check could be replayed to
+	# close out a different order.
+	_verify_order_is_for(razorpay_order_id, order, intent="pos", key="restaurant_order")
 
 	# Never trust a client amount — take it from Razorpay.
 	amount = _authoritative_amount(razorpay_payment_id, razorpay_order_id)

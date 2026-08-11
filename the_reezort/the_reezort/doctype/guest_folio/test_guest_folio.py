@@ -143,3 +143,97 @@ class TestGuestFolio(FrappeTestCase):
 		self.assertEqual(folio.total_discounts, 100)
 		self.assertEqual(folio.outstanding_amount, 900)
 		self.assertEqual(folio.balance_status, "Outstanding")
+
+	def test_payment_reference_and_deposit_lines_count_as_paid(self):
+		# Charge + a Payment Reference line + a Deposit Application line should
+		# both reduce outstanding_amount — these are the only two line types
+		# recalculate_totals() treats as money already received.
+		folio = self.make_folio()
+		self.make_line(folio, amount=1000)
+		self.make_line(
+			folio,
+			line_type="Payment Reference",
+			amount=400,
+			source_module="Manual",
+			source_doctype=None,
+			source_name=None,
+		)
+		self.make_line(
+			folio,
+			line_type="Deposit Application",
+			amount=300,
+			source_module="Manual",
+			source_doctype=None,
+			source_name=None,
+		)
+
+		folio.reload()
+		self.assertEqual(folio.total_paid, 700)
+		self.assertEqual(folio.outstanding_amount, 300)
+		self.assertEqual(folio.balance_status, "Outstanding")
+
+	def test_tax_preview_line_adds_to_estimated_taxes_not_charges(self):
+		folio = self.make_folio()
+		self.make_line(folio, amount=1000)
+		self.make_line(
+			folio,
+			line_type="Tax Preview",
+			amount=180,
+			source_module="Manual",
+			source_doctype=None,
+			source_name=None,
+		)
+
+		folio.reload()
+		self.assertEqual(folio.total_charges, 1000)
+		self.assertEqual(folio.total_taxes_estimated, 180)
+		self.assertEqual(folio.outstanding_amount, 1180)
+
+	def test_voided_lines_are_excluded_from_totals(self):
+		folio = self.make_folio()
+		self.make_line(folio, amount=1000)
+		voided = self.make_line(folio, amount=5000, line_status="Voided")
+
+		folio.reload()
+		# The voided line must not appear in the balance at all — not as a
+		# charge, not as a negative, just absent.
+		self.assertEqual(folio.total_charges, 1000)
+		self.assertEqual(folio.outstanding_amount, 1000)
+		self.assertEqual(voided.line_status, "Voided")
+
+	def test_trashing_a_line_recomputes_folio_totals(self):
+		folio = self.make_folio()
+		self.make_line(folio, amount=1000)
+		removable = self.make_line(folio, amount=500)
+
+		folio.reload()
+		self.assertEqual(folio.total_charges, 1500)
+
+		removable.delete(ignore_permissions=True)
+
+		folio.reload()
+		self.assertEqual(folio.total_charges, 1000)
+		self.assertEqual(folio.outstanding_amount, 1000)
+
+	def test_balance_status_credit_balance_when_paid_exceeds_charges(self):
+		folio = self.make_folio()
+		self.make_line(folio, amount=1000)
+		self.make_line(
+			folio,
+			line_type="Payment Reference",
+			amount=1500,
+			source_module="Manual",
+			source_doctype=None,
+			source_name=None,
+		)
+
+		folio.reload()
+		self.assertEqual(folio.outstanding_amount, -500)
+		self.assertEqual(folio.balance_status, "Credit Balance")
+
+	def test_balance_status_no_balance_when_folio_has_no_lines(self):
+		folio = self.make_folio()
+
+		folio.reload()
+		self.assertEqual(folio.outstanding_amount, 0)
+		self.assertEqual(folio.balance_status, "No Balance")

@@ -93,6 +93,32 @@ def _authoritative_amount(payment_id, order_id):
 	return flt(payment.get("amount")) / 100.0
 
 
+def _authoritative_order_notes(order_id):
+	"""Fetch the Order's own notes from Razorpay — never trust the client.
+
+	The signature check only proves this payment_id genuinely belongs to this
+	order_id; it says nothing about which folio the order was created for. A
+	caller can pair a valid signature from a payment on THEIR OWN folio with a
+	different guest_folio argument. The notes recorded at order-creation time
+	(create_order/create_deposit_order) are the only authoritative record of
+	what the order was actually for — verify against those, not the argument.
+	"""
+	key_id, key_secret = _keys()
+	response = requests.get(
+		f"{RAZORPAY_ORDERS_URL}/{order_id}",
+		auth=(key_id, key_secret),
+		timeout=30,
+	)
+	response.raise_for_status()
+	return response.json().get("notes") or {}
+
+
+def _verify_order_is_for(order_id, expected_value, intent, key="guest_folio"):
+	notes = _authoritative_order_notes(order_id)
+	if notes.get(key) != expected_value or notes.get("intent") != intent:
+		frappe.throw(_("Razorpay order does not match this record."), frappe.PermissionError)
+
+
 def _create_order(amount, currency, receipt, notes):
 	"""Create a Razorpay order and return the checkout params."""
 	key_id, key_secret = _keys()
@@ -158,6 +184,12 @@ def capture_payment(guest_folio, razorpay_order_id, razorpay_payment_id, razorpa
 	if not verify_signature(razorpay_order_id, razorpay_payment_id, razorpay_signature):
 		frappe.throw(_("Razorpay signature verification failed."))
 
+	# A valid signature only proves this payment belongs to this order — it does
+	# not prove the order was created for THIS folio. Without this check, a
+	# genuine payment on the caller's own folio could be replayed with a
+	# different guest_folio argument to settle someone else's balance.
+	_verify_order_is_for(razorpay_order_id, guest_folio, intent="settle")
+
 	# Ignore the client-supplied amount — derive it from Razorpay directly so a
 	# tampered callback cannot over-credit the folio.
 	captured_amount = _authoritative_amount(razorpay_payment_id, razorpay_order_id)
@@ -187,6 +219,10 @@ def capture_deposit(guest_folio, razorpay_order_id, razorpay_payment_id, razorpa
 
 	if not verify_signature(razorpay_order_id, razorpay_payment_id, razorpay_signature):
 		frappe.throw(_("Razorpay signature verification failed."))
+
+	# See capture_payment — a valid signature alone doesn't prove this order
+	# was created for THIS folio's deposit.
+	_verify_order_is_for(razorpay_order_id, guest_folio, intent="deposit")
 
 	# Ignore the client-supplied amount — derive it from Razorpay directly so a
 	# tampered callback cannot over-credit the deposit.

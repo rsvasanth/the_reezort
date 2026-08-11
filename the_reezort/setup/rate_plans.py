@@ -9,6 +9,25 @@ from frappe import _
 
 from the_reezort.setup.api import _as_dict, _clean, _envelope, _require_permission
 
+# Fields a caller may set through upsert_*. Identity fields (resort_property,
+# code — which together derive `name`) and framework fields (name, owner,
+# docstatus, doctype, ...) are deliberately excluded: they must never come
+# from an unfiltered client payload.
+_EDITABLE = {
+	"Rate Plan": [
+		"plan_name", "is_active", "refundable", "cancellation_hours",
+		"room_type", "currency", "base_rate_override", "weekend_uplift_pct", "notes",
+	],
+	"Season": [
+		"season_name", "priority", "is_active",
+		"start_date", "end_date", "modifier_pct", "absolute_rate", "notes",
+	],
+	"Package": [
+		"package_name", "nights", "is_active", "room_type", "linked_rate_plan",
+		"package_price", "currency", "valid_from", "valid_to", "notes",
+	],
+}
+
 
 def _list_docs(doctype, resort_property, fields):
 	filters = {}
@@ -55,20 +74,28 @@ def _upsert(doctype, payload, upper_code=True):
 		frappe.throw(_("Code is required."))
 	if upper_code:
 		code = code.upper()
-		payload["code"] = code
 	resort_property = payload.get("resort_property")
 	if not resort_property:
 		frappe.throw(_("Resort Property is required."))
 
+	editable = _EDITABLE.get(doctype, [])
 	name = f"{resort_property}-{code}"
 	if frappe.db.exists(doctype, name):
 		doc = frappe.get_doc(doctype, name)
-		for key, value in payload.items():
-			doc.set(key, value)
+		for field in editable:
+			if field in payload:
+				value = payload[field]
+				doc.set(field, _clean(value) if isinstance(value, str) else value)
 		doc.save(ignore_permissions=True)
 		reused = True
 	else:
-		doc = frappe.get_doc({"doctype": doctype, **payload})
+		values = {field: payload[field] for field in editable if field in payload}
+		doc = frappe.get_doc({
+			"doctype": doctype,
+			"resort_property": resort_property,
+			"code": code,
+			**values,
+		})
 		doc.insert(ignore_permissions=True)
 		reused = False
 	return doc, reused

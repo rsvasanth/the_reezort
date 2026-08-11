@@ -7,7 +7,7 @@
  "doctype": "DocType",
  "document_type": "Document",
  "engine": "InnoDB",
- "field_order": ["policy", "action", "state", "column_break_1", "requester", "requested_at", "source_section", "source_doctype", "source_name", "amount", "payload_section", "payload_json", "decision_section", "decided_by", "decided_at", "decision_notes", "reason"],
+ "field_order": ["policy", "action", "state", "column_break_1", "requester", "requested_at", "source_section", "source_doctype", "source_name", "amount", "payload_section", "payload_json", "decision_section", "decided_by", "decided_at", "decision_notes", "reason", "consumed_at"],
  "fields": [
   {"fieldname": "policy", "fieldtype": "Link", "in_list_view": 1, "in_standard_filter": 1, "label": "Policy", "options": "Approval Policy"},
   {"fieldname": "action", "fieldtype": "Data", "in_list_view": 1, "in_standard_filter": 1, "label": "Action", "reqd": 1},
@@ -25,7 +25,8 @@
   {"fieldname": "decision_section", "fieldtype": "Section Break", "label": "Decision"},
   {"fieldname": "decided_by", "fieldtype": "Link", "label": "Decided By", "options": "User", "read_only": 1},
   {"fieldname": "decided_at", "fieldtype": "Datetime", "label": "Decided At", "read_only": 1},
-  {"fieldname": "decision_notes", "fieldtype": "Small Text", "label": "Decision Notes"}
+  {"fieldname": "decision_notes", "fieldtype": "Small Text", "label": "Decision Notes"},
+  {"fieldname": "consumed_at", "fieldtype": "Datetime", "label": "Consumed At", "read_only": 1}
  ],
  "links": [],
  "modified": "2026-06-30 00:00:00.000000",

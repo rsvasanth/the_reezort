@@ -73,10 +73,31 @@ def require_approval(
 	"""
 	_require_login()
 
-	# If the caller passes an existing request that's already Approved, let them proceed.
+	amount = flt((payload or {}).get("amount"))
+
+	# If the caller passes an existing request that's already Approved, let them proceed —
+	# but only for the exact action/document/amount it was raised and approved for, and
+	# only once. Without this, one approved request would authorize any action on any
+	# document, any number of times.
 	if approval_request:
 		req = frappe.get_doc("Approval Request", approval_request)
 		if req.state in {"Approved", "Auto-Approved"}:
+			if req.get("consumed_at"):
+				frappe.throw(
+					_("Approval Request {0} has already been used.").format(req.name),
+					frappe.PermissionError,
+				)
+			if (
+				req.action != action
+				or (req.source_doctype or None) != (source_doctype or None)
+				or (req.source_name or None) != (source_name or None)
+				or flt(req.amount) != amount
+			):
+				frappe.throw(
+					_("Approval Request {0} does not match this action.").format(req.name),
+					frappe.PermissionError,
+				)
+			frappe.db.set_value("Approval Request", req.name, "consumed_at", now())
 			return True, req.name
 		if req.state == "Pending":
 			frappe.throw(
@@ -85,7 +106,6 @@ def require_approval(
 			)
 		frappe.throw(_("Approval Request {0} was {1}; cannot proceed.").format(req.name, req.state))
 
-	amount = flt((payload or {}).get("amount"))
 	policy = _resolve_policy(action, source_doctype, amount)
 	if not policy:
 		return True, None  # no gate

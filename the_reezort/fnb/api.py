@@ -23,6 +23,7 @@ from frappe import _
 from frappe.utils import flt, get_datetime, getdate, now_datetime, today
 
 from the_reezort.staff.api import _envelope
+from the_reezort.utils import require_permission
 
 BACKDATE_HOURS = 24
 
@@ -129,7 +130,7 @@ def post_room_charge_order(
 	"""Post an IRD order → ONE Folio Line (Restaurant source_module) + ONE
 	FnB Order audit doc. Idempotent per (stay, outlet, ordered_at, item bag,
 	user). Slice 1 = room charge only (walk-in Sales Invoice is Slice 5)."""
-	_require_login()
+	require_permission("FnB Order", "create")
 
 	if isinstance(items, str):
 		items = json.loads(items)
@@ -193,7 +194,8 @@ def post_room_charge_order(
 		if not mi["is_available"]:
 			frappe.throw(_("Item {0} is 86'd (out of stock).").format(mi["item_name"]))
 		qty = int(r["quantity"])
-		rate = flt(r.get("rate")) or flt(mi["price"])
+		# Price always comes from the menu catalog — never trust a client-supplied rate.
+		rate = flt(mi["price"])
 		amount = qty * rate
 		total += amount
 		order_items.append({

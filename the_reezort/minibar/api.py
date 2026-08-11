@@ -21,6 +21,7 @@ from frappe import _
 from frappe.utils import flt, get_datetime, getdate, now_datetime, today
 
 from the_reezort.staff.api import _envelope
+from the_reezort.utils import require_permission
 
 
 BACKDATE_HOURS = 24
@@ -100,7 +101,7 @@ def post_minibar_consumption(
 	"""Post minibar consumption → creates ONE Folio Line (source_module Minibar)
 	+ ONE Minibar Posting audit doc. Idempotent per (stay, consumed_at, item bag).
 	"""
-	_require_login()
+	require_permission("Minibar Posting", "create")
 
 	if isinstance(items, str):
 		items = json.loads(items)
@@ -159,7 +160,8 @@ def post_minibar_consumption(
 		if not mi:
 			frappe.throw(_("Unknown Minibar Item: {0}").format(r["minibar_item"]))
 		qty = int(r["quantity"])
-		rate = flt(r.get("rate")) or flt(mi["price"])
+		# Price always comes from the catalog — never trust a client-supplied rate.
+		rate = flt(mi["price"])
 		amount = qty * rate
 		total += amount
 		posting_items.append({
@@ -268,7 +270,7 @@ def post_minibar_consumption(
 
 @frappe.whitelist()
 def list_recent_postings(stay: str, limit: int = 10) -> dict:
-	_require_login()
+	require_permission("Minibar Posting", "read")
 	rows = frappe.get_all(
 		"Minibar Posting",
 		filters={"stay": stay},

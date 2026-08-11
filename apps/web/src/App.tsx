@@ -99,12 +99,14 @@ function Workspace() {
 	const profile = useUserProfile(currentUser);
 	const showDesk = canAccessDesk(profile);
 	const [snapshot, setSnapshot] = useState<DashboardSnapshot | null>(null);
-	const [snapshotState, setSnapshotState] = useState<"loading" | "live" | "mock">(
+	const [snapshotState, setSnapshotState] = useState<"loading" | "live" | "error">(
 		"loading"
 	);
+	const [snapshotAttempt, setSnapshotAttempt] = useState(0);
 
 	useEffect(() => {
 		let active = true;
+		setSnapshotState((prev) => (prev === "live" ? prev : "loading"));
 
 		getManagementDashboardSnapshot()
 			.then((nextSnapshot) => {
@@ -115,13 +117,15 @@ function Workspace() {
 			.catch(() => {
 				if (!active) return;
 				setSnapshot(null);
-				setSnapshotState("mock");
+				setSnapshotState("error");
 			});
 
 		return () => {
 			active = false;
 		};
-	}, []);
+	}, [snapshotAttempt]);
+
+	const retrySnapshot = () => setSnapshotAttempt((n) => n + 1);
 
 	const cards = useMemo(
 		() => (snapshot ? toSectionCards(snapshot) : undefined),
@@ -154,7 +158,7 @@ function Workspace() {
 											? "Live Frappe data"
 											: snapshotState === "loading"
 												? "Loading data"
-												: "Mock fallback"}
+												: "Couldn't load live data"}
 									</Badge>
 									<Badge variant="secondary">Management preview</Badge>
 									<Badge variant="secondary">
@@ -192,7 +196,7 @@ function Workspace() {
 							</div>
 						</div>
 					</section>
-					<SectionCards cards={cards} />
+					<SectionCards cards={cards} onRetry={retrySnapshot} />
 					<div className="px-4 lg:px-6">
 						<ChartAreaInteractive />
 					</div>

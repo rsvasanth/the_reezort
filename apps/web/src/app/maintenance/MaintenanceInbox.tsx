@@ -38,7 +38,6 @@ import { EASE_OUT } from "@/lib/motion";
 import { FolioApiError } from "@/lib/folio-api";
 import { ReportIssueSheet } from "@/components/maintenance/report-issue-sheet";
 import {
-	MOCK_LIST,
 	addTicketNote,
 	assignTicket,
 	getPrimaryResortProperty,
@@ -51,7 +50,7 @@ import {
 
 import { priorityTone, relativeTime, shortRoom, slaLabel, stateTone } from "./maintenance-format";
 
-type LoadState = "loading" | "live" | "mock";
+type LoadState = "loading" | "live" | "error";
 
 const STATUS_FILTERS = [
 	"Open",
@@ -107,8 +106,8 @@ export default function MaintenanceInbox() {
 					setState("live");
 					return;
 				}
-				setData(MOCK_LIST);
-				setState("mock");
+				setData(null);
+				setState("error");
 			});
 	}, [status, priority, search]);
 
@@ -192,7 +191,7 @@ export default function MaintenanceInbox() {
 			<div className="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<div className="mb-2 flex items-center gap-2">
-						<Badge variant="outline">{state === "live" ? "Live" : state === "loading" ? "Loading" : "Mock"}</Badge>
+						<Badge variant="outline">{state === "live" ? "Live" : state === "loading" ? "Loading" : "Couldn't load"}</Badge>
 						<Badge variant="secondary">Maintenance</Badge>
 					</div>
 					<h1 className="font-display text-3xl font-light tracking-tight">Maintenance</h1>
@@ -235,6 +234,14 @@ export default function MaintenanceInbox() {
 					{Array.from({ length: 4 }).map((_, i) => (
 						<Skeleton key={i} className="h-20 w-full rounded-xl" />
 					))}
+				</div>
+			) : state === "error" ? (
+				<div className="flex flex-col items-center gap-3 py-16 text-center">
+					<AlertTriangle className="size-7 text-destructive" />
+					<p className="text-sm text-muted-foreground">Could not load maintenance tickets.</p>
+					<Button variant="outline" onClick={() => load()}>
+						<RefreshCw className="mr-1.5 size-4" /> Retry
+					</Button>
 				</div>
 			) : rows.length === 0 ? (
 				<div className="flex flex-col items-center gap-2 rounded-xl border border-dashed py-16 text-center">

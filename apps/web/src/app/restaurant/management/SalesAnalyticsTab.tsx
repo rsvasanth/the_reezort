@@ -42,12 +42,8 @@ import { staggerContainer, staggerItem } from "@/lib/motion";
 import { FolioApiError } from "@/lib/folio-api";
 import { formatINR, formatINRCompact } from "@/lib/analytics-api";
 import {
-	MOCK_SALES_BY_WAITER,
-	MOCK_TOP_DISHES,
 	getDailySales,
 	getSalesSummary,
-	mockDailySales,
-	mockSummary,
 	rangeEndingYesterday,
 	salesByWaiter,
 	topDishes,
@@ -59,7 +55,7 @@ import {
 
 import { DeltaBadge } from "./management-visuals";
 
-type LoadState = "loading" | "live" | "mock" | "error" | "denied";
+type LoadState = "loading" | "live" | "error" | "denied";
 
 const RANGES = [
 	{ key: "7", label: "Last 7 days" },
@@ -97,15 +93,7 @@ export default function SalesAnalyticsTab({ outlet }: { outlet: string }) {
 					setState("denied");
 					return;
 				}
-				if (error instanceof FolioApiError && error.status >= 400 && error.status < 500) {
-					setState("error");
-					return;
-				}
-				setSummary(mockSummary(range));
-				setDaily(mockDailySales(range));
-				setWaiters(MOCK_SALES_BY_WAITER);
-				setDishes(MOCK_TOP_DISHES);
-				setState("mock");
+				setState("error");
 			});
 	}, [days, outlet]);
 
@@ -153,7 +141,7 @@ export default function SalesAnalyticsTab({ outlet }: { outlet: string }) {
 		<div className="flex flex-col gap-6">
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div className="flex items-center gap-2">
-					<Badge variant="outline">{state === "mock" ? "Mock" : "Live"}</Badge>
+					<Badge variant="outline">Live</Badge>
 					<span className="text-xs text-muted-foreground">
 						{summary.from_date} → {summary.to_date}
 					</span>

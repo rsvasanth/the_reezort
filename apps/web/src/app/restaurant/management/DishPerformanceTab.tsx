@@ -30,7 +30,6 @@ import { MenuItemThumb } from "@/components/fnb/menu-visuals";
 import { FolioApiError } from "@/lib/folio-api";
 import { formatINR } from "@/lib/analytics-api";
 import {
-	MOCK_DISH_PERFORMANCE,
 	getDishPerformance,
 	rangeEndingYesterday,
 	type DishPerformance,
@@ -38,7 +37,7 @@ import {
 
 import { TrendArrow } from "./management-visuals";
 
-type LoadState = "loading" | "live" | "mock" | "error" | "denied";
+type LoadState = "loading" | "live" | "error" | "denied";
 
 const RANGES = [
 	{ key: "7", label: "Last 7 days" },
@@ -70,12 +69,7 @@ export default function DishPerformanceTab({ outlet }: { outlet: string }) {
 					setState("denied");
 					return;
 				}
-				if (error instanceof FolioApiError && error.status >= 400 && error.status < 500) {
-					setState("error");
-					return;
-				}
-				setPerf(MOCK_DISH_PERFORMANCE);
-				setState("mock");
+				setState("error");
 			});
 	}, [days, outlet]);
 
@@ -87,7 +81,7 @@ export default function DishPerformanceTab({ outlet }: { outlet: string }) {
 		<div className="flex flex-col gap-4">
 			<div className="flex flex-wrap items-center justify-between gap-3">
 				<div className="flex items-center gap-2">
-					{state === "mock" ? <Badge variant="outline">Mock</Badge> : <Badge variant="outline">Live</Badge>}
+					<Badge variant="outline">Live</Badge>
 					<span className="text-xs text-muted-foreground">Margin uses the dish BOM cost</span>
 				</div>
 				<div className="flex items-center gap-2">

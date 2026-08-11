@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { WorkspacePage } from "@/components/workspace/workspace";
 import { motion } from "motion/react";
-import { ChefHat, Loader2, Plus, RefreshCw, Users } from "lucide-react";
+import { AlertTriangle, ChefHat, Loader2, Plus, RefreshCw, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,6 @@ import { formatINR } from "@/components/fnb/menu-visuals";
 import { FolioApiError } from "@/lib/folio-api";
 import { listOutlets, type FnbOutlet } from "@/lib/fnb-api";
 import {
-	MOCK_TABLES,
 	listTables,
 	openWalkInOrder,
 	pickDineInOutlet,
@@ -35,7 +34,7 @@ import {
 
 import { formatElapsed, tableTone } from "./restaurant-format";
 
-type LoadState = "loading" | "live" | "mock";
+type LoadState = "loading" | "live" | "error";
 
 export default function RestaurantFloor() {
 	const [outlets, setOutlets] = useState<FnbOutlet[]>([]);
@@ -50,7 +49,7 @@ export default function RestaurantFloor() {
 				setOutlets(res.outlets);
 				const def = pickDineInOutlet(res.outlets);
 				if (def) setOutlet(def.name);
-				else setState("mock");
+				else setState("live");
 			})
 			.catch(() => {
 				setOutlets([{ name: "Signature Restaurant", outlet_name: "Signature Restaurant", outlet_code: "SIGREST", outlet_type: "Restaurant", is_default: 1, default_service_charge_pct: null }]);
@@ -76,8 +75,8 @@ export default function RestaurantFloor() {
 					setState("live");
 					return;
 				}
-				setTables(MOCK_TABLES);
-				setState("mock");
+				setTables([]);
+				setState("error");
 			});
 	}, []);
 
@@ -115,7 +114,7 @@ export default function RestaurantFloor() {
 			<div className="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<div className="mb-2 flex items-center gap-2">
-						<Badge variant="outline">{state === "live" ? "Live floor" : state === "loading" ? "Loading" : "Mock floor"}</Badge>
+						<Badge variant="outline">{state === "live" ? "Live floor" : state === "loading" ? "Loading" : "Couldn't load"}</Badge>
 						<Badge variant="secondary">Restaurant POS</Badge>
 					</div>
 					<h1 className="font-display text-3xl font-light tracking-tight">Floor plan</h1>
@@ -155,6 +154,14 @@ export default function RestaurantFloor() {
 			{state === "loading" ? (
 				<div className="flex items-center gap-2 py-10 text-sm text-muted-foreground">
 					<Loader2 className="size-4 animate-spin" /> Loading floor…
+				</div>
+			) : state === "error" ? (
+				<div className="flex flex-col items-center gap-3 py-16 text-center">
+					<AlertTriangle className="size-7 text-destructive" />
+					<p className="text-sm text-muted-foreground">Could not load the floor plan.</p>
+					<Button variant="outline" onClick={() => load(outlet)}>
+						<RefreshCw className="mr-1.5 size-4" /> Retry
+					</Button>
 				</div>
 			) : tables.length === 0 ? (
 				<div className="flex flex-col items-center gap-2 rounded-xl border border-dashed py-16 text-center">

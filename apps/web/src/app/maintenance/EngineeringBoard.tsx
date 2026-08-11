@@ -32,7 +32,6 @@ import { EASE_OUT } from "@/lib/motion";
 import { FolioApiError } from "@/lib/folio-api";
 import { getPrimaryResortProperty } from "@/lib/maintenance-api";
 import {
-	MOCK_DOWNTIMES,
 	getRoomDowntimeBoard,
 	requestRoomRelease,
 	verifyAndReleaseRoom,
@@ -40,8 +39,6 @@ import {
 	type DowntimeBoardResult,
 } from "@/lib/downtime-api";
 import {
-	MOCK_PLANS,
-	MOCK_TASKS,
 	listPreventivePlans,
 	listPreventiveTasks,
 	type PreventivePlan,
@@ -49,7 +46,7 @@ import {
 } from "@/lib/preventive-api";
 import { relativeTime, shortRoom } from "./maintenance-format";
 
-type LoadState = "loading" | "live" | "mock";
+type LoadState = "loading" | "live" | "error";
 
 // ---------- helpers ----------
 
@@ -126,8 +123,8 @@ export default function EngineeringBoard() {
 					setDowntimeState("live");
 					return;
 				}
-				setDowntimes(MOCK_DOWNTIMES);
-				setDowntimeState("mock");
+				setDowntimes([]);
+				setDowntimeState("error");
 			}
 		},
 		[property],
@@ -146,9 +143,9 @@ export default function EngineeringBoard() {
 				setTasks(tasksRes.tasks);
 				setPmState("live");
 			} catch {
-				setPlans(MOCK_PLANS);
-				setTasks(MOCK_TASKS);
-				setPmState("mock");
+				setPlans([]);
+				setTasks([]);
+				setPmState("error");
 			}
 		},
 		[property],
@@ -212,7 +209,7 @@ export default function EngineeringBoard() {
 			<div className="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<div className="mb-2 flex items-center gap-2">
-						<Badge variant="outline">{downtimeState === "live" ? "Live" : downtimeState === "loading" ? "Loading" : "Mock"}</Badge>
+						<Badge variant="outline">{downtimeState === "live" ? "Live" : downtimeState === "loading" ? "Loading" : "Couldn't load"}</Badge>
 						<Badge variant="secondary">Engineering</Badge>
 					</div>
 					<h1 className="font-display text-3xl font-light tracking-tight">Engineering Board</h1>
@@ -256,6 +253,14 @@ export default function EngineeringBoard() {
 								<Skeleton key={i} className="h-24 w-full rounded-xl" />
 							))}
 						</div>
+					) : downtimeState === "error" ? (
+						<div className="flex flex-col items-center gap-3 py-16 text-center">
+							<AlertTriangle className="size-7 text-destructive" />
+							<p className="text-sm text-muted-foreground">Could not load room downtimes.</p>
+							<Button variant="outline" onClick={() => loadDowntimes()}>
+								<RefreshCw className="mr-1.5 size-4" /> Retry
+							</Button>
+						</div>
 					) : downtimes.length === 0 ? (
 						<div className="flex flex-col items-center gap-2 rounded-xl border border-dashed py-16 text-center">
 							<CheckCircle2 className="size-7 text-muted-foreground/50" />
@@ -284,8 +289,20 @@ export default function EngineeringBoard() {
 
 				{/* ── Preventive tab ── */}
 				<TabsContent value="preventive" className="mt-4 flex flex-col gap-6">
-					<PmPlansSection plans={plans} loading={pmState === "loading"} />
-					<PmTasksSection tasks={tasks} loading={pmState === "loading"} />
+					{pmState === "error" ? (
+						<div className="flex flex-col items-center gap-3 py-16 text-center">
+							<AlertTriangle className="size-7 text-destructive" />
+							<p className="text-sm text-muted-foreground">Could not load preventive maintenance data.</p>
+							<Button variant="outline" onClick={() => loadPm()}>
+								<RefreshCw className="mr-1.5 size-4" /> Retry
+							</Button>
+						</div>
+					) : (
+						<>
+							<PmPlansSection plans={plans} loading={pmState === "loading"} />
+							<PmTasksSection tasks={tasks} loading={pmState === "loading"} />
+						</>
+					)}
 				</TabsContent>
 			</Tabs>
 		</WorkspacePage>

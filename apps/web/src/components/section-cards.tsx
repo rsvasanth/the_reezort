@@ -1,13 +1,17 @@
 import {
+	AlertTriangleIcon,
 	BedDoubleIcon,
 	CalendarCheckIcon,
 	ClipboardListIcon,
 	IndianRupeeIcon,
+	RefreshCwIcon,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
 	Card,
+	CardContent,
 	CardDescription,
 	CardFooter,
 	CardHeader,
@@ -20,39 +24,6 @@ export type SectionCard = {
 	badge: string;
 	footer: string;
 };
-
-const defaultCards: (SectionCard & {
-	icon: typeof BedDoubleIcon;
-})[] = [
-	{
-		label: "Tonight occupancy",
-		value: "82%",
-		badge: "+6%",
-		footer: "148 of 180 sellable rooms are occupied or due in.",
-		icon: BedDoubleIcon,
-	},
-	{
-		label: "Projected room revenue",
-		value: "₹18.4L",
-		badge: "Today",
-		footer: "Room revenue forecast from direct, OTA, and corporate channels.",
-		icon: IndianRupeeIcon,
-	},
-	{
-		label: "Arrivals",
-		value: "46",
-		badge: "9 VIP",
-		footer: "Expected arrivals, early check-ins, and airport pickup watchlist.",
-		icon: CalendarCheckIcon,
-	},
-	{
-		label: "Open exceptions",
-		value: "11",
-		badge: "3 urgent",
-		footer: "Housekeeping, maintenance, guest request, and billing follow-ups.",
-		icon: ClipboardListIcon,
-	},
-];
 
 const iconByLabel = {
 	"Tonight occupancy": BedDoubleIcon,
@@ -67,12 +38,41 @@ function getCardIcon(label: string) {
 	return iconByLabel[label as keyof typeof iconByLabel] ?? ClipboardListIcon;
 }
 
-export function SectionCards({ cards }: { cards?: SectionCard[] }) {
-	const displayCards = cards ?? defaultCards;
+export function SectionCards({
+	cards,
+	onRetry,
+}: {
+	cards?: SectionCard[];
+	onRetry?: () => void;
+}) {
+	if (!cards) {
+		return (
+			<div className="px-4 lg:px-6">
+				<Card className="border-destructive/40">
+					<CardContent className="flex flex-col items-center gap-3 p-8 text-center">
+						<div className="rounded-full bg-destructive/10 p-3 text-destructive">
+							<AlertTriangleIcon className="size-6" />
+						</div>
+						<div className="text-lg font-semibold">Couldn't load live dashboard data</div>
+						<p className="max-w-md text-sm text-muted-foreground">
+							The management dashboard snapshot didn't load. These figures are not shown to
+							avoid displaying stale or fabricated numbers — retry to fetch live data.
+						</p>
+						{onRetry ? (
+							<Button onClick={onRetry} className="mt-2">
+								<RefreshCwIcon className="mr-2 size-4" />
+								Retry
+							</Button>
+						) : null}
+					</CardContent>
+				</Card>
+			</div>
+		);
+	}
 
 	return (
 		<div className="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-none sm:grid-cols-2 xl:grid-cols-4 lg:px-6">
-			{displayCards.map((card) => {
+			{cards.map((card) => {
 				const Icon = "icon" in card ? card.icon : getCardIcon(card.label);
 
 				return (

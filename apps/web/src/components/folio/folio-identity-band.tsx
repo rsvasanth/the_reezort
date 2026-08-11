@@ -51,6 +51,13 @@ type Props = {
 	onPrintLabel: () => void;
 	onPrintFarewell: () => void;
 	checkingOut?: boolean;
+	/**
+	 * True when `detail` is not confirmed live data (e.g. a mock-fallback
+	 * folio). Destructive/live actions — check out, invoice, farewell slip,
+	 * stay label — must be disabled so a fabricated guest/stay can't be
+	 * checked out or have documents printed against it.
+	 */
+	disableLiveActions?: boolean;
 };
 
 export function FolioIdentityBand({
@@ -61,6 +68,7 @@ export function FolioIdentityBand({
 	onPrintLabel,
 	onPrintFarewell,
 	checkingOut,
+	disableLiveActions,
 }: Props) {
 	const { folio, next_actions } = detail;
 	const actions = next_actions ?? [];
@@ -136,7 +144,13 @@ export function FolioIdentityBand({
 			<div className="flex flex-col items-end gap-3">
 				<div className="flex items-center gap-2">
 					{showCheckOut && (
-						<Button size="sm" onClick={onCheckOut} disabled={checkingOut} data-testid="folio-checkout">
+						<Button
+							size="sm"
+							onClick={onCheckOut}
+							disabled={checkingOut || disableLiveActions}
+							title={disableLiveActions ? "Unavailable while showing unconfirmed data" : undefined}
+							data-testid="folio-checkout"
+						>
 							{checkingOut ? "Checking out…" : "Check out"}
 						</Button>
 					)}
@@ -151,15 +165,27 @@ export function FolioIdentityBand({
 								<RefreshCw className="mr-2 size-4" />
 								Refresh
 							</DropdownMenuItem>
-							<DropdownMenuItem onClick={onDownloadInvoice}>
+							<DropdownMenuItem
+								onClick={onDownloadInvoice}
+								disabled={disableLiveActions}
+								onSelect={disableLiveActions ? (event) => event.preventDefault() : undefined}
+							>
 								<FileDown className="mr-2 size-4" />
 								Download tax invoice (GST)
 							</DropdownMenuItem>
-							<DropdownMenuItem onClick={onPrintFarewell}>
+							<DropdownMenuItem
+								onClick={onPrintFarewell}
+								disabled={disableLiveActions}
+								onSelect={disableLiveActions ? (event) => event.preventDefault() : undefined}
+							>
 								<Printer className="mr-2 size-4" />
 								Print farewell slip (A6)
 							</DropdownMenuItem>
-							<DropdownMenuItem onClick={onPrintLabel}>
+							<DropdownMenuItem
+								onClick={onPrintLabel}
+								disabled={disableLiveActions}
+								onSelect={disableLiveActions ? (event) => event.preventDefault() : undefined}
+							>
 								<Printer className="mr-2 size-4" />
 								Print stay label (QR)
 							</DropdownMenuItem>

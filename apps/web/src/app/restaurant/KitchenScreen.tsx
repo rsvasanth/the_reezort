@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { WorkspacePage } from "@/components/workspace/workspace";
 import { AnimatePresence, motion } from "motion/react";
-import { ChefHat, Clock, Loader2, RefreshCw } from "lucide-react";
+import { AlertTriangle, ChefHat, Clock, Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,6 @@ import { MenuItemThumb } from "@/components/fnb/menu-visuals";
 import { FolioApiError } from "@/lib/folio-api";
 import { listOutlets, type FnbOutlet } from "@/lib/fnb-api";
 import {
-	MOCK_KOTS,
 	listActiveKots,
 	markKotStatus,
 	pickDineInOutlet,
@@ -35,7 +34,7 @@ import {
 
 import { formatElapsed, lineStatusTone, orderStateTone } from "./restaurant-format";
 
-type LoadState = "loading" | "live" | "mock";
+type LoadState = "loading" | "live" | "error";
 
 const REFRESH_MS = 20000;
 
@@ -68,15 +67,16 @@ export default function KitchenScreen() {
 				setState("live");
 			})
 			.catch((error: unknown) => {
-				// Live server error → empty queue, not fake tickets; only a network
-				// failure falls back to the dev fixtures.
+				// Live server error → empty queue, not fake tickets.
 				if (error instanceof FolioApiError) {
 					setOrders([]);
 					setState("live");
 					return;
 				}
-				setOrders(MOCK_KOTS);
-				setState("mock");
+				// A true network/fetch failure must not render fabricated tickets a
+				// cook could act on — show an explicit error state instead.
+				setOrders([]);
+				setState("error");
 			});
 	}, []);
 
@@ -111,7 +111,7 @@ export default function KitchenScreen() {
 			<div className="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<div className="mb-2 flex items-center gap-2">
-						<Badge variant="outline">{state === "live" ? "Live KOT" : state === "loading" ? "Loading" : "Mock KOT"}</Badge>
+						<Badge variant="outline">{state === "live" ? "Live KOT" : state === "loading" ? "Loading" : "Couldn't load"}</Badge>
 						<Badge variant="secondary">Kitchen</Badge>
 					</div>
 					<h1 className="font-display text-3xl font-light tracking-tight">Kitchen queue</h1>
@@ -136,6 +136,17 @@ export default function KitchenScreen() {
 			{state === "loading" ? (
 				<div className="flex items-center gap-2 py-10 text-sm text-muted-foreground">
 					<Loader2 className="size-4 animate-spin" /> Loading tickets…
+				</div>
+			) : state === "error" ? (
+				<div className="flex flex-col items-center gap-3 py-16 text-center">
+					<AlertTriangle className="size-7 text-destructive" />
+					<p className="text-sm text-muted-foreground">
+						Could not load the kitchen queue. No tickets are shown — retry rather than
+						act on stale or fabricated data.
+					</p>
+					<Button variant="outline" onClick={() => load(outlet)}>
+						<RefreshCw className="mr-1.5 size-4" /> Retry
+					</Button>
 				</div>
 			) : orders.length === 0 ? (
 				<div className="flex flex-col items-center gap-2 rounded-xl border border-dashed py-16 text-center">

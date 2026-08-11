@@ -40,14 +40,11 @@ import { staggerContainer, staggerItem } from "@/lib/motion";
 import { FolioApiError } from "@/lib/folio-api";
 import { useUserProfile } from "@/hooks/use-user-profile";
 import {
-	MOCK_CHANNELS,
 	formatINR,
 	formatINRCompact,
 	getChannelMix,
 	getDailyTrend,
 	getSummary,
-	mockSummary,
-	mockTrend,
 	rangeEndingYesterday,
 	rebuildSnapshots,
 	type ChannelMix,
@@ -55,7 +52,7 @@ import {
 	type RevenueSummary,
 } from "@/lib/analytics-api";
 
-type LoadState = "loading" | "live" | "mock" | "error";
+type LoadState = "loading" | "live" | "error";
 
 const RANGES = [
 	{ key: "7", label: "Last 7 days" },
@@ -94,15 +91,8 @@ export default function RevenueDashboard() {
 				setChannels(c);
 				setState("live");
 			})
-			.catch((error: unknown) => {
-				if (error instanceof FolioApiError && error.status >= 400 && error.status < 500) {
-					setState("error");
-					return;
-				}
-				setSummary(mockSummary(days));
-				setTrend(mockTrend(days));
-				setChannels(MOCK_CHANNELS);
-				setState("mock");
+			.catch(() => {
+				setState("error");
 			});
 	}, [days]);
 
@@ -157,7 +147,7 @@ export default function RevenueDashboard() {
 			<div className="flex flex-wrap items-end justify-between gap-4">
 				<div>
 					<div className="mb-2 flex items-center gap-2">
-						<Badge variant="outline">{state === "mock" ? "Mock" : "Live"}</Badge>
+						<Badge variant="outline">Live</Badge>
 						<Badge variant="secondary">Analytics</Badge>
 					</div>
 					<h1 className="font-display text-3xl font-light tracking-tight">Revenue</h1>

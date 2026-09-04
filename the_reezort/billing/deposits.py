@@ -77,9 +77,15 @@ def record_deposit(guest_folio, amount, mode_of_payment="Cash", reference_no=Non
 	if not folio.customer:
 		frappe.throw(_("Folio has no customer to receive the deposit."))
 
-	# Add a random nonce to the auto-generated key so it can't be guessed and
-	# replayed against another folio.
-	key = (idempotency_key or f"deposit:{guest_folio}:{amount}:{mode_of_payment}:{frappe.generate_hash(length=10)}") + ":line"
+	# A random nonce here would defeat idempotency for the common case where the
+	# caller doesn't supply its own key — every retry (a double-click, a client
+	# timeout-and-resend) would mint a fresh key and post a duplicate deposit.
+	# Cross-folio replay of a *guessed* key is already independently blocked
+	# below (existing.guest_folio != guest_folio), so the nonce wasn't buying
+	# any real protection. Callers that legitimately need to record two
+	# same-amount/same-mode deposits on one folio in quick succession must pass
+	# their own distinguishing idempotency_key (every current caller already does).
+	key = (idempotency_key or f"deposit:{guest_folio}:{amount}:{mode_of_payment}") + ":line"
 	existing = frappe.db.get_value(
 		"Folio Line", {"idempotency_key": key},
 		["name", "erpnext_payment_entry", "guest_folio"], as_dict=True,

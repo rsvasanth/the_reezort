@@ -151,6 +151,20 @@ class TestRestaurantPos(FrappeTestCase):
 		# grand_total = subtotal + service + tax; both should be > subtotal (18% GST default)
 		self.assertGreater(result_order["grand_total"], expected_subtotal)
 
+	def test_add_items_ignores_a_client_supplied_rate(self):
+		"""Regression: add_items used to accept row.get("rate") over the menu
+		price, letting any caller with Restaurant Order write access (waiters,
+		cooks) post an arbitrary price for a dish."""
+		table = self._any_table()
+		order = open_walk_in_order(self.outlet, table)["data"]["order"]
+		items = self._first_two_items()
+
+		add_result = add_items(order["name"], [{"menu_item": items[0].name, "quantity": 1, "rate": 1}])
+
+		posted_rate = add_result["data"]["order"]["items"][0]["rate"]
+		self.assertEqual(flt(posted_rate), flt(items[0].price))
+		self.assertNotEqual(flt(posted_rate), 1)
+
 	def test_add_items_allowed_after_kitchen_send_but_not_when_settling(self):
 		# Multi-round dining: a second round can be added after the first is fired.
 		table = self._any_table()
@@ -400,7 +414,12 @@ class TestRestaurantPos(FrappeTestCase):
 
 	def _seed_void_policy(self, auto_role=None, threshold=0):
 		"""Create an active restaurant_void Approval Policy for the current test.
-		FrappeTestCase rolls each test back, so no explicit teardown is needed."""
+
+		Approval Policy autonames on (action, threshold_amount) alone, so every
+		call here — from any test in this class, or a prior run that committed
+		for real — targets the same row. Clear it first so tests don't collide.
+		"""
+		frappe.db.delete("Approval Policy", {"action": "restaurant_void", "threshold_amount": threshold})
 		return frappe.get_doc(
 			{
 				"doctype": "Approval Policy",

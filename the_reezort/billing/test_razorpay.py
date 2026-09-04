@@ -7,6 +7,7 @@ from frappe.tests.utils import FrappeTestCase
 
 from the_reezort.billing.razorpay_gateway import (
 	RAZORPAY_ORDERS_URL,
+	_folio_payable,
 	capture_deposit,
 	capture_payment,
 	verify_signature,
@@ -46,6 +47,41 @@ class TestRazorpayGateway(FrappeTestCase):
 	def test_capture_deposit_rejects_bad_signature_before_any_posting(self):
 		with self.assertRaises(frappe.ValidationError):
 			capture_deposit("RZ-FOL-DOES-NOT-EXIST", "order_x", "pay_x", "bad-signature", 100)
+
+
+class TestFolioPayable(FrappeTestCase):
+	def test_fully_paid_folio_with_zero_outstanding_is_not_payable_again(self):
+		"""Regression: the outstanding<=0 fallback branch omitted total_paid,
+		so a folio fully covered by a deposit (outstanding == 0) fell through
+		to the gross charge total and could be charged again via a brand-new
+		Razorpay order."""
+		folio = frappe._dict(
+			outstanding_amount=0,
+			total_charges=10000,
+			total_taxes_estimated=1800,
+			total_discounts=0,
+			total_paid=11800,
+		)
+		self.assertEqual(_folio_payable(folio), 0)
+
+	def test_partially_paid_folio_with_zero_outstanding_field_is_not_overcharged(self):
+		# outstanding_amount not yet recomputed (e.g. stale) but total_paid
+		# already covers most of the charge — the fallback must still net it out.
+		folio = frappe._dict(
+			outstanding_amount=0,
+			total_charges=10000,
+			total_taxes_estimated=1800,
+			total_discounts=0,
+			total_paid=5000,
+		)
+		self.assertEqual(_folio_payable(folio), 6800)
+
+	def test_outstanding_field_is_trusted_when_positive(self):
+		folio = frappe._dict(
+			outstanding_amount=2500, total_charges=10000, total_taxes_estimated=1800,
+			total_discounts=0, total_paid=9300,
+		)
+		self.assertEqual(_folio_payable(folio), 2500)
 
 
 class TestRazorpayOrderBinding(FrappeTestCase):

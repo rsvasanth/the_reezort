@@ -320,6 +320,13 @@ def settle_split(split: str, payments: list[dict] | str | None = None, stay: str
 	charge lines. When the last open portion settles, the parent order flips to
 	Settled and BOM stock is consumed once for the whole order."""
 	_require_permission("FnB Bill Split", "write")
+	# Serialize concurrent settlement attempts on the same split — without this
+	# lock, the split_status check just below is a read-then-write race: two
+	# concurrent calls (a flaky POS retry, a double-tap) can both read
+	# "not yet Settled" and both submit a Sales Invoice for the same split.
+	# The lock is released when this request's transaction commits or rolls
+	# back, so the second call blocks here until the first is fully done.
+	frappe.db.get_value("FnB Bill Split", split, "name", for_update=True)
 	split_doc = frappe.get_doc("FnB Bill Split", split)
 	if split_doc.split_status == "Settled":
 		return _envelope({"split": _split_dict(split_doc), "reused": True})
@@ -332,6 +339,15 @@ def settle_split(split: str, payments: list[dict] | str | None = None, stay: str
 	if split_doc.settlement_mode == "Room":
 		_settle_room(split_doc, order, stay or split_doc.room_stay)
 	else:
+		# An empty payments list used to still fall through to
+		# split_status = "Settled" below — _settle_direct's payment loop
+		# simply does nothing when there's nothing to iterate, leaving a
+		# submitted Sales Invoice with no Payment Entry against it while the
+		# portion reads Settled and the order can close. (A payment dict
+		# with amount omitted or 0 is a real, existing convention meaning
+		# "pay the full remaining balance" — only an empty list is the bug.)
+		if not payments:
+			frappe.throw(_("At least one payment is required to settle split {0}.").format(split))
 		_settle_direct(split_doc, order, payments)
 
 	split_doc.split_status = "Settled"

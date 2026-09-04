@@ -37,9 +37,22 @@ class TestSplitBill(FrappeTestCase):
 
 	def setUp(self):
 		super().setUp()
+		# settle_split / create_split_plan post real ERPNext documents via
+		# frappe.db.commit() deep in the posting stack, which defeats
+		# FrappeTestCase's rollback-based isolation. Suppress commits for the
+		# duration of each test so nothing survives beyond this run.
+		self._real_commit = frappe.db.commit
+		frappe.db.commit = lambda *a, **k: None
+		self.addCleanup(lambda: setattr(frappe.db, "commit", self._real_commit))
+
 		frappe.set_user("Administrator")
 		for name in frappe.get_all("Restaurant Order", filters={"outlet": self.outlet}, pluck="name"):
 			frappe.delete_doc("Restaurant Order", name, force=True, ignore_permissions=True)
+		# delete_doc on the order doesn't cascade to FnB Bill Split rows (a
+		# linked, not child, doctype) — clear any orphans a prior committed
+		# run left behind, or create_split_plan's "already has settled
+		# splits" guard trips on a split whose parent order no longer exists.
+		frappe.db.delete("FnB Bill Split", {"restaurant_order": ["not in", frappe.get_all("Restaurant Order", pluck="name") or [""]]})
 
 	# ---------- fixtures ----------
 

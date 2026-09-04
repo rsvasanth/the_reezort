@@ -358,7 +358,18 @@ def post_refund(line, amount=None, mode_of_payment=None, reason="", approval_req
 
 	folio = frappe.get_doc("Guest Folio", doc.guest_folio)
 	original_pe = frappe.get_doc("Payment Entry", doc.erpnext_payment_entry)
-	idempotency_key = f"refund:{doc.name}:{int(amount * 100)}"
+	# Keying on (line, amount) alone means a second, genuinely distinct refund
+	# of the same amount on the same line collides with the first's already-
+	# Posted key — run_posting silently short-circuits and returns the FIRST
+	# refund's result without moving any new money, while the caller is told
+	# it succeeded. Folding in the running total already refunded (real,
+	# monotonically-increasing state) makes two sequential distinct refunds
+	# of the same amount produce different keys, while a genuine retry of the
+	# same not-yet-completed request still sees the same prior total and
+	# correctly dedupes. The disambiguator goes BEFORE the amount, not after —
+	# _prior_refunded() parses the amount back out of the key's last
+	# colon-segment, so the amount must stay last.
+	idempotency_key = f"refund:{doc.name}:{int(already_refunded * 100)}:{int(amount * 100)}"
 
 	def operation():
 		refund = frappe.new_doc("Payment Entry")

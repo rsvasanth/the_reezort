@@ -92,6 +92,31 @@ class TestERPNextPostingLog(FrappeTestCase):
 		self.assertEqual(log.retry_count, 1)
 		self.assertIn("simulated posting failure", log.error_message)
 
+	def test_failed_posting_rolls_back_partial_work_done_before_the_exception(self):
+		"""Regression: operation() can do real work (e.g. submit a Sales Invoice)
+		before failing on a later step (e.g. the Payment Entry). Without a
+		rollback, that partial work stayed committed alongside a "Failed" log,
+		and a retry would call operation() again and create a duplicate
+		alongside the orphaned first attempt."""
+		marker_name = {}
+
+		def operation():
+			doc = frappe.get_doc(
+				{"doctype": "Guest Profile", "guest_full_name": "Posting Rollback Marker"}
+			).insert(ignore_permissions=True)
+			marker_name["value"] = doc.name
+			raise ValueError("fails after partial work")
+
+		with self.assertRaises(ValueError):
+			self._run("PARTIAL", operation)
+
+		self.assertFalse(
+			frappe.db.exists("Guest Profile", marker_name["value"]),
+			"the Guest Profile inserted before the failure must not survive the rollback",
+		)
+		log = frappe.get_doc("ERPNext Posting Log", {"idempotency_key": self._key("PARTIAL")})
+		self.assertEqual(log.posting_status, "Failed")
+
 	def test_retry_after_failure_can_succeed(self):
 		state = {"fail": True}
 

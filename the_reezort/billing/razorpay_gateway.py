@@ -41,7 +41,11 @@ def _folio_payable(folio):
 	outstanding = flt(folio.outstanding_amount)
 	if outstanding > 0:
 		return outstanding
-	return flt(folio.total_charges) + flt(folio.total_taxes_estimated) - flt(folio.total_discounts)
+	# The fallback branch omitted total_paid entirely, so a fully-paid folio
+	# (outstanding == 0, e.g. covered by a deposit) fell through to the gross
+	# charge total and could be charged again via a brand-new Razorpay order.
+	fallback = flt(folio.total_charges) + flt(folio.total_taxes_estimated) - flt(folio.total_discounts) - flt(folio.total_paid)
+	return max(fallback, 0)
 
 
 def _ensure_razorpay_mode_of_payment():

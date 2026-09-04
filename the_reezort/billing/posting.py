@@ -79,11 +79,22 @@ def run_posting(posting_type, source_doctype, source_name, idempotency_key, oper
 	log.posting_status = "Processing"
 	log.last_attempt_at = now_datetime()
 	log.save(ignore_permissions=True)
+	# Commit the "attempt in progress" marker on its own before running the
+	# operation, so it survives a rollback of the operation's own work below —
+	# without this, a fresh log's very insert() would be uncommitted too, and
+	# rolling back operation()'s partial documents would erase the log itself.
+	frappe.db.commit()
 
 	try:
 		result = operation() or {}
 	except Exception as exc:
-		log.reload()
+		# The operation may have already submitted some financial documents
+		# (e.g. a Sales Invoice) before failing on a later step (e.g. the
+		# Payment Entry). Roll those back — otherwise they'd stay committed
+		# while the log records "Failed", and a retry would call operation()
+		# again from scratch and create duplicates alongside the orphaned ones.
+		frappe.db.rollback()
+		log = frappe.get_doc(POSTING_LOG, log.name)
 		log.posting_status = "Failed"
 		log.error_message = str(exc)[:1000]
 		log.retry_count = (log.retry_count or 0) + 1

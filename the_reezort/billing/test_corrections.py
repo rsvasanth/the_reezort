@@ -170,6 +170,29 @@ class TestFolioCorrections(FrappeTestCase):
 		self.assertEqual(refund_pe.paid_amount, 10000)
 		self.assertEqual(frappe.db.get_value("Folio Line", deposit_line.name, "line_status"), "Refunded")
 
+	def test_two_sequential_refunds_of_the_same_amount_both_move_money(self):
+		"""Regression: the refund idempotency key used to be keyed on
+		(line, amount) alone, so a second, genuinely distinct refund of the
+		same amount on the same line collided with the first's already-Posted
+		key — run_posting silently returned the FIRST refund's result without
+		moving any new money, while the caller was told it succeeded."""
+		folio, _stay = self._fresh_folio_with_charge()
+		record_deposit(folio, amount=10000, mode_of_payment="Cash")
+		deposit_line = frappe.get_all(
+			"Folio Line", {"guest_folio": folio, "line_type": "Deposit Application"}, pluck="name"
+		)[0]
+
+		first = post_refund(deposit_line, amount=4000, reason="Partial refund 1")
+		# The line is only fully "Refunded" after the cumulative amount is
+		# reached, so a second partial refund on the same line is a real flow.
+		second = post_refund(deposit_line, amount=4000, reason="Partial refund 2")
+
+		first_pe = first["data"]["refund_payment_entry"]
+		second_pe = second["data"]["refund_payment_entry"]
+		self.assertNotEqual(first_pe, second_pe, "each distinct refund must create its own Payment Entry")
+		self.assertEqual(frappe.db.get_value("Payment Entry", first_pe, "paid_amount"), 4000)
+		self.assertEqual(frappe.db.get_value("Payment Entry", second_pe, "paid_amount"), 4000)
+
 	def test_refund_amount_bounded_by_line_amount(self):
 		folio, _stay = self._fresh_folio_with_charge()
 		record_deposit(folio, amount=5000, mode_of_payment="Cash")

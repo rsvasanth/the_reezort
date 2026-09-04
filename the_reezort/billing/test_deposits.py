@@ -45,6 +45,23 @@ class TestDeposits(FrappeTestCase):
 		self.assertTrue(b["reused"])
 		self.assertEqual(a["folio_line"], b["folio_line"])
 
+	def test_deposit_without_an_explicit_key_still_dedupes_on_retry(self):
+		"""Regression: the default (no idempotency_key supplied) key used to
+		fold in a fresh random nonce every call, so a genuine retry — a
+		double-click, a client timeout-and-resend — could never dedupe and
+		would post a duplicate deposit. Cross-folio key replay is separately
+		blocked by the guest_folio-mismatch check, so the nonce wasn't buying
+		real protection — only breaking the common case."""
+		a = deposits.record_deposit(self.folio, 3000, mode_of_payment="Cash")["data"]
+		b = deposits.record_deposit(self.folio, 3000, mode_of_payment="Cash")["data"]
+		self.assertFalse(a["reused"])
+		self.assertTrue(b["reused"])
+		self.assertEqual(a["folio_line"], b["folio_line"])
+		# Only one Deposit Application line was ever created for this folio.
+		self.assertEqual(
+			frappe.db.count("Folio Line", {"guest_folio": self.folio, "line_type": "Deposit Application"}), 1
+		)
+
 	def test_reject_nonpositive(self):
 		with self.assertRaises(frappe.ValidationError):
 			deposits.record_deposit(self.folio, 0)
